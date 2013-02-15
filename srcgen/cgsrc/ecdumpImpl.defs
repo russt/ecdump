@@ -14,7 +14,7 @@ PL_CONSTRUCTOR_NAME = new
 
 {
 PL_EXTERN_PKG_IMPORTS = << [
-use sqlpj::sqlpjImpl;
+require "sqlpj.pl";
 ]
 PL_PKG_IMPORTS = << [
 ]
@@ -25,6 +25,7 @@ PL_PKG_IMPORTS = << [
 PL_PKG_ATTRIBUTES := << [
 my $mPROMPT = $pkgname . "> ";
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
+my $sqlImpl = undef;
 ]
 #%evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
 }
@@ -67,7 +68,7 @@ $DDEBUG  = $cfg->getDDebug();
 $QUIET   = $cfg->getQuiet();
 $VERBOSE = $cfg->getVerbose();
 
-$sqlImpl   = new sqlpjImpl($cfg);
+$sqlImpl   = new sqlpj::sqlpjImpl($cfg);
 ]
 %evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }

@@ -9,7 +9,7 @@ PL_PACKAGE_DESCRIPTION = Main driver for ecdump - a tool to dump the Electric Co
 {
 PL_EXTERN_PKG_IMPORTS = << [
 use Config;
-use sqlpj::pkgconfig;
+require "sqlpj.pl";
 ]
 PL_PKG_IMPORTS = << [
 use $_PKGCONFIG_PACKAGE;

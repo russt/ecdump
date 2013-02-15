@@ -32,7 +32,9 @@ ECHO_TXT =
 }
 
 #check for undefs:
-%shell egrep "{=|:undef" `walkdir -f -ftxt $CG_ROOT`
+%eecho Checking for undefined cg vars in output...
+%if    $GEN_ONE_MODULE    %shell egrep "{=|:undef" $CG_ROOT/$ONE_MODULE
+%ifnot $GEN_ONE_MODULE    %shell egrep "{=|:undef" `walkdir -f -ftxt $CG_ROOT`
 
 #if matches found (i.e., grep status is zero)...
 %ifnot $CG_SHELL_STATUS %echo Found undefined varibles - please correct.
