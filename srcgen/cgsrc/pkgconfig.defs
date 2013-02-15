@@ -1,0 +1,181 @@
+#
+#pkgconfig.defs -  definitions for pkgconfig object.
+#
+
+#allows us to run stand-alone:
+%ifdef BUILD_SETUP_COMPLETE %include build_setup.defs
+
+{ ## header section
+PL_PACKAGE = $PKGCONFIG_PACKAGE
+PL_PACKAGE_DESCRIPTION = Configuration parameters for sqlpj package
+
+#not a base class - use standard constuctor name:
+PL_CONSTRUCTOR_NAME = new
+
+PL_PKG_IMPORTS := << EOF
+EOF
+#%evalmacro PL_PKG_IMPORTS PL_PKG_IMPORTS
+
+PL_PKG_ATTRIBUTES := << EOF
+EOF
+#%evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
+}
+
+{ ## constructor section
+PL_CONSTRUCTOR_BODY := << EOF
+EOF
+#%evalmacro PL_CONSTRUCTOR_BODY PL_CONSTRUCTOR_BODY
+
+PL_OBJ_ATTRIBUTES := << EOF
+'mProgName' => undef,
+'mUserSuppliedPrompt' => undef,
+'mJdbcClassPath' => undef,
+'mJdbcDriverClass' => undef,
+'mJdbcUrl' => undef,
+'mJdbcUser' => undef,
+'mJdbcPassword' => undef,
+'mJdbcPropsFileName' => undef,
+'mVersionNumber' => "{=VERSION_STR=}",
+'mVersionDate'   => "{=VERSION_DATE=}",
+'mPathSeparator' => undef,
+'mDebug'         => 0,
+'mDDebug'        => 0,
+'mQuiet'         => 0,
+'mVerbose'       => 0,
+'mExecCommandString' => undef,  #note - currently only used in main package.
+'mSuppressOutput' => 0,
+EOF
+%evalmacro PL_OBJ_ATTRIBUTES PL_OBJ_ATTRIBUTES
+
+#this is for further initialzation of attributes, since hash init cannot be self-referential:
+PL_POST_ATTRIBUTE_INIT := << EOF
+EOF
+#%evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
+}
+
+{ ## class methods
+
+#clear standard accessor accumulator:
+getset_methods =
+
+#generate read/write (get/set) accessors:
+PL_ATTRIBUTE_NAME = ProgName
+%evalmacro >> getset_methods pl_getset
+PL_ATTRIBUTE_NAME = JdbcClassPath
+%evalmacro >> getset_methods pl_getset
+PL_ATTRIBUTE_NAME = JdbcDriverClass
+%evalmacro >> getset_methods pl_getset
+PL_ATTRIBUTE_NAME = JdbcUrl
+%evalmacro >> getset_methods pl_getset
+PL_ATTRIBUTE_NAME = JdbcUser
+%evalmacro >> getset_methods pl_getset
+PL_ATTRIBUTE_NAME = JdbcPassword
+%evalmacro >> getset_methods pl_getset
+PL_ATTRIBUTE_NAME = JdbcPropsFileName
+%evalmacro >> getset_methods pl_getset
+PL_ATTRIBUTE_NAME = PathSeparator
+%evalmacro >> getset_methods pl_getset
+PL_ATTRIBUTE_NAME = UserSuppliedPrompt
+%evalmacro >> getset_methods pl_getset
+PL_ATTRIBUTE_NAME = Debug
+%evalmacro >> getset_methods pl_getset
+PL_ATTRIBUTE_NAME = DDebug
+%evalmacro >> getset_methods pl_getset
+PL_ATTRIBUTE_NAME = Verbose
+%evalmacro >> getset_methods pl_getset
+PL_ATTRIBUTE_NAME = Quiet
+%evalmacro >> getset_methods pl_getset
+PL_ATTRIBUTE_NAME = ExecCommandString
+%evalmacro >> getset_methods pl_getset
+PL_ATTRIBUTE_NAME = SuppressOutput
+%evalmacro >> getset_methods pl_getset
+
+#generate read-only attributes:
+PL_ATTRIBUTE_NAME = VersionNumber
+%evalmacro >> getset_methods pl_attr_method
+PL_ATTRIBUTE_NAME = VersionDate
+%evalmacro >> getset_methods pl_attr_method
+
+PL_PKG_METHODS := << EOF
+sub parseJdbcPropertiesFile
+#parse the jdbc properties file if defined
+#return 0 if successful.
+{
+    my ($self) = @_;
+
+    return 0 unless (defined($self->getJdbcPropsFileName()));
+
+    #open file and read each line, ignoring comments.
+    my $infile;
+    my @props = ();
+#printf STDERR "parseJdbcPropertiesFile: fn='%s'\n", $self->getJdbcPropsFileName();
+    if (open($infile, $self->getJdbcPropsFileName())) {
+        #read into @props:
+        @props = <$infile>;
+#printf STDERR "parseJdbcPropertiesFile: props=(%s)\n", join("", @props);
+        close $infile;
+    } else {
+        printf STDERR "%s[%s]:  ERROR: cannot open properities file, '%s':  '%s'\n",
+            $self->getProgName(), $pkgname, $self->getJdbcPropsFileName(), $!;
+        return 1;
+    }
+
+#printf STDERR "self->setJdbcClassPath is a %s\n", ref($self->can('setJdbcClassPath'));
+
+    #this is a list of the valid property names and their setters:
+    #NOTE:  can() is in the UNIVERSAL class.
+    my %ValidProp = (
+        'JDBC_CLASSPATH'    => $self->can('setJdbcClassPath'),
+        'JDBC_DRIVER_CLASS' => $self->can('setJdbcDriverClass'),
+        'JDBC_URL'          => $self->can('setJdbcUrl'),
+        'JDBC_USER'         => $self->can('setJdbcUser'),
+        'JDBC_PASSWORD'     => $self->can('setJdbcPassword'),
+    );
+
+    #keep track of number of properties we set:
+    my $npropsSet = 0;
+
+    for my $prop (@props) {
+        chomp $prop;
+
+        #skip empty lines:
+        next if ($prop =~ /^\s*$/);
+        #skip comments:
+        next if ($prop =~ /^\s*[#\*]/);
+
+        my (@line) = split(/\s*=\s*/, $prop, 2);    #values (db url) can have "=" in them!  RT 8/30/12
+        if ($#line < 1) {
+            printf STDERR "%s[%s]:  WARNING: bad record, '%s' in property file, '%s'\n",
+                $self->getProgName(), $pkgname, $prop, $self->getJdbcPropsFileName();
+            next;
+        }
+
+        my ($key, $value) = @line;
+#printf STDERR "parseJdbcPropertiesFile:  key='%s' value='%s' ValidProp{%s}='%s'\n", $key, $value, $key, $ValidProp{$key};
+
+        #if valid jdbc property...
+        if (defined($ValidProp{$key})) {
+            #... then set it:
+            my $fref = $ValidProp{$key};
+
+            ####
+            #set property:
+            ####
+            &{$fref}($self, $value);
+
+#printf STDERR "set property %s=%s\n", $key, $value;
+            ++$npropsSet;
+        }
+    }
+
+#printf STDERR "set %d properties successfully\n", $npropsSet;
+
+    return 0;    #SUCCESS
+}
+
+{=$getset_methods:rtrim=}
+EOF
+
+%evalmacro PL_PKG_METHODS PL_PKG_METHODS
+}
+

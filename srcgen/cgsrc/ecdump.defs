@@ -1,0 +1,290 @@
+%include build_setup.defs
+
+# ecdump.pl - prlskel program derived from template: perl/prlskel.ptpl
+
+{ ### ecdump defs
+%ifndef PL_PACKAGE       PL_PACKAGE = $ECDUMP_PACKAGE
+PL_PACKAGE_DESCRIPTION = Main driver for ecdump - a tool to dump the Electric Commander database in a form that can be checked into an SCM
+
+{
+PL_EXTERN_PKG_IMPORTS = << [
+use Config;
+use sqlpj::pkgconfig;
+]
+PL_PKG_IMPORTS = << [
+use $_PKGCONFIG_PACKAGE;
+use $_ECDUMPIMPL_PACKAGE;
+]
+%if    $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS:rnewline
+%ifnot $GEN_ONE_MODULE   PL_PKG_IMPORTS = ${PL_EXTERN_PKG_IMPORTS:rnewline}$PL_PKG_IMPORTS
+}
+
+PL_PKG_ATTRIBUTES := << [
+my $USE_STDIN = 1;
+my @SQLFILES = ();
+my $ecdcfg = new {=_PKGCONFIG_PACKAGE=}();
+
+#this allows signal to close/open connection:
+my $ecdumpImpl = undef;
+
+#pointer to sqlpj implementation instance:
+my $sqlpjImpl = undef;
+]
+%evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
+}
+
+{
+PL_MAIN := << //
+
+#we handle our own signals:
+$SIG{'INT'}  = '{=_PL_PACKAGE=}::rec_signal';
+$SIG{'KILL'} = '{=_PL_PACKAGE=}::rec_signal';
+$SIG{'QUIT'} = '{=_PL_PACKAGE=}::rec_signal';
+$SIG{'TERM'} = '{=_PL_PACKAGE=}::rec_signal';
+$SIG{'HUP'}  = '{=_PL_PACKAGE=}::rec_signal';
+$SIG{'TRAP'} = '{=_PL_PACKAGE=}::rec_signal';
+
+#######
+#create implementation class, passing in our configuration:
+#######
+$ecdumpImpl = new {=_ECDUMPIMPL_PACKAGE=}($ecdcfg);
+
+#initialize our driver class:
+if (!$ecdumpImpl->check_driver()) {
+    printf STDERR "%s:  ERROR: JDBC driver '%s' is not available for url '%s', user '%s', password '%s'\n",
+        $pkgname, $ecdumpImpl->jdbcDriver(), $ecdumpImpl->getJdbcUrl(), $ecdumpImpl->user(), $ecdumpImpl->password();
+    return 1;
+}
+
+//
+%evalmacro PL_MAIN PL_MAIN
+}
+
+{ #subroutines
+PL_PKG_METHODS := << //
+sub checkSetClasspath
+#if we have a classpath setting, then add to the environemnt.
+#
+#NOTE:  inline java will ignore any new CLASSPATH setting after
+#       the module is loaded.  A work-around is to use "require" to load it.
+{
+    my ($cfg) = @_;
+
+#printf STDERR "BEFORE CLASSPATH='%s'\n", $ENV{'CLASSPATH'};
+    if (defined($cfg->getJdbcClassPath())) {
+        if (defined($ENV{'CLASSPATH'}) && $ENV{'CLASSPATH'} ne "") {
+            $ENV{'CLASSPATH'} = sprintf("%s%s%s", $cfg->getJdbcClassPath(), $cfg->getPathSeparator(), $ENV{'CLASSPATH'});
+        } else {
+            $ENV{'CLASSPATH'} = $cfg->getJdbcClassPath();
+        }
+    }
+#printf STDERR "AFTER CLASSPATH='%s'\n", $ENV{'CLASSPATH'};
+}
+
+sub checkJdbcSettings
+#return true(1) if jdbc properties are all defined.
+{
+    my ($cfg) = @_;
+    my $errs = 0;
+
+    if (!defined($cfg->getJdbcDriverClass())) {
+        ++$errs; printf STDERR "%s:  missing JDBC driver class\n", $p;
+    }
+    if (!defined($cfg->getJdbcUrl())) {
+        ++$errs; printf STDERR "%s:  missing JDBC URL\n", $p
+    }
+    if (!defined($cfg->getJdbcUser())) {
+        ++$errs; printf STDERR "%s:  missing JDBC User name\n", $p;
+    }
+    if (!defined($cfg->getJdbcPassword())) {
+        ++$errs; printf STDERR "%s:  missing JDBC User password\n", $p;
+    }
+
+    return($errs == 0);
+}
+
+sub rec_signal
+# we only want to abort sqlexec in progress, not program.
+{
+    local($SIG) = @_;
+    my($prevHandler) = $SIG{$SIG};
+
+    # Reestablish the handler.
+    $SIG{$SIG} = $prevHandler;
+    printf STDERR ("\n%s:  Received SIG%s%s\n", $p, $SIG, ($SIG eq "HUP")? " - IGNORED" : "");
+
+#printf STDERR "ecdumpImpl=%s connection=%s\n", ref($ecdumpImpl), ref($ecdumpImpl->getConnection());
+
+    #reinitialize the connection if we got that far:
+    if ($ecdumpImpl->getConnection()) {
+        #none of this works...don't know how to recover the JVM or SQL connections.  RT 2/8/13
+        #Inline::Java->reconnect_JVM();
+        #JDBC->load_driver($ecdumpImpl->jdbcDriver());
+        #$ecdumpImpl->sql_init_connection() 
+    } else {
+        #if we have not initialized Inline::Java, then we can safetly continue.
+        return;
+    }
+
+    main::abort("Shutting down.\n");
+}
+//
+}
+
+{
+PL_USAGE := << [
+Usage:  $pkgname [options] dirname
+
+SYNOPSIS
+  Connect to an Electric Commander database and dump EC projects, procedures,
+  and property hierarchy to directory rooted at <dirname>.
+
+OPTIONS
+  -help             Display this help message.
+  -V                Show the $pkgname version.
+  -verbose          Display additional informational messages.
+  -debug            Display debug messages.
+  -ddebug           Display deep debug messages.
+  -quiet            Display severe errors only.
+
+  -clean            Remove <dirname> prior to dump.
+  -projects         Dump EC projects
+  -procs            Dump EC projects and procedures
+  -procsteps        Dump EC projects, procedures, and procedure steps
+  -all              Same as -projects -procs -procsteps -ecprops
+
+                    ===============
+                    JDBC PROPERTIES
+                    ===============
+  -props file       A java property file containing the JDBC connection parameters.
+                    The following property keys are recognized:
+
+                        JDBC_CLASSPATH, JDBC_DRIVER_CLASS,
+                        JDBC_URL, JDBC_USER, JDBC_PASSWORD
+
+  -classpath string Classpath containing the JDBC driver (can be a single jar).
+  -driver classname Name of the driver class
+  -url name         Jdbc connection url
+  -user name        Username used for connection
+  -password string  Password for this user
+
+ENVIRONMENT
+
+  CLASSPATH         Java CLASSPATH, inherited by JDBC.pm
+
+  PERL_INLINE_JAVA_EXTRA_JAVA_ARGS
+                    Extra args for java vm, e.g. -Xmx1024m to increase memory.
+
+EXAMPLES
+  Initialize JDBC properties and dump EC database to directory `ecbackup'.
+      $pkgname -props ~/.jdbc/lcommander.props ecbackup
+
+SEE ALSO
+ sqlpj(1) - used to provide database connectivity via JDBC.
+
+]
+
+%evalmacro PL_USAGE PL_USAGE
+}
+
+{
+PL_PARSE_ARGS_PRE := << [
+#set defaults:
+$ecdcfg->setProgName($p);
+$ecdcfg->setPathSeparator($Config{path_sep});
+]
+%evalmacro PL_PARSE_ARGS_PRE PL_PARSE_ARGS_PRE
+
+{
+{ #balance braces
+PL_PARSE_ARGS_LOOP := << [
+} elsif ($flag =~ '^-V') {
+    # -V                show version and exit
+    printf STDOUT "%s, Version %s, %s.\n",
+        $ecdcfg->getProgName(), $ecdcfg->versionNumber(), $ecdcfg->versionDate();
+    $HELPFLAG = 1;    #display version and exit.
+    return 0;
+} elsif ($flag =~ '^-q') {
+    $QUIET = 1;
+} elsif ($flag =~ '^-user') {
+    # -user name        Username used for connection
+    if ($#ARGV+1 > 0 && $ARGV[0] !~ /^-/) {
+        $ecdcfg->setJdbcUser(shift(@ARGV));
+    } else {
+        printf STDERR "%s:  -user requires user name.\n", $p;
+        return 1;
+    }
+} elsif ($flag =~ '^-pass') {
+    # -password string  Password for this user
+    if ($#ARGV+1 > 0 && $ARGV[0] !~ /^-/) {
+        $ecdcfg->setJdbcPassword(shift(@ARGV));
+    } else {
+        printf STDERR "%s:  -password requires password string.\n", $p;
+        return 1;
+    }
+} elsif ($flag =~ '^-driver') {
+    # -driver classname Name of the driver class
+    if ($#ARGV+1 > 0 && $ARGV[0] !~ /^-/) {
+        $ecdcfg->setJdbcDriverClass(shift(@ARGV));
+    } else {
+        printf STDERR "%s:  -driver requires driver class name.\n", $p;
+        return 1;
+    }
+} elsif ($flag =~ '^-classpath') {
+    # -classpath string Classpath containing the JDBC driver (can be a single jar).
+    if ($#ARGV+1 > 0 && $ARGV[0] !~ /^-/) {
+        $ecdcfg->setJdbcClassPath(shift(@ARGV));
+    } else {
+        printf STDERR "%s:  -classpath requires classpath setting.\n", $p;
+        return 1;
+    }
+} elsif ($flag =~ '^-props') {
+    # -props <file>        Set JDBC connection properties from <file>
+    if ($#ARGV+1 > 0 && $ARGV[0] !~ /^-/) {
+        $ecdcfg->setJdbcPropsFileName(shift(@ARGV));
+        #parse the properties file - additional command line args can override:
+        $ecdcfg->parseJdbcPropertiesFile();
+    } else {
+        printf STDERR "%s:  -props requires a file name containing JDBC connection properties.\n", $p;
+        return 1;
+    }
+} elsif ($flag =~ '^-url') {
+    # -url name         Jdbc connection url
+    if ($#ARGV+1 > 0 && $ARGV[0] !~ /^-/) {
+        $ecdcfg->setJdbcUrl(shift(@ARGV));
+    } else {
+        printf STDERR "%s:  -url requires the JDBC connection url\n", $p;
+        return 1;
+    }
+]
+} #balance braces
+} #end of parse arg loop defs
+
+PL_PARSE_ARGS_POST := << [
+#set debug, verbose options:
+$ecdcfg->setDebug($DEBUGFLAG);
+$ecdcfg->setDDebug($DDEBUGFLAG);
+$ecdcfg->setQuiet($QUIET);
+$ecdcfg->setVerbose($VERBOSE);
+
+#do we have an output directory?
+if ($#ARGV >= 0) {
+    $ecdcfg->setOutputDirectory(shift @ARGV);
+} else {
+    printf STDERR "%s:  please specify output directory for EC backup files.\n", $p;
+    return 1;
+}
+
+#check the JDBC configuration:
+if (!sqlpj::checkJdbcSettings($ecdcfg->sqlpjcfg())) {
+    printf STDERR "%s:  one or more JDBC connection settings are missing or incomplete - ABORT.\n", $p;
+    return 1;
+}
+
+#add to the CLASSPATH if required:
+&checkSetClasspath($ecdcfg);
+
+]
+
+} #end of parse arg defs
+

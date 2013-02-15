@@ -1,0 +1,44 @@
+%ifndef BUILD_SETUP_COMPLETE %include ../build_setup.defs
+%ifdef DEBUG %echo ${CG_INFILE}:  CG_ROOT is $CG_ROOT
+
+#initialize one module if selected:
+ECHO_TXT =
+%if $GEN_ONE_MODULE	echo /$ONE_MODULE
+
+{
+    #configuration parameters:
+    PL_PACKAGE = $PKGCONFIG_PACKAGE
+    _PL_PACKAGE = $_PKGCONFIG_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+
+{
+    #this is the ecdump implementation:
+    PL_PACKAGE = $ECDUMPIMPL_PACKAGE
+    _PL_PACKAGE = $_ECDUMPIMPL_PACKAGE
+    module_defs = ecdumpImpl.defs
+    %call generate_a_module
+}
+
+{
+    #this is the main program:
+    PL_PACKAGE = $ECDUMP_PACKAGE
+    _PL_PACKAGE = $_ECDUMP_PACKAGE
+    module_defs = ecdump.defs
+    perl_template = perl/prlskel.ptpl
+    perl_outputfn = $PL_PACKAGE.pl
+    %call generate_a_module
+}
+
+#check for undefs:
+%shell egrep "{=|:undef" `walkdir -f -ftxt $CG_ROOT`
+
+#if matches found (i.e., grep status is zero)...
+%ifnot $CG_SHELL_STATUS %echo Found undefined varibles - please correct.
+%ifnot $CG_SHELL_STATUS CG_SHELL_STATUS = 1
+
+#create symlinks for prlskel programs:
+ECDUMP_CMD = $ECDUMP_PACKAGE
+%ifnot $NO_SYMLINKS %echo creating prlskel links ...
+%ifnot $NO_SYMLINKS %shell cd $CG_ROOT; rm -f $ECDUMP_CMD; ln -s `fwhich prlskel` $ECDUMP_CMD

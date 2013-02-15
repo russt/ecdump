@@ -1,0 +1,3 @@
+NOTES, 2/13/13
+
+o create skeleton app using sqlpj as base.  implement -help and arg parser. 
