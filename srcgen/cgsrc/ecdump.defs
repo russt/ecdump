@@ -31,8 +31,12 @@ my $scfg    = new {=_SQLPJ_CONFIG_PACKAGE=}();
 
 #this will be initialized after configuration is set up:
 my $ecdumpImpl = undef;
+
+#true if we are to remove output directory
+my $DOCLEAN = 0;
 ]
 %evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
+}
 }
 
 {
@@ -62,6 +66,9 @@ if (!$sqlpjImpl->check_driver()) {
         $pkgname, $ecdumpImpl->jdbcDriver(), $ecdumpImpl->getJdbcUrl(), $ecdumpImpl->user(), $ecdumpImpl->password();
     return 1;
 }
+
+#call implementation:
+return $ecdumpImpl->execEcdump();
 
 //
 %evalmacro PL_MAIN PL_MAIN
@@ -140,11 +147,13 @@ sub rec_signal
 
 {
 PL_USAGE := << [
-Usage:  $pkgname [options] dirname
+Usage:  $pkgname [options] [project_names]
 
 SYNOPSIS
-  Connect to an Electric Commander database and dump EC projects, procedures,
-  and property hierarchy to directory rooted at <dirname>.
+  Connect to an Electric Commander database and dump named EC projects,
+  including procedure and property hierarchy.
+
+  If -dump is specified, and no projects are named, then dump all projects.
 
 OPTIONS
   -help             Display this help message.
@@ -154,11 +163,9 @@ OPTIONS
   -ddebug           Display deep debug messages.
   -quiet            Display severe errors only.
 
+  -dump dirname     Dump named projects, output rooted at <dirname>.
   -clean            Remove <dirname> prior to dump.
-  -projects         Dump EC projects
-  -procs            Dump EC projects and procedures
-  -procsteps        Dump EC projects, procedures, and procedure steps
-  -all              Same as -projects -procs -procsteps -ecprops
+  -list             List all projects and exit.
 
                     ===============
                     JDBC PROPERTIES
@@ -213,6 +220,17 @@ PL_PARSE_ARGS_LOOP := << [
     return 0;
 } elsif ($flag =~ '^-q') {
     $QUIET = 1;
+} elsif ($flag =~ '^-clean') {
+    # -clean            Remove <dirname> prior to dump.
+    $DOCLEAN = 1;
+} elsif ($flag =~ '^-dump') {
+    # -dump dirname     Dump named projects, output rooted at <dirname>.
+    if ($#ARGV+1 > 0 && $ARGV[0] !~ /^-/) {
+        $edmpcfg->setOutputDirectory(shift @ARGV);
+    } else {
+        printf STDERR "%s:  -user requires user name.\n", $p;
+        return 1;
+    }
 } elsif ($flag =~ '^-user') {
     # -user name        Username used for connection
     if ($#ARGV+1 > 0 && $ARGV[0] !~ /^-/) {
@@ -264,6 +282,7 @@ PL_PARSE_ARGS_LOOP := << [
 ]
 } #balance braces
 } #end of parse arg loop defs
+#%evalmacro PL_PARSE_ARGS_LOOP PL_PARSE_ARGS_LOOP
 
 PL_PARSE_ARGS_POST := << [
 #set debug, verbose options:
@@ -272,12 +291,25 @@ $edmpcfg->setDDebug($DDEBUGFLAG);
 $edmpcfg->setQuiet($QUIET);
 $edmpcfg->setVerbose($VERBOSE);
 
-#do we have an output directory?
+#eliminate empty args (this happens on some platforms):
+@ARGV = grep(!/^$/, @ARGV);
+
+#do we have a list of projects?
 if ($#ARGV >= 0) {
-    $edmpcfg->setOutputDirectory(shift @ARGV);
-} else {
-    printf STDERR "%s:  please specify output directory for EC backup files.\n", $p;
-    return 1;
+    $edmpcfg->setProjectList(@ARGV);
+    $edmpcfg->setHaveProjects(1);
+    $edmpcfg->setDumpAllProjects(0);
+}
+
+
+if ($edmpcfg->getHaveDumpCommand() && $edmpcfg->getHaveListCommand()) {
+    printf STDERR "%s: WARN:  -dump and -list specified - will do -list only.\n", $p unless($QUIET);
+    $edmpcfg->setHaveDumpCommand(0);
+}
+
+if ($edmpcfg->getHaveDumpCommand() && $edmpcfg->getHaveProjects()) {
+    printf STDERR "%s: INFO:  dump specified, but no projects specified - will dump all projects.\n", $p unless($QUIET);
+    $edmpcfg->setDumpAllProjects(1);
 }
 
 #####
@@ -297,6 +329,6 @@ if (!$edmpcfg->getSqlpjConfig->checkJdbcSettings()) {
 #add to the CLASSPATH if required:
 $edmpcfg->getSqlpjConfig->checkSetClasspath();
 ]
-#%evalmacro PL_PARSE_ARGS_POST PL_PARSE_ARGS_POST
+%evalmacro PL_PARSE_ARGS_POST PL_PARSE_ARGS_POST
 
 } #end of parse arg defs

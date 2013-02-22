@@ -1,0 +1,30 @@
+#
+#build.cg - generate sqlpj into single prlskel lib
+#
+#to generate package for distribution:
+#    codegen -cgroot .. -u build.cg
+#
+#generation options (will generate to bld):
+#    codegen -DNO_SYMLINKS=0 -DDEBUG=1 -u build.cg
+#    codegen -DNO_DBPROPS=0 -DNO_SYMLINKS=0 -DDEBUG=1 -u build.cg
+
+
+%ifndef CG_ROOT CG_ROOT = bld
+%ifdef DEBUG %echo ${CG_INFILE}:  CG_ROOT is $CG_ROOT
+
+%ifndef NO_SYMLINKS	NO_SYMLINKS = 1
+%ifndef NO_DBPROPS	NO_DBPROPS = 1
+%ifndef GEN_ONE_MODULE	GEN_ONE_MODULE = 1
+
+%pragma trim_multiline_rnewline 1
+
+%include build_setup.defs
+%include cgsrc/ecdump.cg
+
+COPYRIGHT_YEARS  = 2007-2013
+COPYRIGHT_HOLDER = Russ Tremain
+%export COPYRIGHT_YEARS
+%export COPYRIGHT_HOLDER
+
+%echo Adding LICENSE header to $CG_ROOT/*.pl ...
+%shell signsrc $CG_ROOT/*.pl

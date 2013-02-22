@@ -1,0 +1,6 @@
+TARGET_OS = cmn & skel
+ecdump.prl           bin/$TARGET_OS/ecdump                 0555
+
+TARGET_OS=cmn
+ecdump.pl            lib/$TARGET_OS/ecdump.pl              0444
+

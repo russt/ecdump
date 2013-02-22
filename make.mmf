@@ -1,0 +1,10 @@
+TEMPLATE    = file.mmf
+
+PKG =  bin
+PKG2    =  lib
+
+MODE    =  0555
+MODE2   =  0444
+
+FILES   = ecdump.prl
+FILES2  = ecdump.pl

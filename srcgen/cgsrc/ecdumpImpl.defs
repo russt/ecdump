@@ -72,6 +72,10 @@ PL_ATTRIBUTE_NAME = Sqlpj
 
 {
 PL_PKG_METHODS := << [
+sub execEcdump
+{
+    printf STDERR "Hello from execEcdump DEBUG=%d DDEBUG=%d QUIET=%d VERBOSE=%d\n", $DEBUG, $DDEBUG, $QUIET, $VERBOSE;
+}
 ]
 
 %evalmacro PL_PKG_METHODS PL_PKG_METHODS
