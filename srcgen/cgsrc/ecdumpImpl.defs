@@ -35,9 +35,10 @@ my ($cfg) = @_;
 #%evalmacro PL_CONSTRUCTOR_BODY PL_CONSTRUCTOR_BODY
 
 PL_OBJ_ATTRIBUTES := << [
-'mConfig'      => $cfg,
-'mSqlpjConfig' => $cfg->getSqlpjConfig(),
-'mSqlpj'       => $cfg->getSqlpjImpl(),
+'mSqlpjConfig'      => $cfg->getSqlpjConfig(),
+'mSqlpj'            => $cfg->getSqlpjImpl(),
+#local r/o copies of main command configuration options:
+'mHaveListCommand'  => $cfg->getHaveListCommand(),
 ]
 %evalmacro PL_OBJ_ATTRIBUTES PL_OBJ_ATTRIBUTES
 
@@ -61,22 +62,72 @@ getset_methods =
 
 ##########
 #read-only attributes:
+#note:  for r/o attrs, an PL_ATTRIBUTE_NAME named FooBar gets an accessor fooBar().
 ##########
-PL_ATTRIBUTE_NAME = Config
-%evalmacro >> getset_methods pl_attr_method
 PL_ATTRIBUTE_NAME = SqlpjConfig
-%evalmacro >> getset_methods pl_attr_method
+    %evalmacro >> getset_methods pl_attr_method
 PL_ATTRIBUTE_NAME = Sqlpj
-%evalmacro >> getset_methods pl_attr_method
+    %evalmacro >> getset_methods pl_attr_method
+
+#local configuration attributes copied from main:
+PL_ATTRIBUTE_NAME = HaveListCommand
+    %evalmacro >> getset_methods pl_attr_method
 }
 
 {
 PL_PKG_METHODS := << [
 sub execEcdump
+#execute the ec dump command.
+#by the time we get here, all arguments are parsed, checked, and stored in my config() object,
+#the database connectivity is checked, and we are ready to run.
 {
-    printf STDERR "Hello from execEcdump DEBUG=%d DDEBUG=%d QUIET=%d VERBOSE=%d\n", $DEBUG, $DDEBUG, $QUIET, $VERBOSE;
-}
-]
+    my ($self) = @_;
+    my ($sqlpj) = $self->sqlpj();
 
+    printf STDERR "Hello from execEcdump DEBUG=%d DDEBUG=%d QUIET=%d VERBOSE=%d\n", $DEBUG, $DDEBUG, $QUIET, $VERBOSE;
+
+    #tell sqlpj to always make results available via getQueryResult() instead of displaying on stdout:
+    $sqlpj->setOutputToList(1);
+
+    if (!$sqlpj->sql_init_connection()) {
+        printf STDERR "%s:[execEcdump]:  cannot get a database connection:  ABORT\n", $pkgname;
+        return 1;
+    }
+
+#ec_project:(id, name, description, resource_name, workspace_name, property_sheet_id, description_clob_id)
+
+    if ($self->haveListCommand()) {
+
+        printf STDERR "Running LIST COMMAND query:\n" if $DEBUG;
+
+        my $lbuf = "select name from ec_project";
+
+        if ( !$sqlpj->sql_exec($lbuf) ) {
+            printf STDERR "%s:[execEcdump]:  -list command failed:  ABORT\n", $pkgname;
+            return 1;
+        }
+
+        #other, get and display result:
+        my $tref = $sqlpj->getQueryResult();
+
+        for my $rowref (@$tref) {
+            printf "%s\n", join(',', @$rowref);
+        }
+    }
+
+    return 0;
+}
+
+#########
+#accessor methods for {=PL_PACKAGE=} object attributes:
+#########
+
+{=$getset_methods:rtrim=}
+
+#######
+#static class methods
+#######
+
+]
 %evalmacro PL_PKG_METHODS PL_PKG_METHODS
 }

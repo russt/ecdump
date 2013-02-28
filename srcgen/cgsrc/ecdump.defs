@@ -67,7 +67,9 @@ if (!$sqlpjImpl->check_driver()) {
     return 1;
 }
 
-#call implementation:
+#####
+#call ecdump implementation:
+#####
 return $ecdumpImpl->execEcdump();
 
 //
@@ -220,6 +222,9 @@ PL_PARSE_ARGS_LOOP := << [
     return 0;
 } elsif ($flag =~ '^-q') {
     $QUIET = 1;
+} elsif ($flag =~ '^-list') {
+    # -list             List all projects and exit.
+    $edmpcfg->setHaveListCommand(1);
 } elsif ($flag =~ '^-clean') {
     # -clean            Remove <dirname> prior to dump.
     $DOCLEAN = 1;
