@@ -232,8 +232,9 @@ PL_PARSE_ARGS_LOOP := << [
     # -dump dirname     Dump named projects, output rooted at <dirname>.
     if ($#ARGV+1 > 0 && $ARGV[0] !~ /^-/) {
         $edmpcfg->setOutputDirectory(shift @ARGV);
+        $edmpcfg->setHaveDumpCommand(1),
     } else {
-        printf STDERR "%s:  -user requires user name.\n", $p;
+        printf STDERR "%s:  -dump requires directory name.\n", $p;
         return 1;
     }
 } elsif ($flag =~ '^-user') {
@@ -312,7 +313,7 @@ if ($edmpcfg->getHaveDumpCommand() && $edmpcfg->getHaveListCommand()) {
     $edmpcfg->setHaveDumpCommand(0);
 }
 
-if ($edmpcfg->getHaveDumpCommand() && $edmpcfg->getHaveProjects()) {
+if ($edmpcfg->getHaveDumpCommand() && !$edmpcfg->getHaveProjects()) {
     printf STDERR "%s: INFO:  dump specified, but no projects specified - will dump all projects.\n", $p unless($QUIET);
     $edmpcfg->setDumpAllProjects(1);
 }

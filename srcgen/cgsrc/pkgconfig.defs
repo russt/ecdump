@@ -58,6 +58,8 @@ PL_OBJ_ATTRIBUTES := << [
 
 #this is for further initialzation of attributes, since hash init cannot be self-referential:
 PL_POST_ATTRIBUTE_INIT := << EOF
+#initialize project list to be a ref to an empty list (was not able to do this in the hash init).
+$self->setProjectList([]);
 EOF
 #%evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }
@@ -108,7 +110,7 @@ PL_ATTRIBUTE_NAME = ProjectList
     %evalmacro >> getset_methods pl_getsetlist
 PL_ATTRIBUTE_NAME = OutputDirectory
     %evalmacro >> getset_methods pl_getset
-PL_ATTRIBUTE_NAME = Directory
+PL_ATTRIBUTE_NAME = DoClean
     %evalmacro >> getset_methods pl_getset
 PL_ATTRIBUTE_NAME = HaveProjects
     %evalmacro >> getset_methods pl_getset
