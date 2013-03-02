@@ -1,5 +1,7 @@
+%ifndef BUILD_SETUP_COMPLETE %include ../build_setup.defs
+
 %ifndef CG_ROOT    CG_ROOT = ./bld/objects
-%eecho CG_ROOT is $CG_ROOT
+CG_ROOT = $CG_ROOT_BASE/objects
 
 %include perl/newobj.defs
 
@@ -20,6 +22,9 @@ generate_one_object_definition := << //
     #create call to generate actual object (this goes in ecdump.cg):
     %evalmacro >> CREATE_ACTUAL_OBJECTS gen_actual_obj_template
 
+    #create example of how to create our new object:
+    %evalmacro >> NEW_OBJ_EXAMPLES obj_create_statement_template
+
     ECHO_TXT = $OUTPUT_OBJECT_DEFS
     echo	/$OBJECT_NAME.defs
 
@@ -30,8 +35,17 @@ generate_one_object_definition := << //
 
 #    OBJECT_NAME         - the name of the object we are going to generate
 #    PARENT_PACKAGE      - (optional) name of the parent package, with trailing separators, eg "foo::".
-#    OBJECT_PACKAGE_VAR  - (defaulted) cg variable used to refer to object (default is $OBJECT_NAME:toupper)
+#    OBJECT_PACKAGE_VAR  - generated cg variable used to refer to object package (default is $OBJECT_NAME:toupper)
+#    _OBJECT_PACKAGE_VAR - generated cg variable used to refer to fully qualified object package.
 #    OBJECT_DESCRIPTION  - (defaulted) description of object
+
+#generate examples of how to create each of our new objects:
+#example:   $ecdumpImpl = new {=_ECDUMPIMPL_PACKAGE=}($edmpcfg);
+obj_create_statement_template := << [
+my ${=$OBJECT_NAME=} = new {=$_OBJECT_PACKAGE_VAR:cgvar=}();
+
+]
+
 gen_actual_obj_template := << [
 {
     #{=OBJECT_NAME=}
@@ -63,6 +77,9 @@ ecProps	collection of EC Properties
 #accumulator for calls to generate final objects:
 CREATE_ACTUAL_OBJECTS =
 
+#accumulator for example code to construct our new objects:
+NEW_OBJ_EXAMPLES =
+
 #create stack from OBJECTLIST:
 CG_SPLIT_PATTERN = /\n/
 OBJECTLIST = $OBJECTLIST:trim:split
@@ -79,3 +96,9 @@ echo	/ecdump_new.defs
 
 ECHO_TXT = $CREATE_ACTUAL_OBJECTS
 echo	/ecdump_new.cg
+
+ECHO_TXT = $NEW_OBJ_EXAMPLES
+echo	/new_objects.cg
+
+#restore CG_ROOT:
+CG_ROOT = $CG_ROOT_BASE
