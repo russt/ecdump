@@ -1,0 +1,17 @@
+ecdump.cg
+ecdump.defs
+ecdumpImpl.defs
+pkgconfig.defs
+../build_setup.defs
+TODO.txt
+bld/objects/ecProcedure.defs
+bld/objects/ecProcedureStep.defs
+bld/objects/ecProcedureSteps.defs
+bld/objects/ecProcedures.defs
+bld/objects/ecProject.defs
+bld/objects/ecProjects.defs
+bld/objects/ecProp.defs
+bld/objects/ecProps.defs
+bld/objects/ecdump_new.cg
+bld/objects/ecdump_new.defs
+bld/objects/new_objects.cg
