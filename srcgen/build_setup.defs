@@ -14,14 +14,15 @@ VERSION_DATE = 27-Feb-2013
 %pragma trim_multiline_rnewline 1
 
 #defaults if not defined by caller:
-%ifndef CG_ROOT           CG_ROOT = ./bld
+%ifndef CG_ROOT    CG_ROOT = ./bld
+CG_ROOT_BASE       = $CG_ROOT
 
 %ifndef NO_SYMLINKS	NO_SYMLINKS = 0
 %ifndef GEN_ONE_MODULE	GEN_ONE_MODULE = 0
 
 LOCAL_INCLUDES =          cgsrc
 #this allows us to run in sub-projects:
-LOCAL_INCLUDES =          $LOCAL_INCLUDES;..
+LOCAL_INCLUDES =          $LOCAL_INCLUDES;..;$CG_ROOT/objects
 CG_TEMPLATE_PATH=         $LOCAL_INCLUDES;$CG_TEMPLATE_PATH
 
 SRCROOT =  $SRCROOT:nameof:env
@@ -55,22 +56,6 @@ _ECDUMPIMPL_PACKAGE  = ${ECDUMP_PACKAGE}::${ECDUMPIMPL_PACKAGE}
 #ecdump configuration parameters:
 PKGCONFIG_PACKAGE  = pkgconfig
 _PKGCONFIG_PACKAGE = ${ECDUMP_PACKAGE}::${PKGCONFIG_PACKAGE}
-
-#ec projects object (collection of projects):
-ECPROJECTS_PACKAGE  = ecProjects
-_ECPROJECTS_PACKAGE = ${ECDUMP_PACKAGE}::${ECPROJECTS_PACKAGE}
-
-#ec project object:
-ECPROJECT_PACKAGE  = ecProject
-_ECPROJECT_PACKAGE = ${ECDUMP_PACKAGE}::${ECPROJECT_PACKAGE}
-
-#ec procedures object (collection of procedures):
-ECPROCEDURES_PACKAGE  = ecProcedures
-_ECPROCEDURES_PACKAGE = ${ECDUMP_PACKAGE}::${ECPROCEDURES_PACKAGE}
-
-#ec procedure object:
-ECPROCEDURE_PACKAGE  = ecProcedure
-_ECPROCEDURE_PACKAGE = ${ECDUMP_PACKAGE}::${ECPROCEDURE_PACKAGE}
 
 ######
 #sqlpj packages:

@@ -1,0 +1,81 @@
+%ifndef CG_ROOT    CG_ROOT = ./bld/objects
+%eecho CG_ROOT is $CG_ROOT
+
+%include perl/newobj.defs
+
+generate_one_object_definition := << //
+{
+    %shift theObj loopstack
+
+    #split theObj into (objname, objdesc):
+    theObj = $theObj:split
+    %shift OBJECT_NAME theObj
+    %shift OBJECT_DESCRIPTION theObj
+
+    #######
+    #create the object definition:
+    #######
+    %call newobj_create_one_object
+
+    #create call to generate actual object (this goes in ecdump.cg):
+    %evalmacro >> CREATE_ACTUAL_OBJECTS gen_actual_obj_template
+
+    ECHO_TXT = $OUTPUT_OBJECT_DEFS
+    echo	/$OBJECT_NAME.defs
+
+    #clear defs for next object:
+    %call newobj_clear_template_vars
+}
+//
+
+#    OBJECT_NAME         - the name of the object we are going to generate
+#    PARENT_PACKAGE      - (optional) name of the parent package, with trailing separators, eg "foo::".
+#    OBJECT_PACKAGE_VAR  - (defaulted) cg variable used to refer to object (default is $OBJECT_NAME:toupper)
+#    OBJECT_DESCRIPTION  - (defaulted) description of object
+gen_actual_obj_template := << [
+{
+    #{=OBJECT_NAME=}
+    PL_PACKAGE = ${=OBJECT_PACKAGE_VAR=}
+    _PL_PACKAGE = $_{=OBJECT_PACKAGE_VAR=}
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+]
+
+###### MAIN
+
+#defensive:
+%call newobj_clear_template_vars
+
+PARENT_PACKAGE := ${ECDUMP_PACKAGE}::
+
+OBJECTLIST := << [
+ecProject	object representing an EC Project
+ecProjects	collection of EC Projects
+ecProcedure	object representing an EC Procedure
+ecProcedures	collection of EC Procedures
+ecProcedureStep	object representing an EC Procedure Step
+ecProcedureSteps	collection of Procedure Steps
+ecProp	object representing an EC Property
+ecProps	collection of EC Properties
+]
+
+#accumulator for calls to generate final objects:
+CREATE_ACTUAL_OBJECTS =
+
+#create stack from OBJECTLIST:
+CG_SPLIT_PATTERN = /\n/
+OBJECTLIST = $OBJECTLIST:trim:split
+
+# loop split pattern:
+CG_SPLIT_PATTERN = /\t/
+loopstack = $OBJECTLIST
+arange = 01..$loopstack:stacksize
+%foreach ii arange %call generate_one_object_definition
+
+#relegate newly generated objects to tmp files until I get it right:
+ECHO_TXT = $OBJECT_USER_DEFS
+echo	/ecdump_new.defs
+
+ECHO_TXT = $CREATE_ACTUAL_OBJECTS
+echo	/ecdump_new.cg

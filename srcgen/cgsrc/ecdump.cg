@@ -5,13 +5,18 @@
 ECHO_TXT =
 %if $GEN_ONE_MODULE	echo /$ONE_MODULE
 
-{
-    #configuration parameters:
-    PL_PACKAGE = $PKGCONFIG_PACKAGE
-    _PL_PACKAGE = $_PKGCONFIG_PACKAGE
-    module_defs = $PL_PACKAGE.defs
-    %call generate_a_module
-}
+#####
+#this is temporary until the object model is finalized.
+CG_ROOT = $CG_ROOT_BASE/objects
+%pragma trim_multiline_rnewline 0
+%include mkobjs.cg
+%include ecdump_new.defs
+
+#now use to generate new objects:
+CG_ROOT = $CG_ROOT_BASE
+%pragma trim_multiline_rnewline 1
+%include ecdump_new.cg
+#####
 
 {
     #this is the ecdump implementation:
@@ -20,7 +25,13 @@ ECHO_TXT =
     module_defs = ecdumpImpl.defs
     %call generate_a_module
 }
-
+{
+    #configuration object (for main):
+    PL_PACKAGE = $PKGCONFIG_PACKAGE
+    _PL_PACKAGE = $_PKGCONFIG_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
 {
     #this is the main program:
     PL_PACKAGE = $ECDUMP_PACKAGE
@@ -34,7 +45,7 @@ ECHO_TXT =
 #check for undefs:
 %eecho Checking for undefined cg vars in output...
 %if    $GEN_ONE_MODULE    %shell egrep "{=|:undef" $CG_ROOT/$ONE_MODULE
-%ifnot $GEN_ONE_MODULE    %shell egrep "{=|:undef" `walkdir -f -ftxt $CG_ROOT`
+%ifnot $GEN_ONE_MODULE    %shell egrep "{=|:undef" `walkdir -f -ftxt $CG_ROOT | grep -v '\.defs'`
 
 #if matches found (i.e., grep status is zero)...
 %ifnot $CG_SHELL_STATUS %echo Found undefined varibles - please correct.
