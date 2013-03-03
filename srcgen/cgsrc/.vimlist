@@ -1,6 +1,7 @@
 ecdump.cg
 ecdump.defs
 ecdumpImpl.defs
+ecdumpImpl_method.defs
 pkgconfig.defs
 ../build_setup.defs
 TODO.txt
@@ -15,3 +16,5 @@ bld/objects/ecProps.defs
 bld/objects/ecdump_new.cg
 bld/objects/ecdump_new.defs
 bld/objects/new_objects.cg
+perl/genattr.defs
+perl/newobj.defs

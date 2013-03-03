@@ -3,257 +3,96 @@
 #
 
 #allows us to run stand-alone:
-%ifdef BUILD_SETUP_COMPLETE %include build_setup.defs
-
-%include perl/genattr.defs
+%ifndef CG_ROOT %include ../build_setup.defs
 
 { ## header section
-%ifndef PL_PACKAGE       PL_PACKAGE = $ECDUMPIMPL_PACKAGE
-PL_PACKAGE_DESCRIPTION = perl/jdbc sql command line interpreter
+PL_PACKAGE = $ECDUMPIMPL_PACKAGE
+PL_PACKAGE_DESCRIPTION = ecdump implementation
 
 #not a base class - use standard constuctor name:
 PL_CONSTRUCTOR_NAME = new
 
 {
-PL_EXTERN_PKG_IMPORTS = << [
+PL_EXTERN_PKG_IMPORTS = << (
 require "sqlpj.pl";
-]
-PL_PKG_IMPORTS = << [
-]
+)
+PL_PKG_IMPORTS = << (
+)
 %if    $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS
 %ifnot $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS$PL_PKG_IMPORTS
 }
 
-PL_PKG_ATTRIBUTES := << [
+PL_PKG_ATTRIBUTES := << (
+#standard debugging attributes:
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
-]
-#%evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
+)
+%evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
+
+####
+#add to ATTRIBUTE_LIST as required.
+#templates are: (r/w) pl_getset, pl_getsetlist; (r/o) pl_attr_method, pl_attrlist_method
+####
+ATTRIBUTE_LIST := << (
+Debug	pl_getset	$cfg->getDebug()
+DDebug	pl_getset	$cfg->getDDebug()
+Quiet	pl_getset	$cfg->getQuiet()
+Verbose	pl_getset	$cfg->getVerbose()
+SqlpjConfig	pl_attr_method	$cfg->getSqlpjConfig()
+Sqlpj	pl_attr_method	$cfg->getSqlpjImpl()
+HaveDumpCommand	pl_attr_method	$cfg->getHaveDumpCommand()
+HaveListCommand	pl_attr_method	$cfg->getHaveListCommand()
+DumpAllProjects	pl_attr_method	$cfg->getDumpAllProjects()
+ProjectList	pl_attrlist_method	$cfg->getProjectList()
+DoClean	pl_attr_method	$cfg->getDoClean()
+OutputDirectory	pl_attr_method	$cfg->getOutputDirectory()
+)
+#generate attribute accessors (this creates class_attribute_dcls, getset_methods):
+%include perl/genattr.defs
+%call generate_attribute_accessors
 }
-
 { ## constructor section
-PL_CONSTRUCTOR_BODY := << [
+PL_CONSTRUCTOR_BODY := << (
 my ($cfg) = @_;
-]
-#%evalmacro PL_CONSTRUCTOR_BODY PL_CONSTRUCTOR_BODY
+)
+%evalmacro PL_CONSTRUCTOR_BODY PL_CONSTRUCTOR_BODY
 
-PL_OBJ_ATTRIBUTES := << [
-'mSqlpjConfig'      => $cfg->getSqlpjConfig(),
-'mSqlpj'            => $cfg->getSqlpjImpl(),
-#local r/o copies of main command configuration options:
-'mHaveDumpCommand'  => $cfg->getHaveDumpCommand(),
-'mHaveListCommand'  => $cfg->getHaveListCommand(),
-'mDumpAllProjects'  => $cfg->getDumpAllProjects(),
-'mProjectList'      => $cfg->getProjectList(),
-'mDoClean'          => $cfg->getDoClean(),
-'mOutputDirectory'  => $cfg->getOutputDirectory(),
-]
+PL_OBJ_ATTRIBUTES := << (
+{=class_attribute_dcls=}
+)
 %evalmacro PL_OBJ_ATTRIBUTES PL_OBJ_ATTRIBUTES
 
 #this is for further initialzation of attributes, since hash init cannot be self-referential:
-PL_POST_ATTRIBUTE_INIT := << [
-$DEBUG   = $cfg->getDebug();
-$DDEBUG  = $cfg->getDDebug();
-$QUIET   = $cfg->getQuiet();
-$VERBOSE = $cfg->getVerbose();
-]
+PL_POST_ATTRIBUTE_INIT := << (
+
+#cache initial debugging and vebosity values in local package variables:
+$self->update_static_class_attributes();
+)
 %evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }
 
-{
-#clear standard accessor accumulator:
-getset_methods =
+PL_UPDATE_CLASS_STATIC_ATTRIBUTES := << (
+$DEBUG   = $self->getDebug();
+$DDEBUG  = $self->getDDebug();
+$QUIET   = $self->getQuiet();
+$VERBOSE = $self->getVerbose();
+)
 
-###########
-#read/write (get/set) attributes:
-###########
+{ ## class methods
 
-##########
-#read-only attributes:
-#note:  for r/o attrs, an PL_ATTRIBUTE_NAME named FooBar gets an accessor fooBar().
-##########
-PL_ATTRIBUTE_NAME = SqlpjConfig
-    %evalmacro >> getset_methods pl_attr_method
-PL_ATTRIBUTE_NAME = Sqlpj
-    %evalmacro >> getset_methods pl_attr_method
+PL_PKG_METHODS := << (
 
-######
-#local r/o configuration attributes distilled from command-line options:
-######
-# list attribute:
-PL_ATTRIBUTE_NAME = ProjectList
-    %evalmacro >> getset_methods pl_attrlist_method
-PL_ATTRIBUTE_NAME = DoClean
-    %evalmacro >> getset_methods pl_attr_method
-PL_ATTRIBUTE_NAME = OutputDirectory
-    %evalmacro >> getset_methods pl_attr_method
-PL_ATTRIBUTE_NAME = HaveProjects
-    %evalmacro >> getset_methods pl_attr_method
-PL_ATTRIBUTE_NAME = DumpAllProjects
-    %evalmacro >> getset_methods pl_attr_method
-PL_ATTRIBUTE_NAME = HaveListCommand
-    %evalmacro >> getset_methods pl_attr_method
-PL_ATTRIBUTE_NAME = HaveDumpCommand
-    %evalmacro >> getset_methods pl_attr_method
-}
+{=%include ecdumpImpl_method.defs=}
 
-{
-PL_PKG_METHODS := << [
-sub execEcdump
-#execute the ec dump command.
-#by the time we get here, all arguments are parsed, checked, and stored in my config() object,
-#the database connectivity is checked, and we are ready to run.
-#returns 0 on success, non-zero othewise.
+{=getset_methods=}
+
+sub update_static_class_attributes
+#static class method to update package level attributess as required
+#used to set verbosity and debugging for all objects of the class post-instantiation.
 {
     my ($self) = @_;
-    my ($sqlpj) = $self->sqlpj();
-
-#printf STDERR "Hello from execEcdump DEBUG=%d DDEBUG=%d QUIET=%d VERBOSE=%d\n", $DEBUG, $DDEBUG, $QUIET, $VERBOSE;
-
-
-    #tell sqlpj to always make results available via getQueryResult() instead of displaying on stdout:
-    $sqlpj->setOutputToList(1);
-
-    if (!$sqlpj->sql_init_connection()) {
-        printf STDERR "%s:  cannot get a database connection:  ABORT\n", ::srline();
-        return 1;
-    }
-
-#ec_project:(id, name, description, resource_name, workspace_name, property_sheet_id, description_clob_id)
-
-    if ($self->haveListCommand()) {
-        return ($self->processListCommand($sqlpj, 1));  #run query and display results
-    } elsif ($self->haveDumpCommand()) {
-        return ($self->processDumpCommand($sqlpj));
-    } else {
-        printf STDERR "%s:  db connection ok, but nothing to do - please specify a command.\n", ::srline();
-        return 1;
-    }
-    return 0;
+{=$PL_UPDATE_CLASS_STATIC_ATTRIBUTES:indent=}
 }
+)
 
-sub processDumpCommand
-#process dump command.  return 0 on success.
-{
-    my ($self, $sqlpj) = @_;
-    my @projectlist = ();
-
-    printf STDERR "Running DUMP COMMAND...\n" if $DEBUG;
-
-    if ($self->doClean()) {
-        if ($self->cleanOutputDir() != 0) {
-            printf STDERR "%s: ERROR: clean output directory step failed, aborting dump.\n", ::srline();
-            return 1;
-        }
-    }
-
-    #now create output directory:
-    if ($self->createOutputDir() != 0) {
-        printf STDERR "%s: ERROR: create output directory step failed, aborting dump.\n", ::srline();
-        return 1;
-    }
-
-    #get a list of projects to dump if not specified
-    if ($self->dumpAllProjects()) {
-        printf STDERR "Getting all projects list...\n" if $DEBUG;
-
-        #run project query but do not display results:
-        if ($self->processListCommand($sqlpj, 0) != 0) {
-            printf STDERR "%s: ERROR: could get list of all projects - aborting dump.\n", ::srline();
-            return 1;
-        }
-
-        #o'wise, stash results (query returns a ref to a list of list refs):
-        @projectlist = map {
-            @{$_};    #dereference each row
-        } @{$sqlpj->getQueryResult()};
-
-    } else {
-        @projectlist = $self->projectList();
-    }
-
-    printf STDERR "%s: projectlist=(%s)\n", ::srline(), join(',', @projectlist) if ($DEBUG);
-
-    #foreach project, do the dump:
-    my $nerrs = 0;
-    for my $project (@projectlist) {
-        $nerrs += $self->dumpOneProject($sqlpj, $project);
-    }
-
-    return $nerrs;
-}
-
-sub dumpOneProject
-#dump a single project, including all procedures and properties.
-{
-    my ($self, $sqlpj, $projectName) = @_;
-
-    printf STDERR "%s: projectName='%s'\n", ::srline(), $projectName;
-
-    #create a new project object:
-    #$self->writeProjectName()
-    #$ecpj->initEcProperties();
-    #$ecpj->initEcProcedures();
-    #$ecpj->writeToFileSystem();
-}
-
-sub processListCommand
-#process list command.  return 0 on success.
-{
-    my ($self, $sqlpj, $showResults) = @_;
-
-    printf STDERR "Running LIST COMMAND...\n" if $DEBUG;
-
-    my $lbuf = "select name from ec_project";
-
-    if ( !$sqlpj->sql_exec($lbuf) ) {
-        printf STDERR "%s:  -list command failed:  ABORT\n", ::srline();
-        return 1;
-    }
-
-    return 0 unless ($showResults);
-
-    #otherwise, get and display result:
-    my $tref = $sqlpj->getQueryResult();
-
-    for my $rowref (@$tref) {
-        printf "%s\n", join(',', @$rowref);
-    }
-
-    return 0;
-}
-
-sub cleanOutputDir
-#remove the output directory.  return 0 if successful.
-{
-    my ($self) = @_;
-    my $theDir = $self->outputDirectory();
-
-    printf STDERR "Cleaning output dir '%s'...\n", $theDir if $DEBUG;
-
-    return 0;
-}
-
-sub createOutputDir
-#create the output directory.  return 0 if successful.
-{
-    my ($self) = @_;
-    my $theDir = $self->outputDirectory();
-
-    printf STDERR "Creating output dir '%s'...\n", $theDir if $DEBUG;
-
-    return 0;
-}
-
-#########
-#accessor methods for {=PL_PACKAGE=} object attributes:
-#########
-
-{=$getset_methods:rtrim=}
-
-#######
-#static class methods
-#######
-
-]
 %evalmacro PL_PKG_METHODS PL_PKG_METHODS
 }
