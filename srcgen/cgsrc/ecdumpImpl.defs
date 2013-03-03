@@ -5,6 +5,8 @@
 #allows us to run stand-alone:
 %ifdef BUILD_SETUP_COMPLETE %include build_setup.defs
 
+%include perl/genattr.defs
+
 { ## header section
 %ifndef PL_PACKAGE       PL_PACKAGE = $ECDUMPIMPL_PACKAGE
 PL_PACKAGE_DESCRIPTION = perl/jdbc sql command line interpreter
@@ -189,10 +191,9 @@ sub dumpOneProject
 
     #create a new project object:
     #$self->writeProjectName()
-
-    $ecpj->initEcProperties();
-    $ecpj->initEcProcedures();
-    $ecpj->writeToFileSystem();
+    #$ecpj->initEcProperties();
+    #$ecpj->initEcProcedures();
+    #$ecpj->writeToFileSystem();
 }
 
 sub processListCommand

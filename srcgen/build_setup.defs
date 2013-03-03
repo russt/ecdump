@@ -2,7 +2,7 @@
 %ifdef BUILD_SETUP_COMPLETE %return
 
 #this is to get later perl operators:
-%pragma version 1.98
+%pragma version 1.99
 
 ###########
 # note - version is initialized in pkgconfig.defs
@@ -22,7 +22,7 @@ CG_ROOT_BASE       = $CG_ROOT
 
 LOCAL_INCLUDES =          cgsrc
 #this allows us to run in sub-projects:
-LOCAL_INCLUDES =          $LOCAL_INCLUDES;..;$CG_ROOT/objects
+LOCAL_INCLUDES =          $LOCAL_INCLUDES;..;.;$CG_ROOT/objects
 CG_TEMPLATE_PATH=         $LOCAL_INCLUDES;$CG_TEMPLATE_PATH
 
 SRCROOT =  $SRCROOT:nameof:env
@@ -72,17 +72,7 @@ _SQLPJ_CONFIG_PACKAGE = ${SQLPJ_PACKAGE}::${SQLPJ_CONFIG_PACKAGE}
 #set default constuctor name:
 PL_CONSTRUCTOR_NAME = new
 
-#set global var for generating standard getter/setters:
-%readtemplate pl_getset     perl/getset.ptpl
-#same again for list value:
-%readtemplate pl_getsetlist perl/getsetlist.ptpl
-
-#immutable attributes - with no get prefix:
-%readtemplate pl_attr_method     perl/get.ptpl
-#same again for list value:
-%readtemplate pl_attrlist_method perl/getlist.ptpl
-
-OBJECT_UTILS := << EOF
+OBJECT_UTILS := << //
 sub dumpThisObject
 {
     my ($aref) = @_;
@@ -92,35 +82,7 @@ sub dumpThisObject
     }
 }
 
-EOF
-
-#:pl2path            - convert perl package reference to .pl pathname, e.g. Foo::Bar::Impl -> Foo/Bar/Impl.pl
-#:pm2path            - convert perl package reference to .pm pathname, e.g. Foo::Bar::Impl -> Foo/Bar/Impl.pm
-#:prlpkg2path        - convert perl parent package reference to path, e.g. Foo::Bar -> Foo/Bar
-#:path2pm            - convert perl pathname to perl module or package name, e.g.:
-
-generate_a_module := << EOF
-#macro to generate a single module and append to single module
-{
-#%echo generate_a_module module_defs=$module_defs PL_PACKAGE=$PL_PACKAGE GEN_ONE_MODULE=$GEN_ONE_MODULE
-    %ifndef  perl_template       perl_template = perl/prlobj.ptpl
-    %ifndef  perl_outputfn       perl_outputfn = $_PL_PACKAGE:pm2path
-
-    %ifndef   PL_PACKAGE_PREFIX    PL_PACKAGE_PREFIX = ${DEFAULT_PACKAGE}::
-    %include  $module_defs
-    %if       $GEN_ONE_MODULE    $perl_template >>    /$ONE_MODULE
-    %include  perl/reset_template_vars.ptpl
-
-    %include  $module_defs
-    %ifnot    $GEN_ONE_MODULE    $perl_template       lib/$perl_outputfn
-    %include  perl/reset_template_vars.ptpl
-
-    %undef  module_defs
-    %undef  perl_template
-    %undef  perl_outputfn
-    %undef  PL_PACKAGE_PREFIX
-}
-EOF
+//
 
 #tell sub-sections we have been initialized:
 BUILD_SETUP_COMPLETE = 1

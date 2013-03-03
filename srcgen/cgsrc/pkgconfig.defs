@@ -183,6 +183,10 @@ sub copyJdbcConfigTo
 }
 
 {=$getset_methods:rtrim=}
+
+sub update_static_class_attributes
+{
+}
 ]
 %evalmacro PL_PKG_METHODS PL_PKG_METHODS
 }
