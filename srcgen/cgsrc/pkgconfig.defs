@@ -71,7 +71,7 @@ PL_OBJ_ATTRIBUTES := << (
 #this is for further initialzation of attributes, since hash init cannot be self-referential:
 PL_POST_ATTRIBUTE_INIT := << EOF
 #initialize project list to be a ref to an empty list (was not able to do this in the hash init).
-$self->setProjectList([]);
+$self->{'mProjectList'} = [];
 EOF
 #%evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }

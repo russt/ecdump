@@ -2,6 +2,8 @@ ecdump.cg
 ecdump.defs
 ecdumpImpl.defs
 ecdumpImpl_method.defs
+ecProjects.defs
+ecProject.defs
 pkgconfig.defs
 ../build_setup.defs
 TODO.txt

@@ -32,9 +32,10 @@ generate_attribute_accessors := << //
     #return if ATTRIBUTE_LIST is empty (not an error)::
     %ifnot $ATTRIBUTE_LIST    return
 
-    #create stack from ATTRIBUTE_LIST:
+    #create stack from ATTRIBUTE_LIST, eliminating comments:
     CG_SPLIT_PATTERN = /\n/
-    ATTRIBUTE_LIST = $ATTRIBUTE_LIST:trim:split
+    CG_GREP_SPEC = !/^\s*[#]/
+    ATTRIBUTE_LIST = $ATTRIBUTE_LIST:trim:split:g
 
     # set split pattern for loop:
     CG_SPLIT_PATTERN = /\t/
