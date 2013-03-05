@@ -65,7 +65,13 @@ sub processDumpCommand
         return 1;
     }
 
-    #tell ecProjects to dump istself:
+    #tell ecProjects to load data:
+    if ($ecprojects->loadProjects() != 0) {
+        printf STDERR "%s: ERROR: load data step failed, aborting dump.\n", ::srline();
+        return 1;
+    }
+
+    #tell ecProjects to dump data into output root:
     return $ecprojects->dumpProjects();
 }
 
