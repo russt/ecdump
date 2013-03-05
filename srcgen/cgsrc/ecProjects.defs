@@ -131,6 +131,16 @@ sub listProjectNames
     }
 }
 
+sub dumpProjects
+#dump each project to the dump tree.
+{
+    my ($self) = @_;
+
+    for my $pj ($self->ecProjects()) {
+        $pj->dumpProject();
+    }
+}
+
 {=getset_methods=}
 
 sub update_static_class_attributes

@@ -1,28 +1,26 @@
 #
-#ecdumpImpl.defs -  definitions for ecdumpImpl object.
+#ecProcedureStep.defs -  definitions for ecProcedureStep object.
 #
 
 #allows us to run stand-alone:
 %ifndef CG_ROOT %include ../build_setup.defs
 
 { ## header section
-PL_PACKAGE = $ECDUMPIMPL_PACKAGE
-PL_PACKAGE_DESCRIPTION = ecdump implementation
+PL_PACKAGE = $ECPROCEDURESTEP_PACKAGE
+PL_PACKAGE_DESCRIPTION = object representing an EC Procedure Step
 
 #not a base class - use standard constuctor name:
 PL_CONSTRUCTOR_NAME = new
 
+{
 PL_EXTERN_PKG_IMPORTS = << (
-require "sqlpj.pl";
 )
 PL_PKG_IMPORTS = << (
-use $_ECPROJECTS_PACKAGE;
 )
 %if    $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS
 %ifnot $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS$PL_PKG_IMPORTS
 }
 
-{
 PL_PKG_ATTRIBUTES := << (
 #standard debugging attributes:
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
@@ -34,24 +32,19 @@ my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
 #templates are: (r/w) pl_getset, pl_getsetlist; (r/o) pl_attr_method, pl_attrlist_method
 ####
 ATTRIBUTE_LIST := << (
-#debugging and verbosity levels, inherited from command line (r/w):
+#debugging and verbosity levels, inherited from parent (r/w):
 Debug	pl_getset	$cfg->getDebug()
 DDebug	pl_getset	$cfg->getDDebug()
 Quiet	pl_getset	$cfg->getQuiet()
 Verbose	pl_getset	$cfg->getVerbose()
 #sqlpj interface (r/o):
-SqlpjConfig	pl_attr_method	$cfg->getSqlpjConfig()
-Sqlpj	pl_attr_method	$cfg->getSqlpjImpl()
-#command-line configuration inputs (r/o):
-HaveDumpCommand	pl_attr_method	$cfg->getHaveDumpCommand()
-HaveListCommand	pl_attr_method	$cfg->getHaveListCommand()
-DumpAllProjects	pl_attr_method	$cfg->getDumpAllProjects()
-ProjectList	pl_attrlist_method	[$cfg->getProjectList()]
-DoClean	pl_attr_method	$cfg->getDoClean()
-OutputDirectory	pl_attr_method	$cfg->getOutputDirectory()
-#reference to the EC projects collection, which is our top-level reference to EC:
-EcProjects	pl_attr_method	undef
+Sqlpj	pl_attr_method	$cfg->sqlpj()
+#project attributes, inherited from impl:
+OutputDirectory	pl_attr_method	$cfg->outputDirectory()
+#local project attributes:
+EcProcedureStepName	pl_attr_method	undef
 )
+%evalmacro ATTRIBUTE_LIST ATTRIBUTE_LIST
 #generate attribute accessors (this creates class_attribute_dcls, getset_methods):
 %include perl/genattr.defs
 %call generate_attribute_accessors
@@ -72,9 +65,6 @@ PL_POST_ATTRIBUTE_INIT := << (
 
 #cache initial debugging and vebosity values in local package variables:
 $self->update_static_class_attributes();
-
-#create projects object, which will contain the list of our projects::
-$self->{'mEcProjects'} = new {=_ECPROJECTS_PACKAGE=}($self);
 )
 %evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }
@@ -85,13 +75,23 @@ $DDEBUG  = $self->getDDebug();
 $QUIET   = $self->getQuiet();
 $VERBOSE = $self->getVerbose();
 )
-}
 
 { ## class methods
 
 PL_PKG_METHODS := << (
 
-{=%include ecdumpImpl_method.defs=}
+sub dumpProcedureStep
+#dump this procedure step.
+{
+    my ($self) = @_;
+
+    #first dump this Procedure Step:
+    printf "DUMPING PROCEDURE STEP\n" if ($DEBUG);
+
+    #TODO:  dump procedure step properties.
+
+    return 0;
+}
 
 {=getset_methods=}
 

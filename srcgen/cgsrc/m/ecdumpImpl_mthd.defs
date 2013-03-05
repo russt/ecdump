@@ -30,7 +30,7 @@ sub execEcdump
     if ($self->haveListCommand() || $self->dumpAllProjects()) {
         $ecprojects->addAllProjects();
     } else {
-        for my $pjname (@{$self->projectList()}) {
+        for my $pjname ($self->projectList()) {
             $ecprojects->addOneProject($pjname);
         }
     }

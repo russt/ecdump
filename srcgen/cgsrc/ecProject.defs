@@ -16,6 +16,7 @@ PL_CONSTRUCTOR_NAME = new
 PL_EXTERN_PKG_IMPORTS = << (
 )
 PL_PKG_IMPORTS = << (
+use $_ECPROCEDURES_PACKAGE;
 )
 %if    $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS
 %ifnot $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS$PL_PKG_IMPORTS
@@ -43,6 +44,8 @@ Sqlpj	pl_attr_method	$cfg->sqlpj()
 OutputDirectory	pl_attr_method	$cfg->outputDirectory()
 #local project attributes:
 ProjectName	pl_attr_method	$projectName
+#this is the EC procedures object:
+EcProcedures	pl_attr_method	undef
 )
 %evalmacro ATTRIBUTE_LIST ATTRIBUTE_LIST
 #generate attribute accessors (this creates class_attribute_dcls, getset_methods):
@@ -65,6 +68,9 @@ PL_POST_ATTRIBUTE_INIT := << (
 
 #cache initial debugging and vebosity values in local package variables:
 $self->update_static_class_attributes();
+
+#create procedure container object, which will contain the list of our procedures:
+$self->{'mEcProcedures'} = new {=_ECPROCEDURES_PACKAGE=}($self);
 )
 %evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }
@@ -79,6 +85,18 @@ $VERBOSE = $self->getVerbose();
 { ## class methods
 
 PL_PKG_METHODS := << (
+
+sub dumpProject
+#dump each project to the dump tree.
+{
+    my ($self) = @_;
+
+    #first dump myself the project:
+    printf "DUMPING PROJECT '%s'\n", $self->projectName() if ($DEBUG);
+
+    #then dump the procedures:
+    $self->ecProcedures->dumpProcedures();
+}
 
 {=getset_methods=}
 
