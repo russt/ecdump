@@ -1,0 +1,23 @@
+sub loadProject
+#load each project from the database
+{
+    my ($self) = @_;
+
+    #first load myself the project:
+    printf "LOADING PROJECT '%s'\n", $self->projectName() if ($DEBUG);
+
+    #then load the procedures:
+    $self->ecProcedures->loadProcedures();
+}
+
+sub dumpProject
+#dump each project to the dump tree.
+{
+    my ($self) = @_;
+
+    #first dump myself the project:
+    printf "DUMPING PROJECT '%s'\n", $self->projectName() if ($DEBUG);
+
+    #then dump the procedures:
+    $self->ecProcedures->dumpProcedures();
+}

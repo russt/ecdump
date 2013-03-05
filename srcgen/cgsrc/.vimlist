@@ -1,7 +1,15 @@
+m/ecdumpImpl_mthd.defs
+m/ecProjects_mthd.defs
+m/ecProject_mthd.defs
+m/ecProcedures_mthd.defs
+m/ecProcedure_mthd.defs
+m/ecProcedureSteps_mthd.defs
+m/ecProcedureStep_mthd.defs
+m/ecProps_mthd.defs
+m/ecProp_mthd.defs
 ecdump.cg
 ecdump.defs
 ecdumpImpl.defs
-ecdumpImpl_method.defs
 ecProjects.defs
 ecProject.defs
 ecProcedures.defs

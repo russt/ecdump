@@ -1,0 +1,19 @@
+sub loadProps
+#load EC property set from database
+{
+    my ($self) = @_;
+
+    printf "LOADING EC PROPERTY SET\n" if ($DEBUG);
+
+    return 0;
+}
+
+sub dumpProps
+#dump EC property set
+{
+    my ($self) = @_;
+
+    printf "DUMPING EC PROPERTY SET\n" if ($DEBUG);
+
+    return 0;
+}

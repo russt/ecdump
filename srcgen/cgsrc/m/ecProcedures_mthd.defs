@@ -1,0 +1,33 @@
+sub loadProcedures
+#load each EC procedure from the database
+#return 0 on success.
+{
+    my ($self) = @_;
+
+    #first load myself the Procedure collection:
+    printf "LOADING PROCEDURES\n" if ($DEBUG);
+
+    #then load each procedures:
+    for my $proc ($self->ecProcedureList()) {
+        $proc->loadProcedure();
+    }
+
+    return 0;
+}
+
+sub dumpProcedures
+#dump each EC procedure to the dump tree.
+#return 0 on success.
+{
+    my ($self) = @_;
+
+    #first dump myself the Procedure collection:
+    printf "DUMPING PROCEDURES\n" if ($DEBUG);
+
+    #then dump each procedures:
+    for my $proc ($self->ecProcedureList()) {
+        $proc->dumpProcedure();
+    }
+
+    return 0;
+}

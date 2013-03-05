@@ -1,0 +1,25 @@
+sub loadProcedureStep
+#load this procedure step.
+{
+    my ($self) = @_;
+
+    #first load this Procedure Step:
+    printf "LOADING PROCEDURE STEP\n" if ($DEBUG);
+
+    #TODO:  load procedure step properties.
+
+    return 0;
+}
+
+sub dumpProcedureStep
+#dump this procedure step.
+{
+    my ($self) = @_;
+
+    #first dump this Procedure Step:
+    printf "DUMPING PROCEDURE STEP\n" if ($DEBUG);
+
+    #TODO:  dump procedure step properties.
+
+    return 0;
+}

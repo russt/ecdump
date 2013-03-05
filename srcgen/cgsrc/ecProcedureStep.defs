@@ -80,18 +80,7 @@ $VERBOSE = $self->getVerbose();
 
 PL_PKG_METHODS := << (
 
-sub dumpProcedureStep
-#dump this procedure step.
-{
-    my ($self) = @_;
-
-    #first dump this Procedure Step:
-    printf "DUMPING PROCEDURE STEP\n" if ($DEBUG);
-
-    #TODO:  dump procedure step properties.
-
-    return 0;
-}
+{=%include m/ecProcedureStep_mthd.defs=}
 
 {=getset_methods=}
 

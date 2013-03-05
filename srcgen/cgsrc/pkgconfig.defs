@@ -32,6 +32,8 @@ ProgName	pl_getset	undef
 PathSeparator	pl_getset	undef
 VersionNumber	pl_attr_method	"{=VERSION_STR=}"
 VersionDate	pl_attr_method	"{=VERSION_DATE=}"
+#utils class:
+Utils	pl_getset	undef
 Debug	pl_getset	0
 DDebug	pl_getset	0
 Quiet	pl_getset	0

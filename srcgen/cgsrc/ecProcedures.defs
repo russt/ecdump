@@ -82,23 +82,7 @@ $VERBOSE = $self->getVerbose();
 
 PL_PKG_METHODS := << (
 
-sub dumpProcedures
-#dump each EC procedure to the dump tree.
-#return 0 on success.
-{
-    my ($self) = @_;
-
-    #first dump myself the Procedure collection:
-    printf "DUMPING PROCEDURES\n" if ($DEBUG);
-
-    #then dump each procedures:
-
-    for my $proc ($self->ecProcedureList()) {
-        $proc->dumpProcedure();
-    }
-
-    return 0;
-}
+{=%include m/ecProcedures_mthd.defs=}
 
 {=getset_methods=}
 

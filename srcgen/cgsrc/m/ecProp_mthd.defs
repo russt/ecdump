@@ -1,0 +1,19 @@
+sub loadProp
+#load this property.
+{
+    my ($self) = @_;
+
+    printf "LOADING EC PROPERTY\n" if ($DEBUG);
+
+    return 0;
+}
+
+sub dumpProp
+#dump this property.
+{
+    my ($self) = @_;
+
+    printf "DUMPING EC PROPERTY\n" if ($DEBUG);
+
+    return 0;
+}

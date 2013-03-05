@@ -115,7 +115,7 @@ sub set{=PL_ATTRIBUTE_NAME=}
 {
     my ($self, $value) = @_;
     $self->{'m{=PL_ATTRIBUTE_NAME=}'} = $value;
-    update_static_class_attributes();
+    $self->update_static_class_attributes();
     return $self->{'m{=PL_ATTRIBUTE_NAME=}'};
 }
 

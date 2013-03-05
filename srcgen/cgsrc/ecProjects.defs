@@ -24,7 +24,7 @@ use $_ECPROJECT_PACKAGE;
 
 PL_PKG_ATTRIBUTES := << (
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
 )
 %evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
 
@@ -38,6 +38,8 @@ Debug	pl_getset	$cfg->getDebug()
 DDebug	pl_getset	$cfg->getDDebug()
 Quiet	pl_getset	$cfg->getQuiet()
 Verbose	pl_getset	$cfg->getVerbose()
+#utils class:
+Utils	pl_attr_method	$cfg->utils()
 #sqlpj interface (r/o):
 Sqlpj	pl_attr_method	$cfg->sqlpj()
 #project attributes, inherited from impl:
@@ -45,6 +47,8 @@ OutputDirectory	pl_attr_method	$cfg->outputDirectory()
 #local project attributes:
 #reference to list of project objects (initially empty list):
 EcProjects	pl_attrlist_method	undef
+DbKeysInitialized	pl_getset	0
+NameIdMap	pl_getset	undef
 )
 #generate attribute accessors (this creates class_attribute_dcls, getset_methods):
 %include perl/genattr.defs
@@ -75,71 +79,14 @@ $DEBUG   = $self->getDebug();
 $DDEBUG  = $self->getDDebug();
 $QUIET   = $self->getQuiet();
 $VERBOSE = $self->getVerbose();
+$utils = $self->utils();
 )
 
 { ## class methods
 
 PL_PKG_METHODS := << (
 
-sub addOneProject
-#add a single project to the collection.
-{
-    my ($self, $projectName) = @_;
-
-    #no setter, for mEcProjects - so use direct ref:
-    push @{$self->{'mEcProjects'}}, (new {=_ECPROJECT_PACKAGE=}($self, $projectName));
-
-    #TODO:  add project-level properties
-
-    return 0;
-}
-
-sub addAllProjects
-#add all of the EC projects to the collection.
-#returns 0 on success
-{
-    my ($self) = @_;
-    my ($sqlpj) = $self->sqlpj();
-
-    my $lbuf = "select name from ec_project";
-
-    if ( !$sqlpj->sql_exec($lbuf) ) {
-        printf STDERR "%s:  ERROR:  all projects query failed.\n", ::srline();
-        return 1;
-    }
-
-    #o'wise, stash results (query returns a ref to a list of list refs):
-    my @projectlist = map {
-        @{$_};    #dereference each row
-    } @{$sqlpj->getQueryResult()};
-
-    #now add one project obj. per retrieved project:
-    for my $name (@projectlist) {
-        $self->addOneProject($name);
-    }
-
-    return 0;
-}
-
-sub listProjectNames
-#display the current list of project names
-{
-    my ($self) = @_;
-
-    for my $pj ($self->ecProjects()) {
-        printf "%s\n", $pj->projectName();
-    }
-}
-
-sub dumpProjects
-#dump each project to the dump tree.
-{
-    my ($self) = @_;
-
-    for my $pj ($self->ecProjects()) {
-        $pj->dumpProject();
-    }
-}
+{=%include m/ecProjects_mthd.defs=}
 
 {=getset_methods=}
 

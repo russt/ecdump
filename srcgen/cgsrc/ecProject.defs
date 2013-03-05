@@ -24,7 +24,7 @@ use $_ECPROCEDURES_PACKAGE;
 
 PL_PKG_ATTRIBUTES := << (
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
 )
 %evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
 
@@ -38,12 +38,15 @@ Debug	pl_getset	$cfg->getDebug()
 DDebug	pl_getset	$cfg->getDDebug()
 Quiet	pl_getset	$cfg->getQuiet()
 Verbose	pl_getset	$cfg->getVerbose()
+#utils class:
+Utils	pl_attr_method	$cfg->utils()
 #sqlpj interface (r/o):
 Sqlpj	pl_attr_method	$cfg->sqlpj()
 #project attributes, inherited from impl:
 OutputDirectory	pl_attr_method	$cfg->outputDirectory()
 #local project attributes:
 ProjectName	pl_attr_method	$projectName
+ProjectId	pl_attr_method	$projectId
 #this is the EC procedures object:
 EcProcedures	pl_attr_method	undef
 )
@@ -54,7 +57,7 @@ EcProcedures	pl_attr_method	undef
 }
 { ## constructor section
 PL_CONSTRUCTOR_BODY := << (
-my ($cfg, $projectName) = @_;
+my ($cfg, $projectName, $projectId) = @_;
 )
 %evalmacro PL_CONSTRUCTOR_BODY PL_CONSTRUCTOR_BODY
 
@@ -80,23 +83,14 @@ $DEBUG   = $self->getDebug();
 $DDEBUG  = $self->getDDebug();
 $QUIET   = $self->getQuiet();
 $VERBOSE = $self->getVerbose();
+$utils = $self->utils();
 )
 
 { ## class methods
 
 PL_PKG_METHODS := << (
 
-sub dumpProject
-#dump each project to the dump tree.
-{
-    my ($self) = @_;
-
-    #first dump myself the project:
-    printf "DUMPING PROJECT '%s'\n", $self->projectName() if ($DEBUG);
-
-    #then dump the procedures:
-    $self->ecProcedures->dumpProcedures();
-}
+{=%include m/ecProject_mthd.defs=}
 
 {=getset_methods=}
 

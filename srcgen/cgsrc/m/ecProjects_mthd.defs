@@ -1,0 +1,126 @@
+sub addOneProject
+#supports list and dump commands.
+#can be called from outside (to process a list of user-supplied projects).
+#add a single project to the collection.
+#does not fully populate sub-objects. for that, use loadProjects();
+#return 0 on success.
+{
+    my ($self, $projectName) = @_;
+
+    #initialize project keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->initDbKeys());
+
+    #check that we have a legitimate project name:
+    if (!defined($self->getNameIdMap->{$projectName})) {
+        printf STDERR "%s:  ERROR:  project '%s' is not in the database.\n", ::srline(), $projectName;
+        return 1;
+    }
+
+    #no setter, for mEcProjects - so use direct ref:
+    push @{$self->{'mEcProjects'}}, (new {=_ECPROJECT_PACKAGE=}($self, $projectName, $self->getNameIdMap->{$projectName}));
+
+    #TODO:  add project-level properties
+
+    return 0;
+}
+
+sub addAllProjects
+#add all of the EC projects to the collection.
+#returns 0 on success
+{
+    my ($self) = @_;
+
+    #initialize project keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->initDbKeys());
+
+    #make sure we start with a clean list, in the event this routine has already been called:
+    $self->{'mEcProjects'} = [];
+
+    #now add one project obj. per retrieved project:
+    for my $name (sort keys %{$self->getNameIdMap()}) {
+        $self->addOneProject($name);
+    }
+
+    return 0;
+}
+
+sub initDbKeys
+#initialize project keys.  This only needs to happen once.
+#if okay, then we set DbKeysInitialized attribute to true.
+#return 0 on success.
+{
+    my ($self) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    my $lbuf = "select name,id from ec_project";
+
+    printf "%s: running sql query to get project keys\n", ::srline() if ($DEBUG);
+
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.  we expect an even number of name,id pairs
+    } @{$sqlpj->getQueryResult()};
+
+
+    #map name,id rows into hash:
+    my %nameId = @results;
+    $self->setNameIdMap(\%nameId);
+
+    printf "%s: nameId result=%s\n", ::srline(), $utils->dumpDbKeys(\%nameId) if ($DDEBUG);
+
+    $self->setDbKeysInitialized(1);
+    return 0;
+}
+
+sub listProjectNames
+#display the current list of project names
+{
+    my ($self) = @_;
+
+    for my $pj ($self->ecProjects()) {
+        printf "%s\n", $pj->projectName();
+    }
+}
+
+sub loadEcTopLevel
+#load top-level EC metadata
+{
+    #TBD.
+    return 0;
+}
+
+sub dumpEcTopLevel
+#dump top-level EC metadata
+{
+    #TBD.
+    return 0;
+}
+
+sub loadProjects
+#load each project from the database
+{
+    my ($self) = @_;
+
+    $self->loadEcTopLevel();
+
+    for my $pj ($self->ecProjects()) {
+        $pj->loadProject();
+    }
+}
+
+sub dumpProjects
+#dump each project to the dump tree.
+{
+    my ($self) = @_;
+
+    $self->dumpEcTopLevel();
+
+    for my $pj ($self->ecProjects()) {
+        $pj->dumpProject();
+    }
+}

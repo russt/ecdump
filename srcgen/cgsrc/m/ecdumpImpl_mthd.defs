@@ -24,15 +24,22 @@ sub execEcdump
         return 1;
     }
 
-    #initialize the EcProjects object:
+    #cache handle for EcProjects object:
     my $ecprojects = $self->ecProjects();
 
+    my $nerrs = 0;
+
     if ($self->haveListCommand() || $self->dumpAllProjects()) {
-        $ecprojects->addAllProjects();
+        $nerrs += $ecprojects->addAllProjects();
     } else {
         for my $pjname ($self->projectList()) {
-            $ecprojects->addOneProject($pjname);
+            $nerrs += $ecprojects->addOneProject($pjname);
         }
+    }
+
+    if ($nerrs) {
+        printf STDERR "%s:  encounterd %d ERROR%s while adding projects - ABORT\n", ::srline(), $nerrs, ($nerrs == 1 ? '' : 'S');
+        return 1;
     }
 
     if ($self->haveListCommand()) {

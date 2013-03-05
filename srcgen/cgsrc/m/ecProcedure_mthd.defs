@@ -1,0 +1,29 @@
+sub loadProcedure
+#load this EC procedure from the database.
+#return 0 on success.
+{
+    my ($self) = @_;
+
+    #first load this procedure:
+    printf "LOADING PROCEDURE\n" if ($DEBUG);
+
+    #then load procedure steps:
+    $self->ecProcedureSteps->loadProcedureSteps();
+
+    return 0;
+}
+
+sub dumpProcedure
+#dump this EC procedure to the dump tree.
+#return 0 on success.
+{
+    my ($self) = @_;
+
+    #first dump myself this procedure:
+    printf "DUMPING PROCEDURE\n" if ($DEBUG);
+
+    #then dump procedure steps:
+    $self->ecProcedureSteps->dumpProcedureSteps();
+
+    return 0;
+}

@@ -26,6 +26,7 @@ ecProcedureStep	object representing an EC Procedure Step
 ecProcedureSteps	collection of Procedure Steps
 ecProp	object representing an EC Property
 ecProps	collection of EC Properties
+utils	ecdump utilility routines
 ]
 
 %call newobj_create_objects
