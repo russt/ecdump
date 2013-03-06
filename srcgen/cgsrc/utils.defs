@@ -72,6 +72,22 @@ $VERBOSE = $self->getVerbose();
 
 PL_PKG_METHODS := << (
 
+sub ec2scm
+#map EC entity names to legal scm filenames.
+{
+    my ($self, $name) = @_;
+
+    return $name;
+}
+
+sub scm2ec
+#map scm filenames back to EC entity names.
+{
+    my ($self, $name) = @_;
+
+    return $name;
+}
+
 sub dumpThisObject
 {
     my ($self, $aref) = @_;

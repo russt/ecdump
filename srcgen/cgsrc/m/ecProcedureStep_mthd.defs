@@ -16,9 +16,16 @@ sub dumpProcedureStep
 #dump this procedure step.
 {
     my ($self) = @_;
+    my $outroot = $self->rootDir();
 
     #first dump this Procedure Step:
-    printf STDERR "        DUMPING PROCEDURE STEP (%s,%s)\n", $self->procedureStepName, $self->procedureStepId,   if ($DEBUG);
+    printf STDERR "        DUMPING PROCEDURE STEP (%s,%s) -> %s\n", $self->procedureStepName, $self->procedureStepId, $outroot   if ($VERBOSE);
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline, $outroot, $!;
+        return 1;
+    }
 
     #TODO:  dump procedure step properties.
 

@@ -14,6 +14,8 @@ PL_CONSTRUCTOR_NAME = new
 
 {
 PL_EXTERN_PKG_IMPORTS = << (
+require "path.pl";
+require "os.pl";
 )
 PL_PKG_IMPORTS = << (
 use $_ECPROCEDURE_PACKAGE;
@@ -42,9 +44,8 @@ Verbose	pl_getset	$proj->getVerbose()
 Utils	pl_attr_method	$proj->utils()
 #sqlpj interface (r/o):
 Sqlpj	pl_attr_method	$proj->sqlpj()
-#project attributes, inherited from impl:
-OutputDirectory	pl_attr_method	$proj->outputDirectory()
 #local project attributes:
+RootDir	pl_attr_method	undef
 ProjectName	pl_attr_method	$proj->projectName()
 ProjectId	pl_attr_method	$proj->projectId()
 #this is my list of ecProcedure objects:
@@ -74,6 +75,9 @@ PL_POST_ATTRIBUTE_INIT := << (
 
 #cache initial debugging and vebosity values in local package variables:
 $self->update_static_class_attributes();
+
+#set output root for this the procedures:
+$self->{'mRootDir'} = path::mkpathname($proj->rootDir(), $utils->ec2scm("procedures"));
 )
 %evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }

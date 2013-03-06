@@ -22,16 +22,24 @@ sub dumpProcedures
 #return 0 on success.
 {
     my ($self) = @_;
+    my $outroot = $self->rootDir();
 
     #first dump myself the Procedure collection:
-    printf STDERR "  DUMPING PROCEDURES\n" if ($DEBUG);
+    printf STDERR "  DUMPING PROCEDURES -> %s\n", $outroot if ($VERBOSE);
 
-    #then dump each procedures:
-    for my $proc ($self->ecProcedureList()) {
-        $proc->dumpProcedure();
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline, $outroot, $!;
+        return 1;
     }
 
-    return 0;
+    my $errs = 0;
+    #then dump each procedures:
+    for my $proc ($self->ecProcedureList()) {
+        $errs += $proc->dumpProcedure();
+    }
+
+    return $errs;
 }
 
 sub initProcedureKeys

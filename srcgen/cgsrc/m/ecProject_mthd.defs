@@ -14,10 +14,17 @@ sub dumpProject
 #dump each project to the dump tree.
 {
     my ($self) = @_;
+    my $outroot = $self->rootDir();
 
     #first dump myself the project:
-    printf STDERR "DUMPING PROJECT '%s'\n", $self->projectName() if ($DEBUG);
+    printf STDERR "DUMPING PROJECT '%s' -> %s\n", $self->projectName(), $outroot if ($VERBOSE);
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline, $outroot, $!;
+        return 1;
+    }
 
     #then dump the procedures:
-    $self->ecProcedures->dumpProcedures();
+    return $self->ecProcedures->dumpProcedures();
 }

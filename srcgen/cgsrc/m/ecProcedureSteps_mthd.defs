@@ -22,16 +22,24 @@ sub dumpProcedureSteps
 #return 0 on success.
 {
     my ($self) = @_;
+    my $outroot = $self->rootDir();
 
     #first dump myself the Procedure Step collection:
-    printf STDERR "      DUMPING PROCEDURE Steps\n" if ($DEBUG);
+    printf STDERR "      DUMPING PROCEDURE Steps -> %s\n", $outroot if ($VERBOSE);
 
-    #then dump each procedures step:
-    for my $proc ($self->ecProcedureStepsList()) {
-        $proc->dumpProcedureStep();
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline, $outroot, $!;
+        return 1;
     }
 
-    return 0;
+    #then dump each procedures step:
+    my $errs = 0;
+    for my $proc ($self->ecProcedureStepsList()) {
+        $errs += $proc->dumpProcedureStep();
+    }
+
+    return $errs;
 }
 
 sub addOneProcedureStep

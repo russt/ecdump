@@ -1,3 +1,4 @@
+#see also:  ecProjects.defs
 sub addOneProject
 #supports list and dump commands.
 #can be called from outside (to process a list of user-supplied projects).
@@ -114,16 +115,30 @@ sub loadProjects
     for my $pj ($self->ecProjects()) {
         $pj->loadProject();
     }
+
+    return 0;
 }
 
 sub dumpProjects
 #dump each project to the dump tree.
 {
     my ($self) = @_;
+    my $outroot = $self->rootDir();
 
     $self->dumpEcTopLevel();
 
-    for my $pj ($self->ecProjects()) {
-        $pj->dumpProject();
+    printf STDERR "DUMPING PROJECTS -> %s\n", $outroot if ($VERBOSE);
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline, $outroot, $!;
+        return 1;
     }
+
+    my $errs = 0;
+    for my $pj ($self->ecProjects()) {
+        $errs += $pj->dumpProject();
+    }
+
+    return $errs;
 }

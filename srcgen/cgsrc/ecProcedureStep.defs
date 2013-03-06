@@ -14,6 +14,8 @@ PL_CONSTRUCTOR_NAME = new
 
 {
 PL_EXTERN_PKG_IMPORTS = << (
+require "path.pl";
+require "os.pl";
 )
 PL_PKG_IMPORTS = << (
 )
@@ -41,9 +43,8 @@ Verbose	pl_getset	$cfg->getVerbose()
 Utils	pl_attr_method	$cfg->utils()
 #sqlpj interface (r/o):
 Sqlpj	pl_attr_method	$cfg->sqlpj()
-#project attributes, inherited from impl:
-OutputDirectory	pl_attr_method	$cfg->outputDirectory()
 #local project attributes:
+RootDir	pl_attr_method	undef
 ProcedureStepName	pl_attr_method	$procedureStepName
 ProcedureStepId	pl_attr_method	$procedureStepId
 )
@@ -69,6 +70,9 @@ PL_POST_ATTRIBUTE_INIT := << (
 
 #cache initial debugging and vebosity values in local package variables:
 $self->update_static_class_attributes();
+
+#set output root for this procedure step:
+$self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), $utils->ec2scm($procedureStepName));
 )
 %evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }

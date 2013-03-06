@@ -53,7 +53,7 @@ HaveListCommand	pl_attr_method	$cfg->getHaveListCommand()
 DumpAllProjects	pl_attr_method	$cfg->getDumpAllProjects()
 ProjectList	pl_attrlist_method	[$cfg->getProjectList()]
 DoClean	pl_attr_method	$cfg->getDoClean()
-OutputDirectory	pl_attr_method	$cfg->getOutputDirectory()
+RootDir	pl_attr_method	$cfg->getOutputDirectory()
 #local attributes:
 DbConnectionInitialized	pl_getset	0
 #reference to the EC projects collection, which is our top-level reference to EC:

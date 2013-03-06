@@ -14,6 +14,8 @@ PL_CONSTRUCTOR_NAME = new
 
 {
 PL_EXTERN_PKG_IMPORTS = << (
+require "path.pl";
+require "os.pl";
 )
 PL_PKG_IMPORTS = << (
 use $_ECPROJECT_PACKAGE;
@@ -42,9 +44,8 @@ Verbose	pl_getset	$cfg->getVerbose()
 Utils	pl_attr_method	$cfg->utils()
 #sqlpj interface (r/o):
 Sqlpj	pl_attr_method	$cfg->sqlpj()
-#project attributes, inherited from impl:
-OutputDirectory	pl_attr_method	$cfg->outputDirectory()
 #local project attributes:
+RootDir	pl_attr_method	undef
 #reference to list of project objects (initially empty list):
 EcProjects	pl_attrlist_method	undef
 DbKeysInitialized	pl_getset	0
@@ -70,6 +71,10 @@ PL_POST_ATTRIBUTE_INIT := << (
 
 #cache initial debugging and vebosity values in local package variables:
 $self->update_static_class_attributes();
+
+#local project attributes:
+#set output root for the EC projects:
+$self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), $utils->ec2scm("projects"));
 )
 %evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }

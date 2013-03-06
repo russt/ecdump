@@ -65,7 +65,7 @@ sub processDumpCommand
 {
     my ($self) = @_;
 
-    printf STDERR "Running DUMP COMMAND...\n" if $DEBUG;
+    printf STDERR "DUMPING EC CONTENT -> %s\n", $self->rootDir if $VERBOSE;
 
     my $ecprojects = $self->ecProjects();
     #tell ecProjects to load data:
@@ -110,9 +110,9 @@ sub cleanOutputDir
 #remove the output directory.  return 0 if successful.
 {
     my ($self) = @_;
-    my $outroot = $self->outputDirectory();
+    my $outroot = $self->rootDir();
 
-    printf STDERR "Cleaning output dir '%s'...\n", $outroot if $DEBUG;
+    printf STDERR "Cleaning output dir '%s'...\n", $outroot if $VERBOSE;
 
     if (-d $outroot) {
         os::rm_recursive($outroot);
@@ -136,13 +136,13 @@ sub createOutputDir
 #create the output directory.  return 0 if successful.
 {
     my ($self) = @_;
-    my $theDir = $self->outputDirectory();
+    my $outroot = $self->rootDir();
 
-    printf STDERR "Creating output dir '%s'...\n", $theDir if $DEBUG;
+    printf STDERR "Creating output dir '%s'...\n", $outroot if $VERBOSE;
 
-    os::createdir($theDir, 0775) if (! -d $theDir);
-    if (!-d $theDir) {
-        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline, $theDir, $!;
+    os::createdir($outroot, 0775) if (! -d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline, $outroot, $!;
         return 1;
     }
     return 0;

@@ -19,12 +19,17 @@ sub dumpProcedure
 #return 0 on success.
 {
     my ($self) = @_;
+    my $outroot = $self->rootDir();
 
     #first dump myself this procedure:
-    printf STDERR "    DUMPING PROCEDURE (%s,%s)\n", $self->procedureName, $self->procedureId  if ($DEBUG);
+    printf STDERR "    DUMPING PROCEDURE (%s,%s) -> %s\n", $self->procedureName, $self->procedureId, $outroot  if ($VERBOSE);
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline, $outroot, $!;
+        return 1;
+    }
 
     #then dump procedure steps:
-    $self->ecProcedureSteps->dumpProcedureSteps();
-
-    return 0;
+    return $self->ecProcedureSteps->dumpProcedureSteps();
 }
