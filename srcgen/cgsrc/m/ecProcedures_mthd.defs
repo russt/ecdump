@@ -1,3 +1,4 @@
+#see also:  ecProcedures.defs
 sub loadProcedures
 #load each EC procedure from the database
 #return 0 on success.
@@ -5,7 +6,7 @@ sub loadProcedures
     my ($self) = @_;
 
     #first load myself the Procedure collection:
-    printf STDERR "LOADING PROCEDURES\n" if ($DEBUG);
+    printf STDERR "  LOADING PROCEDURES\n" if ($DDEBUG);
     $self->addAllProcedures();
 
     #then load each procedures:
@@ -23,7 +24,7 @@ sub dumpProcedures
     my ($self) = @_;
 
     #first dump myself the Procedure collection:
-    printf STDERR "DUMPING PROCEDURES\n" if ($DEBUG);
+    printf STDERR "  DUMPING PROCEDURES\n" if ($DEBUG);
 
     #then dump each procedures:
     for my $proc ($self->ecProcedureList()) {
@@ -40,7 +41,7 @@ sub initProcedureKeys
 
     my $lbuf = sprintf("select name,id from ec_procedure where project_id=%d", $self->projectId);
 
-    printf STDERR "%s: running sql query to get procedures for project (%s,%d)\n", ::srline(), $self->projectName, $self->projectId  if ($DEBUG);
+    printf STDERR "%s: running sql query to get procedures for project (%s,%d)\n", ::srline(), $self->projectName, $self->projectId  if ($DDEBUG);
 
     if ( !$sqlpj->sql_exec($lbuf) ) {
         printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
@@ -83,8 +84,8 @@ sub addOneProcedure
         return 1;
     }
 
-    #no setter, for mEcProcedures - so use direct ref:
-    push @{$self->{'mEcProcedures'}}, (new {=_ECPROCEDURE_PACKAGE=}($self, $procedureName, $self->getNameIdMap->{$procedureName}));
+    #no setter, for mEcProcedureList - so use direct ref:
+    push @{$self->{'mEcProcedureList'}}, (new {=_ECPROCEDURE_PACKAGE=}($self, $procedureName, $self->getNameIdMap->{$procedureName}));
 
     #TODO:  add procedure-level properties
 
@@ -101,7 +102,7 @@ sub addAllProcedures
     return 1 unless ($self->getDbKeysInitialized() || !$self->initProcedureKeys());
 
     #make sure we start with a clean list, in the event this routine has already been called:
-    $self->{'mEcProcedures'} = [];
+    $self->{'mEcProcedureList'} = [];
 
     #now add one procedure obj. per retrieved procedure:
     for my $name (sort keys %{$self->getNameIdMap()}) {

@@ -4,7 +4,7 @@ sub loadProject
     my ($self) = @_;
 
     #first load myself the project:
-    printf STDERR "LOADING PROJECT '%s'\n", $self->projectName() if ($DEBUG);
+    printf STDERR "LOADING PROJECT '%s'\n", $self->projectName() if ($DDEBUG);
 
     #then load the procedures:
     $self->ecProcedures->loadProcedures();

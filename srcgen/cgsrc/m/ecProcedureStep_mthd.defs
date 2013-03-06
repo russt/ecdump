@@ -1,10 +1,11 @@
+#see also:  ecProcedureStep.defs
 sub loadProcedureStep
 #load this procedure step.
 {
     my ($self) = @_;
 
     #first load this Procedure Step:
-    printf STDERR "LOADING PROCEDURE STEP\n" if ($DEBUG);
+    printf STDERR "        LOADING PROCEDURE STEP (%s,%s)\n", $self->procedureStepName, $self->procedureStepId,   if ($DDEBUG);
 
     #TODO:  load procedure step properties.
 
@@ -17,7 +18,7 @@ sub dumpProcedureStep
     my ($self) = @_;
 
     #first dump this Procedure Step:
-    printf STDERR "DUMPING PROCEDURE STEP\n" if ($DEBUG);
+    printf STDERR "        DUMPING PROCEDURE STEP (%s,%s)\n", $self->procedureStepName, $self->procedureStepId,   if ($DEBUG);
 
     #TODO:  dump procedure step properties.
 

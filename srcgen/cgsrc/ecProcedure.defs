@@ -44,9 +44,13 @@ Utils	pl_attr_method	$cfg->utils()
 Sqlpj	pl_attr_method	$cfg->sqlpj()
 #project attributes, inherited from impl:
 OutputDirectory	pl_attr_method	$cfg->outputDirectory()
+#local project attributes:
+ProcedureName	pl_attr_method	$procedureName
+ProcedureId	pl_attr_method	$procedureId
 #this is the EC procedure steps object:
 EcProcedureSteps	pl_attr_method	undef
 )
+#see also:  m/ecProcedure_mthd.defs
 %evalmacro ATTRIBUTE_LIST ATTRIBUTE_LIST
 #generate attribute accessors (this creates class_attribute_dcls, getset_methods):
 %include perl/genattr.defs
@@ -54,7 +58,7 @@ EcProcedureSteps	pl_attr_method	undef
 }
 { ## constructor section
 PL_CONSTRUCTOR_BODY := << (
-my ($cfg) = @_;
+my ($cfg, $procedureName, $procedureId) = @_;
 )
 %evalmacro PL_CONSTRUCTOR_BODY PL_CONSTRUCTOR_BODY
 

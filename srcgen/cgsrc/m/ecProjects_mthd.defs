@@ -54,7 +54,7 @@ sub initDbKeys
 
     my $lbuf = "select name,id from ec_project";
 
-    printf STDERR "%s: running sql query to get project keys\n", ::srline() if ($DEBUG);
+    printf STDERR "%s: running sql query to get project keys\n", ::srline() if ($DDEBUG);
 
     if ( !$sqlpj->sql_exec($lbuf) ) {
         printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;

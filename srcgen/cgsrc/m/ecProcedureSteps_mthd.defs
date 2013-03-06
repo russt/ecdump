@@ -1,3 +1,4 @@
+#see also:  ecProcedureSteps.defs
 sub loadProcedureSteps
 #load each EC procedure step from the database
 #return 0 on success.
@@ -5,7 +6,8 @@ sub loadProcedureSteps
     my ($self) = @_;
 
     #first load myself the Procedure Step collection:
-    printf STDERR "LOADING PROCEDURE Steps\n" if ($DEBUG);
+    printf STDERR "      LOADING PROCEDURE Steps\n" if ($DDEBUG);
+    $self->addAllProcedureSteps();
 
     #then load each procedures step:
     for my $proc ($self->ecProcedureStepsList()) {
@@ -22,12 +24,91 @@ sub dumpProcedureSteps
     my ($self) = @_;
 
     #first dump myself the Procedure Step collection:
-    printf STDERR "DUMPING PROCEDURE Steps\n" if ($DEBUG);
+    printf STDERR "      DUMPING PROCEDURE Steps\n" if ($DEBUG);
 
     #then dump each procedures step:
     for my $proc ($self->ecProcedureStepsList()) {
         $proc->dumpProcedureStep();
     }
 
+    return 0;
+}
+
+sub addOneProcedureStep
+#supports list and dump commands.
+#add a single procedureStep to the collection.
+#does not fully populate sub-objects. for that, use loadProcedureSteps();
+#return 0 on success.
+{
+    my ($self, $procedureStepName) = @_;
+
+    #initialize procedureStep keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->initProcedureStepKeys());
+
+    #check that we have a legitimate procedureStep name:
+    if (!defined($self->getNameIdMap->{$procedureStepName})) {
+        printf STDERR "%s:  ERROR:  procedureStep '%s' is not in the database.\n", ::srline(), $procedureStepName;
+        return 1;
+    }
+
+    #no setter, for mEcProcedureStepsList - so use direct ref:
+    push @{$self->{'mEcProcedureStepsList'}}, (new {=_ECPROCEDURESTEP_PACKAGE=}($self, $procedureStepName, $self->getNameIdMap->{$procedureStepName}));
+
+
+    #TODO:  add procedureStep-level properties
+
+    return 0;
+}
+
+sub addAllProcedureSteps
+#add all of the EC procedureSteps to the collection.
+#returns 0 on success
+{
+    my ($self) = @_;
+
+    #initialize procedureStep keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->initProcedureStepKeys());
+
+    #make sure we start with a clean list, in the event this routine has already been called:
+    $self->{'mEcProcedureStepsList'} = [];
+
+    #now add one procedureStep obj. per retrieved procedureStep:
+    for my $name (sort keys %{$self->getNameIdMap()}) {
+        $self->addOneProcedureStep($name);
+    }
+
+    return 0;
+}
+
+sub initProcedureStepKeys
+{
+    my ($self) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    my $lbuf = sprintf("select name,id from ec_procedure_step where procedure_id=%s", $self->procedureId);
+
+    printf STDERR "%s: running sql query to get procedureSteps for procedure (%s,%s)\n", ::srline(), $self->procedureName, $self->procedureId  if ($DDEBUG);
+
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.  we expect an even number of name,id pairs
+    } @{$sqlpj->getQueryResult()};
+
+
+    #map name,id rows into hash:
+    my %nameId = @results;
+    $self->setNameIdMap(\%nameId);
+
+    if ($DDEBUG) {
+        printf STDERR "%s: nameId result=\n", ::srline();
+        $utils->dumpDbKeys(\%nameId);
+    }
+
+    $self->setDbKeysInitialized(1);
     return 0;
 }

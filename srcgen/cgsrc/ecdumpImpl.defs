@@ -13,6 +13,8 @@ PL_PACKAGE_DESCRIPTION = ecdump implementation
 PL_CONSTRUCTOR_NAME = new
 
 PL_EXTERN_PKG_IMPORTS = << (
+require "path.pl";
+require "os.pl";
 require "sqlpj.pl";
 )
 PL_PKG_IMPORTS = << (
@@ -35,6 +37,7 @@ my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
 ####
 ATTRIBUTE_LIST := << (
 #debugging and verbosity levels, inherited from command line (r/w):
+ProgName	pl_attr_method	$cfg->getProgName()
 Debug	pl_getset	$cfg->getDebug()
 DDebug	pl_getset	$cfg->getDDebug()
 Quiet	pl_getset	$cfg->getQuiet()
@@ -51,9 +54,12 @@ DumpAllProjects	pl_attr_method	$cfg->getDumpAllProjects()
 ProjectList	pl_attrlist_method	[$cfg->getProjectList()]
 DoClean	pl_attr_method	$cfg->getDoClean()
 OutputDirectory	pl_attr_method	$cfg->getOutputDirectory()
+#local attributes:
+DbConnectionInitialized	pl_getset	0
 #reference to the EC projects collection, which is our top-level reference to EC:
 EcProjects	pl_attr_method	undef
 )
+#see also:  m/ecdumpImpl_mthd.defs
 #generate attribute accessors (this creates class_attribute_dcls, getset_methods):
 %include perl/genattr.defs
 %call generate_attribute_accessors

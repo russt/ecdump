@@ -35,9 +35,6 @@ my $utils    = new {=_UTILS_PACKAGE=}();
 
 #this will be initialized after configuration is set up:
 my $ecdumpImpl = undef;
-
-#true if we are to remove output directory
-my $DOCLEAN = 0;
 ]
 %evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
 }
@@ -218,21 +215,20 @@ $edmpcfg->setUtils($utils);
 
 {
 { #balance braces
+#note standard flags added at end of loop in template:  -q,-v,-ddebug,-debug
 PL_PARSE_ARGS_LOOP := << [
 } elsif ($flag =~ '^-V') {
     # -V                show version and exit
     printf STDOUT "%s, Version %s, %s.\n",
         $edmpcfg->getProgName(), $edmpcfg->versionNumber(), $edmpcfg->versionDate();
-    $HELPFLAG = 1;    #display version and exit.
+    $HELPFLAG = 1;   #this forces exit.
     return 0;
-} elsif ($flag =~ '^-q') {
-    $QUIET = 1;
 } elsif ($flag =~ '^-list') {
     # -list             List all projects and exit.
     $edmpcfg->setHaveListCommand(1);
 } elsif ($flag =~ '^-clean') {
     # -clean            Remove <dirname> prior to dump.
-    $DOCLEAN = 1;
+    $edmpcfg->setDoClean(1);
 } elsif ($flag =~ '^-dump') {
     # -dump dirname     Dump named projects, output rooted at <dirname>.
     if ($#ARGV+1 > 0 && $ARGV[0] !~ /^-/) {

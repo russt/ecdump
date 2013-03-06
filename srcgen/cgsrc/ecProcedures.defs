@@ -52,6 +52,7 @@ EcProcedureList	pl_attrlist_method	[]
 DbKeysInitialized	pl_getset	0
 NameIdMap	pl_getset	undef
 )
+#see also:  m/ecProcedures_mthd.defs
 %evalmacro ATTRIBUTE_LIST ATTRIBUTE_LIST
 #generate attribute accessors (this creates class_attribute_dcls, getset_methods):
 %include perl/genattr.defs

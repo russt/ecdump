@@ -1,3 +1,4 @@
+#note:  object defs in ecProcedure.defs
 sub loadProcedure
 #load this EC procedure from the database.
 #return 0 on success.
@@ -5,7 +6,7 @@ sub loadProcedure
     my ($self) = @_;
 
     #first load this procedure:
-    printf STDERR "LOADING PROCEDURE\n" if ($DEBUG);
+    printf STDERR "    LOADING PROCEDURE (%s,%s)\n", $self->procedureName, $self->procedureId  if ($DDEBUG);
 
     #then load procedure steps:
     $self->ecProcedureSteps->loadProcedureSteps();
@@ -20,7 +21,7 @@ sub dumpProcedure
     my ($self) = @_;
 
     #first dump myself this procedure:
-    printf STDERR "DUMPING PROCEDURE\n" if ($DEBUG);
+    printf STDERR "    DUMPING PROCEDURE (%s,%s)\n", $self->procedureName, $self->procedureId  if ($DEBUG);
 
     #then dump procedure steps:
     $self->ecProcedureSteps->dumpProcedureSteps();

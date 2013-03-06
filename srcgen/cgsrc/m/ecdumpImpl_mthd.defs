@@ -1,27 +1,37 @@
+#see also:  ecdumpImpl.defs
 sub execEcdump
 #execute the ec dump command.
 #by the time we get here, all arguments are parsed, checked, and stored in my config() object,
 #the database connectivity is checked, and we are ready to run.
 #returns 0 on success, non-zero othewise.
 {
+
     my ($self) = @_;
-    my ($sqlpj) = $self->sqlpj();
 
     if (!$self->haveListCommand() && !$self->haveDumpCommand()) {
-        printf STDERR "%s:  nothing to do - please specify a list or dump command.\n", ::srline();
+        printf STDERR "%s:  nothing to do - please specify a list or dump command.\n", $self->progName();
         return 0;
     }
 
-    ##########
-    #otherwise, initialize the database connection and execute the command:
-    ##########
+    if ($self->doClean()) {
+        if ($self->cleanOutputDir() != 0) {
+            printf STDERR "%s: ERROR: clean output directory step failed. ABORT\n", $self->progName();
+            return 1;
+        }
+    }
 
-    #tell sqlpj to always make results available via getQueryResult() instead of displaying on stdout:
-    $sqlpj->setOutputToList(1);
-
-    if (!$sqlpj->sql_init_connection()) {
-        printf STDERR "%s:  cannot get a database connection:  ABORT\n", ::srline();
+    #now create output directory:
+    if ($self->createOutputDir() != 0) {
+        printf STDERR "%s: ERROR: create output directory step failed. ABORT\n", $self->progName();
         return 1;
+    }
+
+    #initialize db connection if yet not done:
+    if (!$self->getDbConnectionInitialized()) {
+        if ($self->initDbConnection() != 0) {
+            printf STDERR "%s: ERROR: cannot get a database connection. ABORT\n", $self->progName();
+            return 1;
+        }
     }
 
     #cache handle for EcProjects object:
@@ -38,7 +48,7 @@ sub execEcdump
     }
 
     if ($nerrs) {
-        printf STDERR "%s:  encounterd %d ERROR%s while adding projects - ABORT\n", ::srline(), $nerrs, ($nerrs == 1 ? '' : 'S');
+        printf STDERR "%s:  encounterd %d ERROR%s while adding projects. ABORT\n", $self->progName(), $nerrs, ($nerrs == 1 ? '' : 'S');
         return 1;
     }
 
@@ -55,23 +65,9 @@ sub processDumpCommand
 {
     my ($self) = @_;
 
-    my $ecprojects = $self->ecProjects();
-
     printf STDERR "Running DUMP COMMAND...\n" if $DEBUG;
 
-    if ($self->doClean()) {
-        if ($self->cleanOutputDir() != 0) {
-            printf STDERR "%s: ERROR: clean output directory step failed, aborting dump.\n", ::srline();
-            return 1;
-        }
-    }
-
-    #now create output directory:
-    if ($self->createOutputDir() != 0) {
-        printf STDERR "%s: ERROR: create output directory step failed, aborting dump.\n", ::srline();
-        return 1;
-    }
-
+    my $ecprojects = $self->ecProjects();
     #tell ecProjects to load data:
     if ($ecprojects->loadProjects() != 0) {
         printf STDERR "%s: ERROR: load data step failed, aborting dump.\n", ::srline();
@@ -90,16 +86,48 @@ sub processListCommand
 
     #tell ecProjects to list itself:
     return $ecprojects->listProjectNames();
+}
 
+sub initDbConnection
+#initialize the database connection and execute the command.
+{
+    my ($self) = @_;
+    my $sqlpj = $self->sqlpj();
+
+    if (!$sqlpj->sql_init_connection()) {
+        printf STDERR "%s: ERROR:  failed to get a database connection.\n", ::srline();
+        return 1;
+    }
+
+    #tell sqlpj to always make results available via getQueryResult() instead of displaying on stdout:
+    $sqlpj->setOutputToList(1);
+
+    $self->setDbConnectionInitialized(1);
+    return 0;
 }
 
 sub cleanOutputDir
 #remove the output directory.  return 0 if successful.
 {
     my ($self) = @_;
-    my $theDir = $self->outputDirectory();
+    my $outroot = $self->outputDirectory();
 
-    printf STDERR "Cleaning output dir '%s'...\n", $theDir if $DEBUG;
+    printf STDERR "Cleaning output dir '%s'...\n", $outroot if $DEBUG;
+
+    if (-d $outroot) {
+        os::rm_recursive($outroot);
+        if (-d $outroot) {
+            printf STDERR "%s:  ERROR: can't remove output dir, '%s'\n", ::srline, $outroot;
+            return 1;
+        }
+    } elsif (-e $outroot) {
+        #plain file or symlink, use less firepower:
+        os::rmFile($outroot);
+        if (-e $outroot) {
+            printf STDERR "%s:  ERROR: can't remove '%s'\n", ::srline, $outroot;
+            return 1;
+        }
+    }
 
     return 0;
 }
@@ -112,5 +140,11 @@ sub createOutputDir
 
     printf STDERR "Creating output dir '%s'...\n", $theDir if $DEBUG;
 
+    os::createdir($theDir, 0775) if (! -d $theDir);
+    if (!-d $theDir) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline, $theDir, $!;
+        return 1;
+    }
     return 0;
 }
+
