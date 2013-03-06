@@ -5,7 +5,7 @@ sub loadProcedure
     my ($self) = @_;
 
     #first load this procedure:
-    printf "LOADING PROCEDURE\n" if ($DEBUG);
+    printf STDERR "LOADING PROCEDURE\n" if ($DEBUG);
 
     #then load procedure steps:
     $self->ecProcedureSteps->loadProcedureSteps();
@@ -20,7 +20,7 @@ sub dumpProcedure
     my ($self) = @_;
 
     #first dump myself this procedure:
-    printf "DUMPING PROCEDURE\n" if ($DEBUG);
+    printf STDERR "DUMPING PROCEDURE\n" if ($DEBUG);
 
     #then dump procedure steps:
     $self->ecProcedureSteps->dumpProcedureSteps();

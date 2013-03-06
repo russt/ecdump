@@ -3,7 +3,7 @@ sub loadProp
 {
     my ($self) = @_;
 
-    printf "LOADING EC PROPERTY\n" if ($DEBUG);
+    printf STDERR "LOADING EC PROPERTY\n" if ($DEBUG);
 
     return 0;
 }
@@ -13,7 +13,7 @@ sub dumpProp
 {
     my ($self) = @_;
 
-    printf "DUMPING EC PROPERTY\n" if ($DEBUG);
+    printf STDERR "DUMPING EC PROPERTY\n" if ($DEBUG);
 
     return 0;
 }

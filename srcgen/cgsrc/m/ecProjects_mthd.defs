@@ -54,7 +54,7 @@ sub initDbKeys
 
     my $lbuf = "select name,id from ec_project";
 
-    printf "%s: running sql query to get project keys\n", ::srline() if ($DEBUG);
+    printf STDERR "%s: running sql query to get project keys\n", ::srline() if ($DEBUG);
 
     if ( !$sqlpj->sql_exec($lbuf) ) {
         printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
@@ -71,7 +71,10 @@ sub initDbKeys
     my %nameId = @results;
     $self->setNameIdMap(\%nameId);
 
-    printf "%s: nameId result=%s\n", ::srline(), $utils->dumpDbKeys(\%nameId) if ($DDEBUG);
+    if ($DDEBUG) {
+        printf STDERR "%s: nameId result=\n", ::srline();
+        $utils->dumpDbKeys(\%nameId);
+    }
 
     $self->setDbKeysInitialized(1);
     return 0;
@@ -83,7 +86,7 @@ sub listProjectNames
     my ($self) = @_;
 
     for my $pj ($self->ecProjects()) {
-        printf "%s\n", $pj->projectName();
+        printf STDERR "%s\n", $pj->projectName();
     }
 }
 

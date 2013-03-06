@@ -24,7 +24,7 @@ use $_ECPROCEDURESTEPS_PACKAGE;
 
 PL_PKG_ATTRIBUTES := << (
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
 )
 %evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
 
@@ -38,6 +38,8 @@ Debug	pl_getset	$cfg->getDebug()
 DDebug	pl_getset	$cfg->getDDebug()
 Quiet	pl_getset	$cfg->getQuiet()
 Verbose	pl_getset	$cfg->getVerbose()
+#utils class:
+Utils	pl_attr_method	$cfg->utils()
 #sqlpj interface (r/o):
 Sqlpj	pl_attr_method	$cfg->sqlpj()
 #project attributes, inherited from impl:
@@ -78,6 +80,7 @@ $DEBUG   = $self->getDebug();
 $DDEBUG  = $self->getDDebug();
 $QUIET   = $self->getQuiet();
 $VERBOSE = $self->getVerbose();
+$utils = $self->utils();
 )
 
 { ## class methods

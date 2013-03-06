@@ -24,7 +24,7 @@ use $_ECPROCEDURE_PACKAGE;
 
 PL_PKG_ATTRIBUTES := << (
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
 )
 %evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
 
@@ -34,17 +34,23 @@ my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
 ####
 ATTRIBUTE_LIST := << (
 #debugging and verbosity levels, inherited from parent (r/w):
-Debug	pl_getset	$cfg->getDebug()
-DDebug	pl_getset	$cfg->getDDebug()
-Quiet	pl_getset	$cfg->getQuiet()
-Verbose	pl_getset	$cfg->getVerbose()
+Debug	pl_getset	$proj->getDebug()
+DDebug	pl_getset	$proj->getDDebug()
+Quiet	pl_getset	$proj->getQuiet()
+Verbose	pl_getset	$proj->getVerbose()
+#utils class:
+Utils	pl_attr_method	$proj->utils()
 #sqlpj interface (r/o):
-Sqlpj	pl_attr_method	$cfg->sqlpj()
+Sqlpj	pl_attr_method	$proj->sqlpj()
 #project attributes, inherited from impl:
-OutputDirectory	pl_attr_method	$cfg->outputDirectory()
+OutputDirectory	pl_attr_method	$proj->outputDirectory()
 #local project attributes:
+ProjectName	pl_attr_method	$proj->projectName()
+ProjectId	pl_attr_method	$proj->projectId()
 #this is my list of ecProcedure objects:
 EcProcedureList	pl_attrlist_method	[]
+DbKeysInitialized	pl_getset	0
+NameIdMap	pl_getset	undef
 )
 %evalmacro ATTRIBUTE_LIST ATTRIBUTE_LIST
 #generate attribute accessors (this creates class_attribute_dcls, getset_methods):
@@ -53,7 +59,7 @@ EcProcedureList	pl_attrlist_method	[]
 }
 { ## constructor section
 PL_CONSTRUCTOR_BODY := << (
-my ($cfg) = @_;
+my ($proj) = @_;
 )
 %evalmacro PL_CONSTRUCTOR_BODY PL_CONSTRUCTOR_BODY
 
@@ -76,6 +82,7 @@ $DEBUG   = $self->getDebug();
 $DDEBUG  = $self->getDDebug();
 $QUIET   = $self->getQuiet();
 $VERBOSE = $self->getVerbose();
+$utils = $self->utils();
 )
 
 { ## class methods

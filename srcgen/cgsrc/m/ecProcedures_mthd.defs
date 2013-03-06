@@ -5,7 +5,8 @@ sub loadProcedures
     my ($self) = @_;
 
     #first load myself the Procedure collection:
-    printf "LOADING PROCEDURES\n" if ($DEBUG);
+    printf STDERR "LOADING PROCEDURES\n" if ($DEBUG);
+    $self->addAllProcedures();
 
     #then load each procedures:
     for my $proc ($self->ecProcedureList()) {
@@ -22,11 +23,89 @@ sub dumpProcedures
     my ($self) = @_;
 
     #first dump myself the Procedure collection:
-    printf "DUMPING PROCEDURES\n" if ($DEBUG);
+    printf STDERR "DUMPING PROCEDURES\n" if ($DEBUG);
 
     #then dump each procedures:
     for my $proc ($self->ecProcedureList()) {
         $proc->dumpProcedure();
+    }
+
+    return 0;
+}
+
+sub initProcedureKeys
+{
+    my ($self) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    my $lbuf = sprintf("select name,id from ec_procedure where project_id=%d", $self->projectId);
+
+    printf STDERR "%s: running sql query to get procedures for project (%s,%d)\n", ::srline(), $self->projectName, $self->projectId  if ($DEBUG);
+
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.  we expect an even number of name,id pairs
+    } @{$sqlpj->getQueryResult()};
+
+
+    #map name,id rows into hash:
+    my %nameId = @results;
+    $self->setNameIdMap(\%nameId);
+
+    if ($DDEBUG) {
+        printf STDERR "%s: nameId result=\n", ::srline();
+        $utils->dumpDbKeys(\%nameId);
+    }
+
+    $self->setDbKeysInitialized(1);
+    return 0;
+}
+
+sub addOneProcedure
+#supports list and dump commands.
+#add a single procedure to the collection.
+#does not fully populate sub-objects. for that, use loadProcedures();
+#return 0 on success.
+{
+    my ($self, $procedureName) = @_;
+
+    #initialize procedure keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->initProcedureKeys());
+
+    #check that we have a legitimate procedure name:
+    if (!defined($self->getNameIdMap->{$procedureName})) {
+        printf STDERR "%s:  ERROR:  procedure '%s' is not in the database.\n", ::srline(), $procedureName;
+        return 1;
+    }
+
+    #no setter, for mEcProcedures - so use direct ref:
+    push @{$self->{'mEcProcedures'}}, (new {=_ECPROCEDURE_PACKAGE=}($self, $procedureName, $self->getNameIdMap->{$procedureName}));
+
+    #TODO:  add procedure-level properties
+
+    return 0;
+}
+
+sub addAllProcedures
+#add all of the EC procedures to the collection.
+#returns 0 on success
+{
+    my ($self) = @_;
+
+    #initialize procedure keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->initProcedureKeys());
+
+    #make sure we start with a clean list, in the event this routine has already been called:
+    $self->{'mEcProcedures'} = [];
+
+    #now add one procedure obj. per retrieved procedure:
+    for my $name (sort keys %{$self->getNameIdMap()}) {
+        $self->addOneProcedure($name);
     }
 
     return 0;

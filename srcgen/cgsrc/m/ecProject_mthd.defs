@@ -4,7 +4,7 @@ sub loadProject
     my ($self) = @_;
 
     #first load myself the project:
-    printf "LOADING PROJECT '%s'\n", $self->projectName() if ($DEBUG);
+    printf STDERR "LOADING PROJECT '%s'\n", $self->projectName() if ($DEBUG);
 
     #then load the procedures:
     $self->ecProcedures->loadProcedures();
@@ -16,7 +16,7 @@ sub dumpProject
     my ($self) = @_;
 
     #first dump myself the project:
-    printf "DUMPING PROJECT '%s'\n", $self->projectName() if ($DEBUG);
+    printf STDERR "DUMPING PROJECT '%s'\n", $self->projectName() if ($DEBUG);
 
     #then dump the procedures:
     $self->ecProcedures->dumpProcedures();
