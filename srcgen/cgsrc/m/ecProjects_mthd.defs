@@ -87,7 +87,7 @@ sub listProjectNames
     my ($self) = @_;
 
     for my $pj ($self->ecProjects()) {
-        printf STDERR "%s\n", $pj->projectName();
+        printf "%s\n", $pj->projectName();
     }
 }
 

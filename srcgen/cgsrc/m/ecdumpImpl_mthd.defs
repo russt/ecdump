@@ -13,17 +13,20 @@ sub execEcdump
         return 0;
     }
 
-    if ($self->doClean()) {
-        if ($self->cleanOutputDir() != 0) {
-            printf STDERR "%s: ERROR: clean output directory step failed. ABORT\n", $self->progName();
+    #output directory is defined only if we are dumping:
+    if ($self->haveDumpCommand()) {
+        if ($self->doClean()) {
+            if ($self->cleanOutputDir() != 0) {
+                printf STDERR "%s: ERROR: clean output directory step failed. ABORT\n", $self->progName();
+                return 1;
+            }
+        }
+
+        #now create output directory:
+        if ($self->createOutputDir() != 0) {
+            printf STDERR "%s: ERROR: create output directory step failed. ABORT\n", $self->progName();
             return 1;
         }
-    }
-
-    #now create output directory:
-    if ($self->createOutputDir() != 0) {
-        printf STDERR "%s: ERROR: create output directory step failed. ABORT\n", $self->progName();
-        return 1;
     }
 
     #initialize db connection if yet not done:

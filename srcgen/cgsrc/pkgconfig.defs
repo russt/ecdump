@@ -47,7 +47,7 @@ JdbcPropsFileName	pl_getset	undef
 SqlpjConfig	pl_getset	undef
 SqlpjImpl	pl_getset	undef
 ProjectList	pl_getsetlist	undef
-OutputDirectory	pl_getset	undef
+OutputDirectory	pl_getset	'<NULL>'
 DoClean	pl_getset	0
 HaveProjects	pl_getset	0
 DumpAllProjects	pl_getset	0

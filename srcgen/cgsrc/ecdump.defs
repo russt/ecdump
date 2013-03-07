@@ -11,6 +11,7 @@ PL_PACKAGE_DESCRIPTION = Main driver for ecdump - a tool to dump the Electric Co
 PL_EXTERN_PKG_IMPORTS = << [
 use Config;
 require "sqlpj.pl";
+require "os.pl";
 ]
 
 #local packages:
@@ -35,6 +36,9 @@ my $utils    = new {=_UTILS_PACKAGE=}();
 
 #this will be initialized after configuration is set up:
 my $ecdumpImpl = undef;
+
+#file containing list of projects:
+my $PJLIST = undef;
 ]
 %evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
 }
@@ -166,9 +170,11 @@ OPTIONS
   -ddebug           Display deep debug messages.
   -quiet            Display severe errors only.
 
-  -dump dirname     Dump named projects, output rooted at <dirname>.
-  -clean            Remove <dirname> prior to dump.
   -list             List all projects and exit.
+
+  -dump dirname     Dump any named projects, output rooted at <dirname>.
+  -P file           Dump only the projects listed in <file>.
+  -clean            Remove <dirname> prior to dump.
 
                     ===============
                     JDBC PROPERTIES
@@ -238,6 +244,14 @@ PL_PARSE_ARGS_LOOP := << [
         printf STDERR "%s:  -dump requires directory name.\n", $p;
         return 1;
     }
+} elsif ($flag =~ '^-P') {
+    # -P file - get the list of projects to dump from <file>
+    if ($#ARGV+1 > 0 && $ARGV[0] !~ /^-/) {
+        $PJLIST = shift @ARGV;
+    } else {
+        printf STDERR "%s:  -P requires file containing list of projects to dump.\n", $p;
+        return 1;
+    }
 } elsif ($flag =~ '^-user') {
     # -user name        Username used for connection
     if ($#ARGV+1 > 0 && $ARGV[0] !~ /^-/) {
@@ -301,9 +315,34 @@ $edmpcfg->setVerbose($VERBOSE);
 #eliminate empty args (this happens on some platforms):
 @ARGV = grep(!/^$/, @ARGV);
 
+#if we have a file containing list of projects, process that first:
+my @plist = ();
+
+if ($PJLIST) {
+    if (!-r $PJLIST) {
+        printf STDERR "%s:  cannot read project list from '%s'\n", $p, $PJLIST;
+        return 1;
+    }
+
+    #othewise, see if we can open it:
+    my $tmp = "";
+    if (os::read_file2str(\$tmp, $PJLIST) != 0) {
+        printf STDERR "%s:  cannot read project list from '%s'\n", $p, $PJLIST;
+        return 1;
+    }
+
+    @plist = split(/[\r\n]/, $tmp);
+
+    #eliminate empty or commented lines:
+    @plist = grep(!/^\s*$/, @plist);    #empty or blank lines
+    @plist = grep(!/^\s*#/, @plist);    #comments
+}
+
 #do we have a list of projects?
-if ($#ARGV >= 0) {
-    $edmpcfg->setProjectList(@ARGV);
+push @plist, @ARGV if ($#ARGV >= 0);
+
+if ($#plist >= 0) {
+    $edmpcfg->setProjectList(@plist);
     $edmpcfg->setHaveProjects(1);
     $edmpcfg->setDumpAllProjects(0);
 }
