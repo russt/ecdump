@@ -1,3 +1,4 @@
+#see also: ecProject.defs
 sub loadProject
 #load each project from the database
 {
@@ -6,18 +7,21 @@ sub loadProject
     #first load myself the project:
     printf STDERR "LOADING PROJECT '%s'\n", $self->projectName() if ($DDEBUG);
 
-    #then load the procedures:
+    #load my properties:
+    $self->ecProps->loadProps();
+
+    #then load my procedures:
     $self->ecProcedures->loadProcedures();
 }
 
 sub dumpProject
 #dump each project to the dump tree.
 {
-    my ($self) = @_;
+    my ($self, $indent) = @_;
     my $outroot = $self->rootDir();
 
     #first dump myself the project:
-    printf STDERR "DUMPING PROJECT '%s' -> %s\n", $self->projectName(), $outroot if ($VERBOSE);
+    printf STDERR "%sDUMPING PROJECT '%s' -> %s\n", ' 'x$indent, $self->projectName(), $outroot if ($VERBOSE);
 
     os::createdir($outroot, 0775) unless (-d $outroot);
     if (!-d $outroot) {
@@ -25,6 +29,9 @@ sub dumpProject
         return 1;
     }
 
+    #dump my properties:
+    $self->ecProps->dumpProps($indent+2);
+
     #then dump the procedures:
-    return $self->ecProcedures->dumpProcedures();
+    return $self->ecProcedures->dumpProcedures($indent+2);
 }

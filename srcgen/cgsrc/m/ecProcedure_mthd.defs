@@ -1,4 +1,4 @@
-#note:  object defs in ecProcedure.defs
+#see also:  ecProcedure.defs
 sub loadProcedure
 #load this EC procedure from the database.
 #return 0 on success.
@@ -18,11 +18,11 @@ sub dumpProcedure
 #dump this EC procedure to the dump tree.
 #return 0 on success.
 {
-    my ($self) = @_;
+    my ($self, $indent) = @_;
     my $outroot = $self->rootDir();
 
     #first dump myself this procedure:
-    printf STDERR "    DUMPING PROCEDURE (%s,%s) -> %s\n", $self->procedureName, $self->procedureId, $outroot  if ($VERBOSE);
+    printf STDERR "%sDUMPING PROCEDURE (%s,%s) -> %s\n", ' 'x$indent, $self->procedureName, $self->procedureId, $outroot  if ($VERBOSE);
 
     os::createdir($outroot, 0775) unless (-d $outroot);
     if (!-d $outroot) {
@@ -31,5 +31,5 @@ sub dumpProcedure
     }
 
     #then dump procedure steps:
-    return $self->ecProcedureSteps->dumpProcedureSteps();
+    return $self->ecProcedureSteps->dumpProcedureSteps($indent+2);
 }

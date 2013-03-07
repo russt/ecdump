@@ -5,7 +5,7 @@ sub loadProcedureStep
     my ($self) = @_;
 
     #first load this Procedure Step:
-    printf STDERR "        LOADING PROCEDURE STEP (%s,%s)\n", $self->procedureStepName, $self->procedureStepId,   if ($DDEBUG);
+    printf STDERR "LOADING PROCEDURE STEP (%s,%s)\n", $self->procedureStepName, $self->procedureStepId,   if ($DDEBUG);
 
     #TODO:  load procedure step properties.
 
@@ -15,11 +15,11 @@ sub loadProcedureStep
 sub dumpProcedureStep
 #dump this procedure step.
 {
-    my ($self) = @_;
+    my ($self, $indent) = @_;
     my $outroot = $self->rootDir();
 
     #first dump this Procedure Step:
-    printf STDERR "        DUMPING PROCEDURE STEP (%s,%s) -> %s\n", $self->procedureStepName, $self->procedureStepId, $outroot   if ($VERBOSE);
+    printf STDERR "%sDUMPING PROCEDURE STEP (%s,%s) -> %s\n", ' 'x$indent, $self->procedureStepName, $self->procedureStepId, $outroot   if ($VERBOSE);
 
     os::createdir($outroot, 0775) unless (-d $outroot);
     if (!-d $outroot) {

@@ -78,7 +78,7 @@ sub processDumpCommand
     }
 
     #tell ecProjects to dump data into output root:
-    return $ecprojects->dumpProjects();
+    return $ecprojects->dumpProjects(0);
 }
 
 sub processListCommand
@@ -115,7 +115,7 @@ sub cleanOutputDir
     my ($self) = @_;
     my $outroot = $self->rootDir();
 
-    printf STDERR "Cleaning output dir '%s'...\n", $outroot if $VERBOSE;
+    printf STDERR "Deleting output dir '%s'...\n", $outroot if $VERBOSE;
 
     if (-d $outroot) {
         os::rm_recursive($outroot);

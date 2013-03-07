@@ -14,8 +14,11 @@ PL_CONSTRUCTOR_NAME = new
 
 {
 PL_EXTERN_PKG_IMPORTS = << (
+require "path.pl";
+require "os.pl";
 )
 PL_PKG_IMPORTS = << (
+use $_ECPROP_PACKAGE;
 )
 %if    $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS
 %ifnot $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS$PL_PKG_IMPORTS
@@ -32,13 +35,24 @@ my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
 #templates are: (r/w) pl_getset, pl_getsetlist; (r/o) pl_attr_method, pl_attrlist_method
 ####
 ATTRIBUTE_LIST := << (
-Debug	pl_getset	0
-DDebug	pl_getset	0
-Quiet	pl_getset	0
-Verbose	pl_getset	0
+#debugging and verbosity levels, inherited from parent (r/w):
+Debug	pl_getset	$parent->getDebug()
+DDebug	pl_getset	$parent->getDDebug()
+Quiet	pl_getset	$parent->getQuiet()
+Verbose	pl_getset	$parent->getVerbose()
 #utils class:
-Utils	pl_attr_method	$cfg->utils()
+Utils	pl_attr_method	$parent->utils()
+#sqlpj interface (r/o):
+Sqlpj	pl_attr_method	$parent->sqlpj()
+#local project attributes:
+RootDir	pl_attr_method	undef
+ParentPropertySheetId	pl_attr_method	$parent->propertySheetId()
+DbKeysInitialized	pl_getset	0
+NameIdMap	pl_getset	undef
+#this is my list of EC properties objects:
+EcPropsList	pl_attrlist_method	[]
 )
+#see also:  m/ecProps_mthd.defs
 %evalmacro ATTRIBUTE_LIST ATTRIBUTE_LIST
 #generate attribute accessors (this creates class_attribute_dcls, getset_methods):
 %include perl/genattr.defs
@@ -46,6 +60,7 @@ Utils	pl_attr_method	$cfg->utils()
 }
 { ## constructor section
 PL_CONSTRUCTOR_BODY := << (
+my ($parent) = @_;
 )
 %evalmacro PL_CONSTRUCTOR_BODY PL_CONSTRUCTOR_BODY
 
@@ -59,6 +74,9 @@ PL_POST_ATTRIBUTE_INIT := << (
 
 #cache initial debugging and vebosity values in local package variables:
 $self->update_static_class_attributes();
+
+#set output root for the properties (this will be in parent dir):
+$self->{'mRootDir'} = path::mkpathname($parent->rootDir(), $utils->ec2scm("properties"));
 )
 %evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }

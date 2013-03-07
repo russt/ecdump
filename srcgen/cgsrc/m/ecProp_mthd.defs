@@ -1,9 +1,10 @@
+#see also ecProp.defs
 sub loadProp
 #load this property.
 {
     my ($self) = @_;
 
-    printf STDERR "LOADING EC PROPERTY\n" if ($DEBUG);
+    printf STDERR "LOADING EC PROPERTY (%s,%s)\n", $self->propertyName(), $self->propertyId() if ($DDEBUG);
 
     return 0;
 }
@@ -11,9 +12,19 @@ sub loadProp
 sub dumpProp
 #dump this property.
 {
-    my ($self) = @_;
+    my ($self, $indent) = @_;
+    my $outroot = $self->rootDir();
 
-    printf STDERR "DUMPING EC PROPERTY\n" if ($DEBUG);
+    printf STDERR "%sDUMPING EC PROPERTY (%s,%s) -> %s\n", ' 'x$indent, $self->propertyName(), $self->propertyId(), $outroot if ($VERBOSE);
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline, $outroot, $!;
+        return 1;
+    }
+
+    #this is where it gets interesting - we need to walk down the property tree and dump each property
+    #into some file name, perhaps keyed by the crc of the property content
 
     return 0;
 }

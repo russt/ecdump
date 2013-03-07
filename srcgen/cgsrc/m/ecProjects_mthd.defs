@@ -1,4 +1,66 @@
 #see also:  ecProjects.defs
+sub loadProjects
+#load each project from the database
+{
+    my ($self) = @_;
+
+    $self->loadEcTopLevel();
+
+    for my $pj ($self->ecProjects()) {
+        $pj->loadProject();
+    }
+
+    return 0;
+}
+
+sub dumpProjects
+#dump each project to the dump tree.
+{
+    my ($self, $indent) = @_;
+    my $outroot = $self->rootDir();
+
+    $self->dumpEcTopLevel();
+
+    printf STDERR "%sDUMPING PROJECTS -> %s\n", ' 'x$indent, $outroot if ($VERBOSE);
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline, $outroot, $!;
+        return 1;
+    }
+
+    my $errs = 0;
+    for my $pj ($self->ecProjects()) {
+        $errs += $pj->dumpProject($indent+2);
+    }
+
+    return $errs;
+}
+
+sub listProjectNames
+#display the current list of project names
+{
+    my ($self) = @_;
+
+    for my $pj ($self->ecProjects()) {
+        printf "%s\n", $pj->projectName();
+    }
+}
+
+sub loadEcTopLevel
+#load top-level EC metadata
+{
+    #TBD.
+    return 0;
+}
+
+sub dumpEcTopLevel
+#dump top-level EC metadata
+{
+    #TBD.
+    return 0;
+}
+
 sub addOneProject
 #supports list and dump commands.
 #can be called from outside (to process a list of user-supplied projects).
@@ -18,7 +80,8 @@ sub addOneProject
     }
 
     #no setter, for mEcProjects - so use direct ref:
-    push @{$self->{'mEcProjects'}}, (new {=_ECPROJECT_PACKAGE=}($self, $projectName, $self->getNameIdMap->{$projectName}));
+    push @{$self->{'mEcProjects'}},
+        (new {=_ECPROJECT_PACKAGE=}($self, $projectName, $self->getNameIdMap->{$projectName}, $self->getNamePropIdMap->{$projectName}));
 
     #TODO:  add project-level properties
 
@@ -53,7 +116,7 @@ sub initDbKeys
     my ($self) = @_;
     my ($sqlpj) = $self->sqlpj();
 
-    my $lbuf = "select name,id from ec_project";
+    my $lbuf = "select name,id,property_sheet_id from ec_project";
 
     printf STDERR "%s: running sql query to get project keys\n", ::srline() if ($DDEBUG);
 
@@ -64,81 +127,28 @@ sub initDbKeys
 
     #o'wise, stash results (query returns a ref to a list of list refs):
     my @results = map {
-        @{$_};    #dereference each row.  we expect an even number of name,id pairs
+        @{$_};    #dereference each row.  we expect (name,id,propId) triples.
     } @{$sqlpj->getQueryResult()};
 
 
-    #map name,id rows into hash:
-    my %nameId = @results;
+    #map (name,id,propert_sheet_id) triples into nameId and namePropId hashes:
+    my (%nameId, %namePropId);
+    for (my $ii=0; $ii < $#results; $ii += 3) {
+        $nameId{$results[$ii]} = $results[$ii+1];
+        $namePropId{$results[$ii]} = $results[$ii+2];
+    }
+    
     $self->setNameIdMap(\%nameId);
+    $self->setNamePropIdMap(\%namePropId);
 
     if ($DDEBUG) {
         printf STDERR "%s: nameId result=\n", ::srline();
         $utils->dumpDbKeys(\%nameId);
+
+        printf STDERR "%s: namePropId result=\n", ::srline();
+        $utils->dumpDbKeys(\%namePropId);
     }
 
     $self->setDbKeysInitialized(1);
     return 0;
-}
-
-sub listProjectNames
-#display the current list of project names
-{
-    my ($self) = @_;
-
-    for my $pj ($self->ecProjects()) {
-        printf "%s\n", $pj->projectName();
-    }
-}
-
-sub loadEcTopLevel
-#load top-level EC metadata
-{
-    #TBD.
-    return 0;
-}
-
-sub dumpEcTopLevel
-#dump top-level EC metadata
-{
-    #TBD.
-    return 0;
-}
-
-sub loadProjects
-#load each project from the database
-{
-    my ($self) = @_;
-
-    $self->loadEcTopLevel();
-
-    for my $pj ($self->ecProjects()) {
-        $pj->loadProject();
-    }
-
-    return 0;
-}
-
-sub dumpProjects
-#dump each project to the dump tree.
-{
-    my ($self) = @_;
-    my $outroot = $self->rootDir();
-
-    $self->dumpEcTopLevel();
-
-    printf STDERR "DUMPING PROJECTS -> %s\n", $outroot if ($VERBOSE);
-
-    os::createdir($outroot, 0775) unless (-d $outroot);
-    if (!-d $outroot) {
-        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline, $outroot, $!;
-        return 1;
-    }
-
-    my $errs = 0;
-    for my $pj ($self->ecProjects()) {
-        $errs += $pj->dumpProject();
-    }
-
-    return $errs;
 }

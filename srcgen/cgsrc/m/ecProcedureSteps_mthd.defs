@@ -21,11 +21,11 @@ sub dumpProcedureSteps
 #dump each EC procedure step to the dump tree.
 #return 0 on success.
 {
-    my ($self) = @_;
+    my ($self, $indent) = @_;
     my $outroot = $self->rootDir();
 
     #first dump myself the Procedure Step collection:
-    printf STDERR "      DUMPING PROCEDURE Steps -> %s\n", $outroot if ($VERBOSE);
+    printf STDERR "%sDUMPING PROCEDURE Steps -> %s\n", ' 'x$indent, $outroot if ($VERBOSE);
 
     os::createdir($outroot, 0775) unless (-d $outroot);
     if (!-d $outroot) {
@@ -36,7 +36,7 @@ sub dumpProcedureSteps
     #then dump each procedures step:
     my $errs = 0;
     for my $proc ($self->ecProcedureStepsList()) {
-        $errs += $proc->dumpProcedureStep();
+        $errs += $proc->dumpProcedureStep($indent+2);
     }
 
     return $errs;
