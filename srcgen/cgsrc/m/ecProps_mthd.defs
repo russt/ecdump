@@ -93,9 +93,16 @@ sub initPropKeys
     my ($self) = @_;
     my ($sqlpj) = $self->sqlpj();
 
-    my $lbuf = sprintf("select name,id from ec_property where parent_sheet_id=%s", $self->parentPropertySheetId);
+    #result hash:
+    my %nameId = ();
+    $self->setNameIdMap(\%nameId);
 
-    printf STDERR "%s: running sql query to get properties for parent (%s,%s)\n", ::srline(), $self->propertyParentName, $self->parentPropertySheetId  if ($DDEBUG);
+    #okay if no property sheet is null, I guess...
+    return 0 unless ($self->parentPropertySheetId());
+
+    my $lbuf = sprintf("select name,id from ec_property where parent_sheet_id=%s", $self->parentPropertySheetId());
+
+    printf STDERR "%s: running sql query to get properties for parent (%s,%s)\n", ::srline(), $self->rootDir(), $self->parentPropertySheetId  if ($DDEBUG);
 
     if ( !$sqlpj->sql_exec($lbuf) ) {
         printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
@@ -109,10 +116,9 @@ sub initPropKeys
 
 
     #map name,id rows into hash:
-    my %nameId = @results;
-    $self->setNameIdMap(\%nameId);
+    %nameId = @results;
 
-    if ($DEBUG) {
+    if ($DDEBUG) {
         printf STDERR "%s: nameId result=\n", ::srline();
         $utils->dumpDbKeys(\%nameId);
     }

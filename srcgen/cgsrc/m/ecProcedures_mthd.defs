@@ -47,7 +47,7 @@ sub initProcedureKeys
     my ($self) = @_;
     my ($sqlpj) = $self->sqlpj();
 
-    my $lbuf = sprintf("select name,id from ec_procedure where project_id=%d", $self->projectId);
+    my $lbuf = sprintf("select name,id,property_sheet_id from ec_procedure where project_id=%d", $self->projectId);
 
     printf STDERR "%s: running sql query to get procedures for project (%s,%d)\n", ::srline(), $self->projectName, $self->projectId  if ($DDEBUG);
 
@@ -61,14 +61,22 @@ sub initProcedureKeys
         @{$_};    #dereference each row.  we expect an even number of name,id pairs
     } @{$sqlpj->getQueryResult()};
 
-
-    #map name,id rows into hash:
-    my %nameId = @results;
+    #map (name,id,propert_sheet_id) triples into nameId and namePropId hashes:
+    my (%nameId, %namePropId);
+    for (my $ii=0; $ii < $#results; $ii += 3) {
+        $nameId{$results[$ii]} = $results[$ii+1];
+        $namePropId{$results[$ii]} = $results[$ii+2];
+    }
+    
     $self->setNameIdMap(\%nameId);
+    $self->setNamePropIdMap(\%namePropId);
 
     if ($DDEBUG) {
         printf STDERR "%s: nameId result=\n", ::srline();
         $utils->dumpDbKeys(\%nameId);
+
+        printf STDERR "%s: namePropId result=\n", ::srline();
+        $utils->dumpDbKeys(\%namePropId);
     }
 
     $self->setDbKeysInitialized(1);
@@ -93,7 +101,8 @@ sub addOneProcedure
     }
 
     #no setter, for mEcProcedureList - so use direct ref:
-    push @{$self->{'mEcProcedureList'}}, (new {=_ECPROCEDURE_PACKAGE=}($self, $procedureName, $self->getNameIdMap->{$procedureName}));
+    push @{$self->{'mEcProcedureList'}},
+        (new {=_ECPROCEDURE_PACKAGE=}($self, $procedureName, $self->getNameIdMap->{$procedureName}, $self->getNamePropIdMap->{$procedureName}));
 
     #TODO:  add procedure-level properties
 

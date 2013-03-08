@@ -7,7 +7,8 @@ sub loadProcedureStep
     #first load this Procedure Step:
     printf STDERR "LOADING PROCEDURE STEP (%s,%s)\n", $self->procedureStepName, $self->procedureStepId,   if ($DDEBUG);
 
-    #TODO:  load procedure step properties.
+    #load my properties:
+    $self->ecProps->loadProps();
 
     return 0;
 }
@@ -27,7 +28,8 @@ sub dumpProcedureStep
         return 1;
     }
 
-    #TODO:  dump procedure step properties.
+    #dump my properties:
+    $self->ecProps->dumpProps($indent+2);
 
     return 0;
 }

@@ -18,6 +18,7 @@ require "path.pl";
 require "os.pl";
 )
 PL_PKG_IMPORTS = << (
+use $_ECPROPS_PACKAGE;
 )
 %if    $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS
 %ifnot $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS$PL_PKG_IMPORTS
@@ -47,6 +48,9 @@ Sqlpj	pl_attr_method	$cfg->sqlpj()
 RootDir	pl_attr_method	undef
 ProcedureStepName	pl_attr_method	$procedureStepName
 ProcedureStepId	pl_attr_method	$procedureStepId
+#this is the EC properties object:
+PropertySheetId	pl_attr_method	$propertySheetId
+EcProps	pl_attr_method	undef
 )
 #see also: m/ecProcedureStep_mthd.defs
 %evalmacro ATTRIBUTE_LIST ATTRIBUTE_LIST
@@ -56,7 +60,7 @@ ProcedureStepId	pl_attr_method	$procedureStepId
 }
 { ## constructor section
 PL_CONSTRUCTOR_BODY := << (
-my ($cfg, $procedureStepName, $procedureStepId) = @_;
+my ($cfg, $procedureStepName, $procedureStepId, $propertySheetId) = @_;
 )
 %evalmacro PL_CONSTRUCTOR_BODY PL_CONSTRUCTOR_BODY
 
@@ -67,12 +71,14 @@ PL_OBJ_ATTRIBUTES := << (
 
 #this is for further initialzation of attributes, since hash init cannot be self-referential:
 PL_POST_ATTRIBUTE_INIT := << (
-
 #cache initial debugging and vebosity values in local package variables:
 $self->update_static_class_attributes();
 
 #set output root for this procedure step:
 $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), $utils->ec2scm($procedureStepName));
+
+#create properties container object, which will contain the list of our properties:
+$self->{'mEcProps'} = new {=_ECPROPS_PACKAGE=}($self);
 )
 %evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }

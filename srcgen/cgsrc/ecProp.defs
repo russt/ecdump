@@ -65,7 +65,6 @@ PL_OBJ_ATTRIBUTES := << (
 
 #this is for further initialzation of attributes, since hash init cannot be self-referential:
 PL_POST_ATTRIBUTE_INIT := << (
-
 #cache initial debugging and vebosity values in local package variables:
 $self->update_static_class_attributes();
 

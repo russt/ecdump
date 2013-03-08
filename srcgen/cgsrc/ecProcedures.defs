@@ -52,6 +52,7 @@ ProjectId	pl_attr_method	$proj->projectId()
 EcProcedureList	pl_attrlist_method	[]
 DbKeysInitialized	pl_getset	0
 NameIdMap	pl_getset	undef
+NamePropIdMap	pl_getset	undef
 )
 #see also:  m/ecProcedures_mthd.defs
 %evalmacro ATTRIBUTE_LIST ATTRIBUTE_LIST
@@ -72,7 +73,6 @@ PL_OBJ_ATTRIBUTES := << (
 
 #this is for further initialzation of attributes, since hash init cannot be self-referential:
 PL_POST_ATTRIBUTE_INIT := << (
-
 #cache initial debugging and vebosity values in local package variables:
 $self->update_static_class_attributes();
 

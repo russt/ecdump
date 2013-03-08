@@ -77,6 +77,9 @@ sub ec2scm
 {
     my ($self, $name) = @_;
 
+    #convert blanks?
+    #$name =~ s/\s/_/g;
+
     return $name;
 }
 

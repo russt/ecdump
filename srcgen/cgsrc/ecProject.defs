@@ -49,10 +49,10 @@ Sqlpj	pl_attr_method	$cfg->sqlpj()
 RootDir	pl_attr_method	undef
 ProjectName	pl_attr_method	$projectName
 ProjectId	pl_attr_method	$projectId
-PropertySheetId	pl_attr_method	$propertySheetId
 #this is the EC procedures object:
 EcProcedures	pl_attr_method	undef
 #this is the EC properties object:
+PropertySheetId	pl_attr_method	$propertySheetId
 EcProps	pl_attr_method	undef
 )
 #see also:  m/ecProject_mthd.defs
@@ -74,7 +74,6 @@ PL_OBJ_ATTRIBUTES := << (
 
 #this is for further initialzation of attributes, since hash init cannot be self-referential:
 PL_POST_ATTRIBUTE_INIT := << (
-
 #cache initial debugging and vebosity values in local package variables:
 $self->update_static_class_attributes();
 
