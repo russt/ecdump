@@ -195,7 +195,7 @@ sub fetchDescription
 
     if ($descClobId ne '') {
         my $clobtxt = '';
-        if ($self->getClobText(\$clobtxt, $descClobId) != 0) {
+        if ($self->fetchClobText(\$clobtxt, $descClobId) != 0) {
             printf STDERR "%s:  ERROR:  failed to fetch description clob='%s' for %s[%s]\n", ::srline(), $descClobId, $table, $id;
             return 1;
         }
@@ -207,7 +207,7 @@ sub fetchDescription
     return 0;
 }
 
-sub getClobText
+sub fetchClobText
 {
     my ($self, $txtref, $id) = @_;
     my ($sqlpj) = $self->sqlpj();

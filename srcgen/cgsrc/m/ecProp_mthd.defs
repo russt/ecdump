@@ -11,6 +11,12 @@ sub loadProp
 
     $self->fetchProperyContent($self->propertyId);
 
+    #if we have kid properties...
+    if (defined($self->getKidPropObj())) {
+        #recursive call:
+        $self->getKidPropObj->loadProp();
+    }
+
     return 0;
 }
 
@@ -34,6 +40,61 @@ sub dumpProp
 
     #this is where it gets interesting - we need to walk down the property tree and dump each property
     #into some file name, perhaps keyed by the crc of the property content
+
+    return 0;
+}
+
+sub dumpPropertyContent
+#write the property content to a file called content.
+#return 0 if successful
+{
+    my ($self) = @_;
+    my $txt = $self->getPropertyContent();
+
+    #don't create empty files:
+    return if ($txt eq '');
+
+    my $outroot = $self->rootDir();
+
+    #fix eol:
+    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
+
+    return os::write_str2file(\$txt, path::mkpathname($outroot, "content"));
+}
+
+sub addKidProp
+#add kid prop object
+#returns 0 if successful.
+{
+    my ($self, $parentSheetId) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    #this query should return only one row:
+    my $lbuf = sprintf("select name,id from ec_property where parent_sheet_id=%d", $parentSheetId);
+
+    printf STDERR "%s: running sql query to get name from ID\n", ::srline() if ($DDEBUG);
+
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.  we expect one row containing the (name,id) pair
+    } @{$sqlpj->getQueryResult()};
+
+    if ( $#results+1 != 2 ) {
+        printf STDERR "%s:  ERROR:  query '%s' returned wrong number of results (%d).\n", ::srline(), $lbuf, $#results+1;
+        return 1;
+    }
+
+    #save results:
+    my ($name,$id) = @results;
+
+    #now allocate kid prop and link to parent:
+    my $kid = new {=_ECPROP_PACKAGE=}($self, $name, $id);
+    $self->setKidPropObj($kid);
 
     return 0;
 }
@@ -83,7 +144,7 @@ sub fetchProperyContent
 
     if ($clob_id ne '') {
         my $clobtxt = '';
-        if ($self->getClobText(\$clobtxt, $clob_id) != 0) {
+        if ($self->fetchClobText(\$clobtxt, $clob_id) != 0) {
             printf STDERR "%s:  ERROR:  failed to fetch property clob='%s' for %s[%s]\n", ::srline(), $clob_id, "ec_property", $id;
             return 1;
         }
@@ -94,23 +155,15 @@ sub fetchProperyContent
         $self->setPropertyContent($numeric_value);
     }
 
+    #now add kid prop if we have one:
+    if ($property_type eq "Sheet" && $property_sheet_id ne '') {
+        if ($self->addKidProp($property_sheet_id) != 0) {
+            printf STDERR "%s:  ERROR:  failed to add child property for (%s,%s)->%s\n", ::srline(), $self->propertyName, $self->propertyId, $property_sheet_id;
+            return 1;
+        }
+
+        #othewise addKidProp set us up - successful.
+    }
+
     return 0;
-}
-
-sub dumpPropertyContent
-#write the property content to a file called content.
-#return 0 if successful
-{
-    my ($self) = @_;
-    my $txt = $self->getPropertyContent();
-
-    #don't create empty files:
-    return if ($txt eq '');
-
-    my $outroot = $self->rootDir();
-
-    #fix eol:
-    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
-
-    return os::write_str2file(\$txt, path::mkpathname($outroot, "content"));
 }
