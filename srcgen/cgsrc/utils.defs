@@ -74,11 +74,12 @@ PL_PKG_METHODS := << (
 
 sub ec2scm
 #map EC entity names to legal scm filenames.
+#TODO:  decide on translation map, perhaps map unwanted chars to UTF-8?
 {
     my ($self, $name) = @_;
 
-    #convert blanks?
-    #$name =~ s/\s/_/g;
+    #delete quotes and backslashes until I can think of a better idea.  RT 3/8/13
+    $name =~ tr/\'\"\\//d;
 
     return $name;
 }

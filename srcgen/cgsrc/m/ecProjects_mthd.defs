@@ -152,3 +152,110 @@ sub initDbKeys
     $self->setDbKeysInitialized(1);
     return 0;
 }
+
+sub fetchDescription
+#pull the description for table <table>
+#caller must have a setDescription(string) method.
+#return 0 if successful
+{
+    my ($self, $table, $id) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    #this is a result:
+    $self->setDescription('');
+
+    #this query should return only one row:
+    my $lbuf = sprintf("select description, description_clob_id from %s where id=%d", $table, $id) ;
+
+    printf STDERR "%s: running sql query to get description field\n", ::srline() if ($DDEBUG);
+
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.  we expect one row with (description,description_clob_id) pair
+    } @{$sqlpj->getQueryResult()};
+
+    if ( $#results+1 != 2 ) {
+        printf STDERR "%s:  ERROR:  query '%s' returned wrong number of results (%d).\n", ::srline(), $lbuf, $#results+1;
+        return 1;
+    }
+
+    my ($descStr, $descClobId) = ($results[0], $results[1]);
+
+    $descStr    = '' unless (defined($descStr));
+    $descClobId = '' unless (defined($descClobId));
+
+    printf STDERR "%s: (descStr,descClobId)=(%s,%s)\n", ::srline(), $descStr, $descClobId if ($DDEBUG);
+
+    #Note:  if we have a string and a clob, we prefer the clob, which is the full content
+
+    if ($descClobId ne '') {
+        my $clobtxt = '';
+        if ($self->getClobText(\$clobtxt, $descClobId) != 0) {
+            printf STDERR "%s:  ERROR:  failed to fetch description clob='%s' for %s[%s]\n", ::srline(), $descClobId, $table, $id;
+            return 1;
+        }
+        $self->setDescription($clobtxt);
+    } elsif ($descStr ne '') {
+        $self->setDescription($descStr);
+    }
+
+    return 0;
+}
+
+sub getClobText
+{
+    my ($self, $txtref, $id) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    #this is a result:
+    $$txtref = '';
+
+    #this query should return only one row:
+    my $lbuf = sprintf("select clob from ec_clob where id=%d", $id);
+
+    printf STDERR "%s: running sql query to get clob\n", ::srline() if ($DDEBUG);
+
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.  we expect one row containing the clob
+    } @{$sqlpj->getQueryResult()};
+
+    if ( $#results+1 != 1 ) {
+        printf STDERR "%s:  ERROR:  query '%s' returned wrong number of results (%d).\n", ::srline(), $lbuf, $#results+1;
+        return 1;
+    }
+
+    #otherwise we found the clob, set the result:
+    $$txtref = $results[0];
+
+    return 0;
+}
+
+sub dumpDescription
+#write the description out.
+#caller must have a getDescription(), rootDir  methods.
+#return 0 if successful
+{
+    my ($self) = @_;
+    my $txt = $self->getDescription();
+
+    #don't create empty files:
+    return if ($txt eq '');
+
+    my $outroot = $self->rootDir();
+
+    #fix eol:
+    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
+
+    return os::write_str2file(\$txt, path::mkpathname($outroot, "description"));
+}

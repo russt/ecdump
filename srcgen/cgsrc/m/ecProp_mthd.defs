@@ -1,10 +1,15 @@
-#see also ecProp.defs
+#see also:  ecProp.defs
 sub loadProp
 #load this property.
 {
     my ($self) = @_;
 
     printf STDERR "LOADING EC PROPERTY (%s,%s)\n", $self->propertyName(), $self->propertyId() if ($DDEBUG);
+
+    #get my description (method defined in ecProjects):
+    $self->fetchDescription('ec_property', $self->propertyId);
+
+    $self->fetchProperyContent($self->propertyId);
 
     return 0;
 }
@@ -23,8 +28,89 @@ sub dumpProp
         return 1;
     }
 
+    #write my description out:
+    $self->dumpDescription();
+    $self->dumpPropertyContent();
+
     #this is where it gets interesting - we need to walk down the property tree and dump each property
     #into some file name, perhaps keyed by the crc of the property content
 
     return 0;
+}
+
+sub fetchProperyContent
+#fetch the property content for a given property id.
+#caller must have a setPropertyContent(string) method.
+#return 0 if successful
+{
+    my ($self, $id) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    #this is a result:
+    $self->setPropertyContent('');
+
+    #this query should return only one row:
+    my $lbuf = sprintf("select property_type,string,numeric_value,clob_id,property_sheet_id from ec_property where id=%d", $id) ;
+
+    printf STDERR "%s: running sql query to get property content fields\n", ::srline() if ($DDEBUG);
+
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.  we expect one row with (property_type,string,numeric_value,clob_id,property_sheet_id)
+    } @{$sqlpj->getQueryResult()};
+
+    if ( $#results+1 != 5 ) {
+        printf STDERR "%s:  ERROR:  query '%s' returned wrong number of results (%d).\n", ::srline(), $lbuf, $#results+1;
+        return 1;
+    }
+
+    #map undefined values:
+    @results = map {
+        defined($_) ? $_ : '';
+    } @results;
+
+    my ($property_type, $string, $numeric_value, $clob_id, $property_sheet_id) = @results;
+
+#   printf STDERR "%s: (property_type,string,numeric_value,clob_id,property_sheet_id)=(%s)\n", ::srline(), join(',', @results) if ($DDEBUG);
+    printf STDERR "%s: (property_type,string,numeric_value,clob_id,property_sheet_id)=(%s)\n", ::srline(), join(',', @results);
+
+    #Note:  if we have a string and a clob, we prefer the clob, which is the full content
+
+    if ($clob_id ne '') {
+        my $clobtxt = '';
+        if ($self->getClobText(\$clobtxt, $clob_id) != 0) {
+            printf STDERR "%s:  ERROR:  failed to fetch property clob='%s' for %s[%s]\n", ::srline(), $clob_id, "ec_property", $id;
+            return 1;
+        }
+        $self->setPropertyContent($clobtxt);
+    } elsif ($string ne '') {
+        $self->setPropertyContent($string);
+    } elsif ($numeric_value ne '') {
+        $self->setPropertyContent($numeric_value);
+    }
+
+    return 0;
+}
+
+sub dumpPropertyContent
+#write the property content to a file called content.
+#return 0 if successful
+{
+    my ($self) = @_;
+    my $txt = $self->getPropertyContent();
+
+    #don't create empty files:
+    return if ($txt eq '');
+
+    my $outroot = $self->rootDir();
+
+    #fix eol:
+    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
+
+    return os::write_str2file(\$txt, path::mkpathname($outroot, "content"));
 }

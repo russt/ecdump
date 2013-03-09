@@ -7,6 +7,9 @@ sub loadProject
     #first load myself the project:
     printf STDERR "LOADING PROJECT '%s'\n", $self->projectName() if ($DDEBUG);
 
+    #get my description (method defined in ecProjects):
+    $self->fetchDescription('ec_project', $self->projectId);
+
     #load my properties:
     $self->ecProps->loadProps();
 
@@ -28,6 +31,9 @@ sub dumpProject
         printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline, $outroot, $!;
         return 1;
     }
+
+    #write my description out:
+    $self->dumpDescription();
 
     #dump my properties:
     $self->ecProps->dumpProps($indent+2);

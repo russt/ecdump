@@ -7,6 +7,9 @@ sub loadProcedureStep
     #first load this Procedure Step:
     printf STDERR "LOADING PROCEDURE STEP (%s,%s)\n", $self->procedureStepName, $self->procedureStepId,   if ($DDEBUG);
 
+    #get my description (method defined in ecProjects):
+    $self->fetchDescription('ec_procedure_step', $self->procedureStepId);
+
     #load my properties:
     $self->ecProps->loadProps();
 
@@ -27,6 +30,9 @@ sub dumpProcedureStep
         printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline, $outroot, $!;
         return 1;
     }
+
+    #write my description out:
+    $self->dumpDescription();
 
     #dump my properties:
     $self->ecProps->dumpProps($indent+2);
