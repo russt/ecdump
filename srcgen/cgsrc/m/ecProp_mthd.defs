@@ -3,18 +3,20 @@ sub loadProp
 #load this property.
 {
     my ($self) = @_;
+    my ($name, $id) = ($self->propertyName(), $self->propertyId());
 
-    printf STDERR "LOADING EC PROPERTY (%s,%s)\n", $self->propertyName(), $self->propertyId() if ($DDEBUG);
+    printf STDERR "LOADING EC PROPERTY (%s,%s)\n", $name, $id if ($DDEBUG);
 
     #get my description (method defined in ecProjects):
-    $self->fetchDescription('ec_property', $self->propertyId);
+    $self->fetchDescription('ec_property', $id);
 
-    $self->fetchProperyContent($self->propertyId);
+    #get my content:
+    $self->fetchProperyContent($name, $id);
 
-    #if we have kid properties...
-    if (defined($self->getKidPropObj())) {
-        #recursive call:
-        $self->getKidPropObj->loadProp();
+    #if we have kid properties (and we are not a EC snapshoot prop)...
+    for my $kidobj ($self->getKidPropList()) {
+        ##### recursive call #####
+        $kidobj->loadProp();
     }
 
     return 0;
@@ -38,8 +40,11 @@ sub dumpProp
     $self->dumpDescription();
     $self->dumpPropertyContent();
 
-    #this is where it gets interesting - we need to walk down the property tree and dump each property
-    #into some file name, perhaps keyed by the crc of the property content
+    #if we have kid properties...
+    for my $kidobj ($self->getKidPropList()) {
+        ##### recursive call #####
+        $kidobj->dumpProp($indent+2);
+    }
 
     return 0;
 }
@@ -64,13 +69,16 @@ sub dumpPropertyContent
 
 sub addKidProp
 #add kid prop object
+#call only if property_sheet_id is non-null.
 #returns 0 if successful.
 {
     my ($self, $parentSheetId) = @_;
     my ($sqlpj) = $self->sqlpj();
 
-    #this query should return only one row:
-    my $lbuf = sprintf("select name,id from ec_property where parent_sheet_id=%d", $parentSheetId);
+    #this query can return thousands of rows if we are following generated properties.
+    #limit the number of properties we retrieve so we can see if it is a candidate for our exception list.  RT 3/10/13
+    my $querylimit = 100;
+    my $lbuf = sprintf("select name,id from ec_property where parent_sheet_id=%d limit %d", $parentSheetId, $querylimit);
 
     printf STDERR "%s: running sql query to get name from ID\n", ::srline() if ($DDEBUG);
 
@@ -81,20 +89,24 @@ sub addKidProp
 
     #o'wise, stash results (query returns a ref to a list of list refs):
     my @results = map {
-        @{$_};    #dereference each row.  we expect one row containing the (name,id) pair
+        @{$_};    #dereference each row.  we expect one or more rows containing (name,id) pairs
     } @{$sqlpj->getQueryResult()};
 
-    if ( $#results+1 != 2 ) {
-        printf STDERR "%s:  ERROR:  query '%s' returned wrong number of results (%d).\n", ::srline(), $lbuf, $#results+1;
+    #if count of results zero or not a multiple of 2 ...
+    my $cnt = $#results+1;
+    if ( ($cnt == 0) || (($cnt) % 2) != 0 ) {
+        printf STDERR "%s:  ERROR:  query '%s' count of results (%d) is zero or not a multiple of 2 (name,id).\n", ::srline(), $lbuf, $cnt;
         return 1;
     }
 
-    #save results:
-    my ($name,$id) = @results;
+    #otherwise, allocate new kid prop for each result:
+    my @kidobjs = ();
+    for (my $ii=0; $ii < $#results; $ii += 2) {
+        push @kidobjs, new {=_ECPROP_PACKAGE=}($self, $results[$ii],$results[$ii+1]);
+    }
 
-    #now allocate kid prop and link to parent:
-    my $kid = new {=_ECPROP_PACKAGE=}($self, $name, $id);
-    $self->setKidPropObj($kid);
+    #add list of kid props to this prop:
+    $self->setKidPropList(@kidobjs); 
 
     return 0;
 }
@@ -104,7 +116,7 @@ sub fetchProperyContent
 #caller must have a setPropertyContent(string) method.
 #return 0 if successful
 {
-    my ($self, $id) = @_;
+    my ($self, $name, $id) = @_;
     my ($sqlpj) = $self->sqlpj();
 
     #this is a result:
@@ -137,8 +149,7 @@ sub fetchProperyContent
 
     my ($property_type, $string, $numeric_value, $clob_id, $property_sheet_id) = @results;
 
-#   printf STDERR "%s: (property_type,string,numeric_value,clob_id,property_sheet_id)=(%s)\n", ::srline(), join(',', @results) if ($DDEBUG);
-    printf STDERR "%s: (property_type,string,numeric_value,clob_id,property_sheet_id)=(%s)\n", ::srline(), join(',', @results);
+    printf STDERR "%s: (property_type,string,numeric_value,clob_id,property_sheet_id)=(%s)\n", ::srline(), join(',', @results) if ($DDEBUG);
 
     #Note:  if we have a string and a clob, we prefer the clob, which is the full content
 
@@ -154,6 +165,16 @@ sub fetchProperyContent
     } elsif ($numeric_value ne '') {
         $self->setPropertyContent($numeric_value);
     }
+
+    #######
+    #ignore kid props for generated properties.
+    #######
+    return 0 if ( $name eq 'ecscm_snapshots'    #ignore EC snapshots props created for each p4 temp client. (>86k)
+        || $name eq 'jobsForReaping'            #ignore reaping jobs (>13k)
+        || $name eq 'buildNumbers'
+        || $name eq 'ec_savedSearches'
+        || $name eq 'buildResults'
+    );
 
     #now add kid prop if we have one:
     if ($property_type eq "Sheet" && $property_sheet_id ne '') {

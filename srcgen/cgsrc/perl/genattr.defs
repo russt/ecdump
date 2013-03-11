@@ -125,18 +125,26 @@ sub set{=PL_ATTRIBUTE_NAME=}
 pl_getsetlist := << [
 
 sub get{=PL_ATTRIBUTE_NAME=}
-#return value of @{=PL_ATTRIBUTE_NAME=}
+#return list @{=PL_ATTRIBUTE_NAME=}
 {
     my ($self) = @_;
     return @{$self->{'m{=PL_ATTRIBUTE_NAME=}'}};
 }
 
 sub set{=PL_ATTRIBUTE_NAME=}
-#set value of {=PL_ATTRIBUTE_NAME=} and return value.
+#set list address of {=PL_ATTRIBUTE_NAME=} and return list.
 {
     my ($self, @value) = @_;
     $self->{'m{=PL_ATTRIBUTE_NAME=}'} = \@value;
-    update_static_class_attributes();
+    $self->update_static_class_attributes();
+    return @{$self->{'m{=PL_ATTRIBUTE_NAME=}'}};
+}
+
+sub push{=PL_ATTRIBUTE_NAME=}
+#push new values on to {=PL_ATTRIBUTE_NAME=} list and return list.
+{
+    my ($self, @values) = @_;
+    push @{$self->{'m{=PL_ATTRIBUTE_NAME=}'}}, @values;
     return @{$self->{'m{=PL_ATTRIBUTE_NAME=}'}};
 }
 

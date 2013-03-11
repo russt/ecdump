@@ -49,7 +49,7 @@ PropertyId	pl_attr_method	$propertyId
 #some properties have children:
 KidPropName	pl_getset	undef
 KidPropSheetId	pl_getset	undef
-KidPropObj	pl_getset	undef
+KidPropList	pl_getsetlist	[]
 #content of the property:
 PropertyContent	pl_getset	''
 #description of the property:
