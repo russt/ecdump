@@ -169,12 +169,10 @@ sub fetchProperyContent
     #######
     #ignore kid props for generated properties.
     #######
-    return 0 if ( $name eq 'ecscm_snapshots'    #ignore EC snapshots props created for each p4 temp client. (>86k)
-        || $name eq 'jobsForReaping'            #ignore reaping jobs (>13k)
-        || $name eq 'buildNumbers'
-        || $name eq 'ec_savedSearches'
-        || $name eq 'buildResults'
-    );
+    if (defined($IgnorePropSheets{$name})) {
+        ++$IgnorePropSheets{$name};
+        return 0;
+    }
 
     #now add kid prop if we have one:
     if ($property_type eq "Sheet" && $property_sheet_id ne '') {

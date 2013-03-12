@@ -25,6 +25,16 @@ PL_PKG_ATTRIBUTES := << (
 #standard debugging attributes:
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
 our @ISA = qw({=_ECPROJECTS_PACKAGE=});
+
+#we do not traverse these property sheets as they are generated and numerous:
+my %IgnorePropSheets = (
+    'buildNumbers'      => 0,
+    'buildResults'      => 0,
+    'ec_savedSearches'  => 0,
+    'ecscm_snapshots'   => 0,
+    'jobsForReaping'    => 0,
+);
+
 )
 %evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
 
