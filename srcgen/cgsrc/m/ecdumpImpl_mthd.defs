@@ -31,6 +31,7 @@ sub execEcdump
 
     #initialize db connection if yet not done:
     if (!$self->getDbConnectionInitialized()) {
+        printf STDERR "Initializing database connection ...\n"  if $VERBOSE;
         if ($self->initDbConnection() != 0) {
             printf STDERR "%s: ERROR: cannot get a database connection. ABORT\n", $self->progName();
             return 1;
@@ -68,17 +69,15 @@ sub processDumpCommand
 {
     my ($self) = @_;
 
-    printf STDERR "DUMPING EC CONTENT -> %s\n", $self->rootDir if $VERBOSE;
-
     my $ecprojects = $self->ecProjects();
-    #tell ecProjects to load data:
-    if ($ecprojects->loadProjects() != 0) {
-        printf STDERR "%s: ERROR: load data step failed, aborting dump.\n", ::srline();
+
+    #tell ecProjects to load and dump projects one at a time:
+    if ($ecprojects->loadDumpProjects(0) != 0) {
+        printf STDERR "%s: ERROR: failed to dump one or more projects!\n", ::srline();
         return 1;
     }
 
-    #tell ecProjects to dump data into output root:
-    return $ecprojects->dumpProjects(0);
+    return 0;
 }
 
 sub processListCommand

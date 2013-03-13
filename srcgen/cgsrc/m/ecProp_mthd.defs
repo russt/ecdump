@@ -11,7 +11,7 @@ sub loadProp
     $self->fetchDescription('ec_property', $id);
 
     #get my content:
-    $self->fetchProperyContent($name, $id);
+    $self->fetchPropertyContent($name, $id);
 
     #if we have kid properties (and we are not a EC snapshoot prop)...
     for my $kidobj ($self->getKidPropList()) {
@@ -28,7 +28,7 @@ sub dumpProp
     my ($self, $indent) = @_;
     my $outroot = $self->rootDir();
 
-    printf STDERR "%sDUMPING EC PROPERTY (%s,%s) -> %s\n", ' 'x$indent, $self->propertyName(), $self->propertyId(), $outroot if ($VERBOSE);
+    printf STDERR "%sDUMPING EC PROPERTY (%s,%s) -> %s\n", ' 'x$indent, $self->propertyName(), $self->propertyId(), $outroot if ($DEBUG);
 
     os::createdir($outroot, 0775) unless (-d $outroot);
     if (!-d $outroot) {
@@ -57,7 +57,7 @@ sub dumpPropertyContent
     my $txt = $self->getPropertyContent();
 
     #don't create empty files:
-    return if ($txt eq '');
+    return 0 if ($txt eq '');
 
     my $outroot = $self->rootDir();
 
@@ -72,7 +72,7 @@ sub addKidProp
 #call only if property_sheet_id is non-null.
 #returns 0 if successful.
 {
-    my ($self, $parentSheetId) = @_;
+    my ($self, $parentSheetId, $parentname, $parentid) = @_;
     my ($sqlpj) = $self->sqlpj();
 
     #this query can return thousands of rows if we are following generated properties.
@@ -92,8 +92,15 @@ sub addKidProp
         @{$_};    #dereference each row.  we expect one or more rows containing (name,id) pairs
     } @{$sqlpj->getQueryResult()};
 
-    #if count of results zero or not a multiple of 2 ...
     my $cnt = $#results+1;
+
+    #no results are okay - just means that there are not commands associated with procedure step.
+    if ( $cnt == 0 ) {
+        printf STDERR "%s:  WARNING:  property sheet '%s'[%s]: expected kids but found none.\n", ::srline(), $parentname, $parentid unless ($QUIET);
+        return 0;
+    }
+
+    #if count of results is not a multiple of 2 ...
     if ( ($cnt == 0) || (($cnt) % 2) != 0 ) {
         printf STDERR "%s:  ERROR:  query '%s' count of results (%d) is zero or not a multiple of 2 (name,id).\n", ::srline(), $lbuf, $cnt;
         return 1;
@@ -111,7 +118,7 @@ sub addKidProp
     return 0;
 }
 
-sub fetchProperyContent
+sub fetchPropertyContent
 #fetch the property content for a given property id.
 #caller must have a setPropertyContent(string) method.
 #return 0 if successful
@@ -176,7 +183,7 @@ sub fetchProperyContent
 
     #now add kid prop if we have one:
     if ($property_type eq "Sheet" && $property_sheet_id ne '') {
-        if ($self->addKidProp($property_sheet_id) != 0) {
+        if ($self->addKidProp($property_sheet_id, $name, $id) != 0) {
             printf STDERR "%s:  ERROR:  failed to add child property for (%s,%s)->%s\n", ::srline(), $self->propertyName, $self->propertyId, $property_sheet_id;
             return 1;
         }

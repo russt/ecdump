@@ -25,7 +25,7 @@ sub dumpProps
     my $outroot = $self->rootDir();
 
     #first dump myself the Property collection:
-    printf STDERR "%sDUMPING PROPERTIES -> %s\n", ' 'x$indent, $outroot if ($VERBOSE);
+    printf STDERR "%sDUMPING PROPERTIES -> %s\n", ' 'x$indent, $outroot if ($DEBUG);
 
     os::createdir($outroot, 0775) unless (-d $outroot);
     if (!-d $outroot) {

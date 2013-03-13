@@ -28,7 +28,7 @@ sub dumpProcedure
     my $outroot = $self->rootDir();
 
     #first dump myself this procedure:
-    printf STDERR "%sDUMPING PROCEDURE (%s,%s) -> %s\n", ' 'x$indent, $self->procedureName, $self->procedureId, $outroot  if ($VERBOSE);
+    printf STDERR "%sDUMPING PROCEDURE (%s,%s) -> %s\n", ' 'x$indent, $self->procedureName, $self->procedureId, $outroot  if ($DEBUG);
 
     os::createdir($outroot, 0775) unless (-d $outroot);
     if (!-d $outroot) {

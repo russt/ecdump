@@ -3,12 +3,27 @@ sub loadProcedureStep
 #load this procedure step.
 {
     my ($self) = @_;
+    my($name, $id) = ($self->procedureStepName(), $self->procedureStepId());
+    my $outroot = $self->getRootDir();
 
     #first load this Procedure Step:
-    printf STDERR "LOADING PROCEDURE STEP (%s,%s)\n", $self->procedureStepName, $self->procedureStepId,   if ($DDEBUG);
+    printf STDERR "LOADING PROCEDURE STEP (%s,%s)\n", $name, $id  if ($DDEBUG);
 
     #get my description (method defined in ecProjects):
-    $self->fetchDescription('ec_procedure_step', $self->procedureStepId);
+    $self->fetchDescription('ec_procedure_step', $id);
+
+    #get my content:
+    $self->fetchProcStepContent($name, $id);
+
+    #this is not valid until the fetch:
+    my $step_index = $self->getProcStepIndex();
+
+    #now we can finally set RootDir:
+    $self->setRootDir(path::mkpathname($outroot, sprintf("%02d_%s", $step_index, $name)));
+
+    #$self->setDDebug(1);
+    printf STDERR "%s: outroot:  '%s'->'%s'\n", ::srline(), $outroot, $self->getRootDir() if ($DDEBUG);
+    #$self->setDDebug(0);
 
     #load my properties:
     $self->ecProps->loadProps();
@@ -18,12 +33,13 @@ sub loadProcedureStep
 
 sub dumpProcedureStep
 #dump this procedure step.
+#return 0 on success
 {
     my ($self, $indent) = @_;
-    my $outroot = $self->rootDir();
+    my $outroot = $self->getRootDir();
 
     #first dump this Procedure Step:
-    printf STDERR "%sDUMPING PROCEDURE STEP (%s,%s) -> %s\n", ' 'x$indent, $self->procedureStepName, $self->procedureStepId, $outroot   if ($VERBOSE);
+    printf STDERR "%sDUMPING PROCEDURE STEP (%s,%s) -> %s\n", ' 'x$indent, $self->procedureStepName, $self->procedureStepId, $outroot   if ($DEBUG);
 
     os::createdir($outroot, 0775) unless (-d $outroot);
     if (!-d $outroot) {
@@ -34,8 +50,157 @@ sub dumpProcedureStep
     #write my description out:
     $self->dumpDescription();
 
+    #write my content out:
+    $self->dumpProcStepContent();
+
     #dump my properties:
     $self->ecProps->dumpProps($indent+2);
+
+    return 0;
+}
+
+sub dumpProcStepContent
+#write the property content to a file called content.
+#return 0 if successful
+{
+    my ($self) = @_;
+    my ($errs) = 0;
+
+    $errs += $self->dumpProcStepCommand();
+    $errs += $self->dumpProcStepPostProcessor();
+    $errs += $self->dumpProcStepSubprocedure();
+
+    return $errs;
+}
+
+sub dumpProcStepSubprocedure
+#write the subprocedure call to a file called subprocedure
+#return 0 if successful
+{
+    my ($self) = @_;
+    my $txt = $self->getProcStepSubprocedure();
+
+    #don't create empty files:
+    return 0 if ($txt eq '');
+
+    my $outroot = $self->getRootDir();
+
+    #fix eol:
+    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
+
+    return os::write_str2file(\$txt, path::mkpathname($outroot, "subprocedure"));
+}
+
+sub dumpProcStepCommand
+#write the proc step command to a file called command
+#return 0 if successful
+{
+    my ($self) = @_;
+    my $txt = $self->getProcStepCommand();
+
+    #don't create empty files:
+    return 0 if ($txt eq '');
+
+    my $outroot = $self->getRootDir();
+
+    #fix eol:
+    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
+
+    return os::write_str2file(\$txt, path::mkpathname($outroot, "command"));
+}
+
+sub dumpProcStepPostProcessor
+#write the proc step command to a file called command
+#return 0 if successful
+{
+    my ($self) = @_;
+    my $txt = $self->getProcStepPostProcessor();
+
+    #don't create empty files:
+    return 0 if ($txt eq '');
+
+    my $outroot = $self->getRootDir();
+
+    #fix eol:
+    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
+
+    return os::write_str2file(\$txt, path::mkpathname($outroot, "postprocessor"));
+}
+
+sub fetchProcStepContent
+#fetch the procedure step content for a given procedure step id.
+#return 0 if successful
+{
+    my ($self, $name, $id) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    #these are results:
+    $self->setProcStepCommand('');
+    $self->setProcStepPostProcessor('');
+
+    # ec_procedure_step partial schema:
+    # (id, name, command, description, resource_name, workspace_name, property_sheet_id, actual_parameters_id,
+    #  command_clob_id, description_clob_id, post_processor_clob_id, procedure_id, step_index, subprocedure)
+
+    #this query should return only one row:
+    my $lbuf = sprintf("select step_index,subprocedure,command_clob_id,post_processor_clob_id,command from ec_procedure_step where id=%d",$id);
+
+    printf STDERR "%s: running sql query to get procedure step content fields\n", ::srline() if ($DDEBUG);
+
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.  we expect one row with (step_index, subprocedure, command_clob_id, post_processor_clob_id, command)
+    } @{$sqlpj->getQueryResult()};
+
+    if ( $#results+1 != 5 ) {
+        printf STDERR "%s:  ERROR:  query '%s' returned wrong number of results (%d).\n", ::srline(), $lbuf, $#results+1;
+        return 1;
+    }
+
+    #map undefined values:
+    @results = map {
+        defined($_) ? $_ : '';
+    } @results;
+
+    my ($step_index, $subprocedure, $command_clob_id, $post_processor_clob_id, $command) = @results;
+
+    #$self->setDDebug(1);
+    printf STDERR "%s: (name, id, step_index, command_clob_id, post_processor_clob_id, command)=(%s)\n", ::srline(), join(',', ($name,$id,@results)) if ($DDEBUG);
+    #$self->setDDebug(0);
+
+    #Note:  if we have a string and a clob, we prefer the clob, which is the full content
+
+    if ($command_clob_id ne '') {
+        my $clobtxt = '';
+        if ($self->fetchClobText(\$clobtxt, $command_clob_id) != 0) {
+            printf STDERR "%s:  ERROR:  failed to fetch command_clob='%s' for %s[%s]\n", ::srline(), $command_clob_id, "ec_procedure step", $id;
+            return 1;
+        }
+        $self->setProcStepCommand($clobtxt);
+    } elsif ($command ne '') {
+        $self->setProcStepCommand($command);
+    }
+
+    #now set postprocessor text if it exists:
+    if ($post_processor_clob_id ne '') {
+        my $clobtxt = '';
+        if ($self->fetchClobText(\$clobtxt, $post_processor_clob_id) != 0) {
+            printf STDERR "%s:  ERROR:  failed to fetch post_processor_clob='%s' for %s[%s]\n", ::srline(), $post_processor_clob_id, "ec_procedure step", $id;
+            return 1;
+        }
+        $self->setProcStepPostProcessor($clobtxt);
+    }
+
+    #set subprocedure:
+    $self->setProcStepSubprocedure($subprocedure);
+
+    #set step index for procedure step:
+    $self->setProcStepIndex($step_index);
 
     return 0;
 }

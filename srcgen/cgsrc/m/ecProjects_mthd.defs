@@ -1,4 +1,34 @@
 #see also:  ecProjects.defs
+sub loadDumpProjects
+#load and dump projects one at a time instead of all at once.
+#this allows us to garbage collect between projects.
+{
+    my ($self, $indent) = @_;
+    my $outroot = $self->rootDir();
+
+    return 1 unless ($self->createOutdir() == 0);
+
+    printf STDERR "%sDUMPING PROJECTS -> %s\n", ' 'x$indent, $outroot if ($VERBOSE);
+
+    $self->loadEcTopLevel();
+    $self->dumpEcTopLevel();
+
+    my $errs = 0;
+    for my $pj ($self->ecProjects()) {
+        if ($pj->loadProject() != 0) {
+            printf STDERR "%s: ERROR:  failed to load project '%s'\n", ::srline(), $pj->projectName;
+            ++$errs;
+        } else {
+            if ($pj->dumpProject($indent+2) != 0) {
+                printf STDERR "%s: ERROR:  failed to dump project '%s'\n", ::srline(), $pj->projectName;
+                ++$errs;
+            }
+        }
+    }
+
+    return $errs;
+}
+
 sub loadProjects
 #load each project from the database
 {
@@ -13,21 +43,31 @@ sub loadProjects
     return 0;
 }
 
+sub createOutdir
+{
+    my ($self) = @_;
+    my $outroot = $self->rootDir();
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
+        return 1;
+    }
+
+    return 0;
+}
+
 sub dumpProjects
 #dump each project to the dump tree.
 {
     my ($self, $indent) = @_;
     my $outroot = $self->rootDir();
 
-    $self->dumpEcTopLevel();
-
     printf STDERR "%sDUMPING PROJECTS -> %s\n", ' 'x$indent, $outroot if ($VERBOSE);
 
-    os::createdir($outroot, 0775) unless (-d $outroot);
-    if (!-d $outroot) {
-        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline, $outroot, $!;
-        return 1;
-    }
+    return 1 unless ($self->createOutdir() != 0);
+
+    $self->dumpEcTopLevel();
 
     my $errs = 0;
     for my $pj ($self->ecProjects()) {

@@ -46,10 +46,15 @@ Utils	pl_attr_method	$cfg->utils()
 #sqlpj interface (r/o):
 Sqlpj	pl_attr_method	$cfg->sqlpj()
 #local project attributes:
-RootDir	pl_attr_method	undef
+#note that we do not set RootDir until we have fetched procedure step contents, which contains a step_index:
+RootDir	pl_getset	$cfg->rootDir()
 ProcedureStepName	pl_attr_method	$procedureStepName
 ProcedureStepId	pl_attr_method	$procedureStepId
-#description of the project:
+ProcStepCommand	pl_getset	''
+ProcStepPostProcessor	pl_getset	''
+ProcStepIndex	pl_getset	-1
+ProcStepSubprocedure	pl_getset	''
+#description of the procedure step:
 Description	pl_getset	''
 #this is the EC properties object:
 PropertySheetId	pl_attr_method	$propertySheetId
@@ -76,9 +81,6 @@ PL_OBJ_ATTRIBUTES := << (
 PL_POST_ATTRIBUTE_INIT := << (
 #cache initial debugging and vebosity values in local package variables:
 $self->update_static_class_attributes();
-
-#set output root for this procedure step:
-$self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), $utils->ec2scm($procedureStepName));
 
 #create properties container object, which will contain the list of our properties:
 $self->{'mEcProps'} = new {=_ECPROPS_PACKAGE=}($self);
