@@ -7,8 +7,8 @@
 ###########
 # note - version is initialized in pkgconfig.defs
 # TODO:  initialize these from:  cvs log -h ecdumpImpl.defs
-VERSION_STR  = 1.0
-VERSION_DATE = 05-Mar-2013
+VERSION_STR  = 0.15
+VERSION_DATE = 12-Mar-2013
 ###########
 
 %pragma trim_multiline_rnewline 1
@@ -38,6 +38,8 @@ JDBC_CLASSLIB = $TOOLROOT/java/ant/lib
 %ifnot $JDBC_CLASSLIB:d  %eecho JDBC_CLASSLIB must be a directory - ABORT
 %ifnot $JDBC_CLASSLIB:d  %halt 2
 
+ECDUMP_PACKAGE      = ecdump
+
 #set the name of final module if we are generating:
 %ifndef GEN_ONE_MODULE	GEN_ONE_MODULE=1
 %if $GEN_ONE_MODULE	ONE_MODULE = $ECDUMP_PACKAGE.pl
@@ -46,7 +48,6 @@ JDBC_CLASSLIB = $TOOLROOT/java/ant/lib
 #ecdump packages:
 #convention:  _<package> is "full perl path" for package.
 #######
-ECDUMP_PACKAGE      = ecdump
 _ECDUMP_PACKAGE     = ${ECDUMP_PACKAGE}
 DEFAULT_PACKAGE      = $_ECDUMP_PACKAGE
 

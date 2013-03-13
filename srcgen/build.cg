@@ -21,7 +21,7 @@
 %include build_setup.defs
 %include cgsrc/ecdump.cg
 
-COPYRIGHT_YEARS  = 2007-2013
+COPYRIGHT_YEARS  = 2013-2013
 COPYRIGHT_HOLDER = Russ Tremain
 %export COPYRIGHT_YEARS
 %export COPYRIGHT_HOLDER

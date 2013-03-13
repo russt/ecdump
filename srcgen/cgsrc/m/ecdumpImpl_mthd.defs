@@ -119,14 +119,14 @@ sub cleanOutputDir
     if (-d $outroot) {
         os::rm_recursive($outroot);
         if (-d $outroot) {
-            printf STDERR "%s:  ERROR: can't remove output dir, '%s'\n", ::srline, $outroot;
+            printf STDERR "%s:  ERROR: can't remove output dir, '%s'\n", ::srline(), $outroot;
             return 1;
         }
     } elsif (-e $outroot) {
         #plain file or symlink, use less firepower:
         os::rmFile($outroot);
         if (-e $outroot) {
-            printf STDERR "%s:  ERROR: can't remove '%s'\n", ::srline, $outroot;
+            printf STDERR "%s:  ERROR: can't remove '%s'\n", ::srline(), $outroot;
             return 1;
         }
     }
@@ -144,7 +144,7 @@ sub createOutputDir
 
     os::createdir($outroot, 0775) if (! -d $outroot);
     if (!-d $outroot) {
-        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline, $outroot, $!;
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
         return 1;
     }
     return 0;

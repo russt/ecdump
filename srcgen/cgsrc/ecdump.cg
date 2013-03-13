@@ -19,13 +19,6 @@ CG_ROOT = $CG_ROOT_BASE
 #####
 
 {
-    #this is the ecdump implementation:
-    PL_PACKAGE = $ECDUMPIMPL_PACKAGE
-    _PL_PACKAGE = $_ECDUMPIMPL_PACKAGE
-    module_defs = ecdumpImpl.defs
-    %call generate_a_module
-}
-{
     #configuration object (for main):
     PL_PACKAGE = $PKGCONFIG_PACKAGE
     _PL_PACKAGE = $_PKGCONFIG_PACKAGE

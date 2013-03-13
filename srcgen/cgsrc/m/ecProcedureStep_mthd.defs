@@ -43,7 +43,7 @@ sub dumpProcedureStep
 
     os::createdir($outroot, 0775) unless (-d $outroot);
     if (!-d $outroot) {
-        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline, $outroot, $!;
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
         return 1;
     }
 
