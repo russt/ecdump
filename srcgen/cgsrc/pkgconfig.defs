@@ -53,6 +53,7 @@ HaveProjects	pl_getset	0
 DumpAllProjects	pl_getset	0
 HaveListCommand	pl_getset	0
 HaveDumpCommand	pl_getset	0
+IgnorePropertiesHash	pl_getset	undef
 )
 %evalmacro ATTRIBUTE_LIST ATTRIBUTE_LIST
 #generate attribute accessors (this creates class_attribute_dcls, getset_methods):

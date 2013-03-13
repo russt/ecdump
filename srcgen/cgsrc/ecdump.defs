@@ -39,6 +39,22 @@ my $ecdumpImpl = undef;
 
 #file containing list of projects:
 my $PJLIST = undef;
+
+#default ignore list for property sheets that we do not traverse.
+#user can override this list via ECDUMP_IGNORES env. var
+my %DefaultIgnorePropSheets = (
+    'buildNumbers'      => 0,
+    'buildResults'      => 0,
+    'ec_savedSearches'  => 0,
+    'ecscm_snapshots'   => 0,
+    'jobsForReaping'    => 0,
+);
+
+#this is just for the usage message:
+my $DefaultIgnorePropSheets = join(';', sort keys %DefaultIgnorePropSheets);
+
+#set up based on environment:
+my %IgnorePropSheets = ();
 ]
 %evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
 }
@@ -124,6 +140,29 @@ sub checkJdbcSettings
     return($errs == 0);
 }
 
+sub parseEcdumpIgnores
+#parse ECDUMP_IGNORE environment variable if it is defined:
+#returns a reference to the ignore hash.
+{
+    if (defined($ENV{'ECDUMP_IGNORES'})) {
+        my @ignores = split(';', $ENV{'ECDUMP_IGNORES'});
+
+        if ($#ignores >= 0) {
+            #set global IgnorePropSheets to contents of ECDUMP_IGNORES:
+            %IgnorePropSheets = map {
+                $_, 0;
+            } @ignores;
+        } else {
+            printf STDERR "%s: WARNING:  ECDUMP_IGNORES defined, but empty - setting default ignores.\n", $p;
+            %IgnorePropSheets = %DefaultIgnorePropSheets;
+        }
+    } else {
+        %IgnorePropSheets = %DefaultIgnorePropSheets;
+    }
+
+    return \%IgnorePropSheets;
+}
+
 sub rec_signal
 # we only want to abort sqlexec in progress, not program.
 {
@@ -193,13 +232,16 @@ OPTIONS
 
 ENVIRONMENT
 
+  ECDUMP_IGNORES    List of EC property sheet names to ignore, delimited by semi-colons.
+  DEFAULT: ECDUMP_IGNORES="$DefaultIgnorePropSheets"
+
   CLASSPATH         Java CLASSPATH, inherited by JDBC.pm
 
   PERL_INLINE_JAVA_EXTRA_JAVA_ARGS
                     Extra args for java vm, e.g. -Xmx1024m to increase memory.
 
 EXAMPLES
-  Initialize JDBC properties and dump EC database to directory `ecbackup'.
+  Initialize JDBC properties and dump EC projects to directory `ecbackup'.
       $pkgname -props ~/.jdbc/lcommander.props ecbackup
 
 SEE ALSO
@@ -311,6 +353,8 @@ $edmpcfg->setDebug($DEBUGFLAG);
 $edmpcfg->setDDebug($DDEBUGFLAG);
 $edmpcfg->setQuiet($QUIET);
 $edmpcfg->setVerbose($VERBOSE);
+
+$edmpcfg->setIgnorePropertiesHash(parseEcdumpIgnores());
 
 #eliminate empty args (this happens on some platforms):
 @ARGV = grep(!/^$/, @ARGV);

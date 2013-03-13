@@ -37,6 +37,7 @@ my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
 ####
 ATTRIBUTE_LIST := << (
 #debugging and verbosity levels, inherited from command line (r/w):
+Config	pl_attr_method	$cfg
 ProgName	pl_attr_method	$cfg->getProgName()
 Debug	pl_getset	$cfg->getDebug()
 DDebug	pl_getset	$cfg->getDDebug()

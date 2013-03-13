@@ -26,15 +26,7 @@ PL_PKG_ATTRIBUTES := << (
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
 our @ISA = qw({=_ECPROJECTS_PACKAGE=});
 
-#we do not traverse these property sheets as they are generated and numerous:
-my %IgnorePropSheets = (
-    'buildNumbers'      => 0,
-    'buildResults'      => 0,
-    'ec_savedSearches'  => 0,
-    'ecscm_snapshots'   => 0,
-    'jobsForReaping'    => 0,
-);
-
+my %IgnorePropSheets = ();
 )
 %evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
 
@@ -43,6 +35,7 @@ my %IgnorePropSheets = (
 #templates are: (r/w) pl_getset, pl_getsetlist; (r/o) pl_attr_method, pl_attrlist_method
 ####
 ATTRIBUTE_LIST := << (
+Config	pl_attr_method	$pprop->config()
 #debugging and verbosity levels, inherited from parent (r/w):
 Debug	pl_getset	$pprop->getDebug()
 DDebug	pl_getset	$pprop->getDDebug()
@@ -89,6 +82,9 @@ $self->update_static_class_attributes();
 
 #set output root for the properties (this will be in parent dir):
 $self->{'mRootDir'} = path::mkpathname($pprop->rootDir(), $utils->ec2scm($propertyName));
+
+#copy IgnorePropSheets from configuraton:
+%IgnorePropSheets = %{$self->config->getIgnorePropertiesHash()};
 )
 %evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }

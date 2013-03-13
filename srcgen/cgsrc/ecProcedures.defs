@@ -36,6 +36,7 @@ our @ISA = qw({=_ECPROJECTS_PACKAGE=});
 #templates are: (r/w) pl_getset, pl_getsetlist; (r/o) pl_attr_method, pl_attrlist_method
 ####
 ATTRIBUTE_LIST := << (
+Config	pl_attr_method	$proj->config()
 #debugging and verbosity levels, inherited from parent (r/w):
 Debug	pl_getset	$proj->getDebug()
 DDebug	pl_getset	$proj->getDDebug()
