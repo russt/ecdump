@@ -15,7 +15,7 @@ sub loadDumpProjects
 
     my $errs = 0;
     for my $pj ($self->ecProjects()) {
-        if ($pj->loadProject() != 0) {
+        if ($pj->loadProject($indent+2) != 0) {
             printf STDERR "%s: ERROR:  failed to load project '%s'\n", ::srline(), $pj->projectName;
             ++$errs;
         } else {
