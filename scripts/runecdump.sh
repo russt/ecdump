@@ -1,21 +1,23 @@
 #!/bin/sh
+#runecdump.sh - wraper to run the daily dump
 
-#wraper to run the daily dump
+p=`basename $0`
+
+#make sure PROJECT dir is in path:
+PATH="${PROJECT}:$PATH"
 
 yymmddhhmm=`date +%y%m%d%H%M`
-
 #echo $yymmddhhmm
 
-ecroot="$PROJECT/$yymmddhhmm"
-logroot="$PROJECT/logs"
-logfile="$logroot/$yymmddhhmm".log
+export ECDUMPROOT LOGROOT
+ECDUMPROOT="$PROJECT/$yymmddhhmm"
+LOGROOT="$PROJECT/logs"
 
-mkdir -p "$logroot"
+logfile="$LOGROOT/$yymmddhhmm".log
 
-echo dumping with ECDUMP_IGNORES=$ECDUMP_IGNORES
+mkdir -p "$LOGROOT"
 echo logfile is $logfile
 
-bldmsg -markbeg ecdump > "$logfile"
-ecdump -clean -verbose -props ~/.jdbc/commander-slave.props -dump "$ecroot" -P "$PROJECT/bnrprojects2.txt" >> "$logfile" 2>&1
-status=$?
-bldmsg -status $status -markend ecdump >> "$logfile"
+##### run the command:
+2>&1 doecdump.sh > "$logfile"
+exit $?
