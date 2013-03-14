@@ -1,0 +1,15 @@
+#
+#minute (0-59),
+#hour (0-23),
+#day of the month (1-31),
+#month of the year (1-12),
+#day of the week (0-6 with 0=Sunday).
+#
+#MIN HRS DAT MON DAY
+#----------------------------------------------------------------------------
+#
+38  10,14,18,23  *   *   *  /Users/rtremain/bin/runinpj ecdump runecdump.sh > /Users/rtremain/Perforce/ecdump/runecdump.out 2>&1
+#
+#testing
+#* * * * * date > /tmp/dateA.out
+#* * * * * /Users/rtremain/bin/runinpj ecdump ecdump -help > /tmp/help.out 2>&1
