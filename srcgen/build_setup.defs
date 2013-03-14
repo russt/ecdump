@@ -7,7 +7,7 @@
 ###########
 # note - version is initialized in pkgconfig.defs
 # TODO:  initialize these from:  cvs log -h ecdumpImpl.defs
-VERSION_STR  = 0.17
+VERSION_STR  = 0.18
 VERSION_DATE = 14-Mar-2013
 ###########
 

@@ -2773,6 +2773,8 @@ my $pkgname = __PACKAGE__;
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
 our @ISA = qw(ecdump::ecProjects);
 
+my %IgnorePropSheets = ();
+
 sub new
 {
     my ($invocant) = @_;
@@ -2808,6 +2810,9 @@ sub new
 
     #set output root for the properties (this will be in parent dir):
     $self->{'mRootDir'} = path::mkpathname($pprop->rootDir(), $utils->ec2scm($propertyName));
+
+    #copy IgnorePropSheets from configuraton:
+    %IgnorePropSheets = %{$self->config->getIgnorePropertiesHash()};
 
     return $self;
 }
@@ -2884,8 +2889,8 @@ sub dumpPropertyContent
     return os::write_str2file(\$txt, path::mkpathname($outroot, "content"));
 }
 
-sub addKidProp
-#add kid prop object
+sub addKidProps
+#add kid prop objects
 #call only if property_sheet_id is non-null.
 #returns 0 if successful.
 {
@@ -2926,7 +2931,13 @@ sub addKidProp
     #otherwise, allocate new kid prop for each result:
     my @kidobjs = ();
     for (my $ii=0; $ii < $#results; $ii += 2) {
-        push @kidobjs, new ecdump::ecProp($self, $results[$ii],$results[$ii+1]);
+        #do not add prop if in the ignore list:
+        my ($name, $id) = ($results[$ii],$results[$ii+1]);
+        if (defined($IgnorePropSheets{$name})) {
+            ++$IgnorePropSheets{$name};
+        } else {
+            push @kidobjs, new ecdump::ecProp($self, $name, $id);
+        }
     }
 
     #add list of kid props to this prop:
@@ -2990,14 +3001,14 @@ sub fetchPropertyContent
         $self->setPropertyContent($numeric_value);
     }
 
-    #now add kid prop if we have one:
+    #now add kid properties for this sheet if we have:
     if ($property_type eq "Sheet" && $property_sheet_id ne '') {
-        if ($self->addKidProp($property_sheet_id, $name, $id) != 0) {
+        if ($self->addKidProps($property_sheet_id, $name, $id) != 0) {
             printf STDERR "%s:  ERROR:  failed to add child property for (%s,%s)->%s\n", ::srline(), $self->propertyName, $self->propertyId, $property_sheet_id;
             return 1;
         }
 
-        #othewise addKidProp set us up - successful.
+        #othewise addKidProps set us up - successful.
     }
 
     return 0;
@@ -3746,7 +3757,7 @@ sub new
     my $self = bless {
         'mProgName' => undef,
         'mPathSeparator' => undef,
-        'mVersionNumber' => "0.17",
+        'mVersionNumber' => "0.18",
         'mVersionDate' => "14-Mar-2013",
         'mUtils' => undef,
         'mDebug' => 0,
