@@ -19,5 +19,5 @@ mkdir -p "$LOGROOT"
 echo logfile is $logfile
 
 ##### run the command:
-2>&1 doecdump.sh > "$logfile"
+doecdump.sh > "$logfile" 2>&1 
 exit $?
