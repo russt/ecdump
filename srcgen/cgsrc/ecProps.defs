@@ -28,6 +28,8 @@ PL_PKG_ATTRIBUTES := << (
 #standard debugging attributes:
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
 our @ISA = qw({=_ECPROJECTS_PACKAGE=});
+
+my %IgnorePropSheets = ();
 )
 %evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
 
@@ -78,6 +80,9 @@ $self->update_static_class_attributes();
 
 #set output root for the properties (this will be in parent dir):
 $self->{'mRootDir'} = path::mkpathname($parent->rootDir(), $utils->ec2scm("properties"));
+
+#copy IgnorePropSheets from configuraton:
+%IgnorePropSheets = %{$self->config->getIgnorePropertiesHash()};
 )
 %evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }

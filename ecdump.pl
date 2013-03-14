@@ -772,6 +772,8 @@ sub loadDumpProjects
                 ++$errs;
             }
         }
+        #garbage collect the project since we are now done with it:
+        $self->freeProject($pj, $indent+2);
     }
 
     return $errs;
@@ -1046,6 +1048,27 @@ sub dumpDescription
     $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
 
     return os::write_str2file(\$txt, path::mkpathname($outroot, "description"));
+}
+
+sub freeProject
+#free a project from our project list, which is the only ref to the project object
+#return 0 if successful
+{
+    my ($self, $pj, $indent) = @_;
+    my @pjs = ($self->ecProjects());
+
+    for (my $ii=0; $ii <= $#pjs; $ii++) {
+        if ( defined($pjs[$ii]) && $pjs[$ii] == $pj ) {
+            #kill the reference:
+            undef ${$self->{'mEcProjects'}}[$ii];
+            printf STDERR "%sFREED PROJECT '%s'\n", ' 'x$indent, $pj->projectName if ($VERBOSE);
+            return 0;
+        }
+    }
+
+    #didn't find it:
+    printf STDERR "%s:  WARNING:  could not free project %s\n", ::srline(), $pj->projectName;
+    return 1;
 }
 
 sub config
@@ -2750,8 +2773,6 @@ my $pkgname = __PACKAGE__;
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
 our @ISA = qw(ecdump::ecProjects);
 
-my %IgnorePropSheets = ();
-
 sub new
 {
     my ($invocant) = @_;
@@ -2788,9 +2809,6 @@ sub new
     #set output root for the properties (this will be in parent dir):
     $self->{'mRootDir'} = path::mkpathname($pprop->rootDir(), $utils->ec2scm($propertyName));
 
-    #copy IgnorePropSheets from configuraton:
-    %IgnorePropSheets = %{$self->config->getIgnorePropertiesHash()};
-
     return $self;
 }
 
@@ -2824,9 +2842,10 @@ sub dumpProp
 #dump this property.
 {
     my ($self, $indent) = @_;
+    my ($name, $id) = ($self->propertyName(), $self->propertyId());
     my $outroot = $self->rootDir();
 
-    printf STDERR "%sDUMPING EC PROPERTY (%s,%s) -> %s\n", ' 'x$indent, $self->propertyName(), $self->propertyId(), $outroot if ($DEBUG);
+    printf STDERR "%sDUMPING EC PROPERTY (%s,%s) -> %s\n", ' 'x$indent, $name, $id, $outroot if ($DEBUG);
 
     os::createdir($outroot, 0775) unless (-d $outroot);
     if (!-d $outroot) {
@@ -2969,14 +2988,6 @@ sub fetchPropertyContent
         $self->setPropertyContent($string);
     } elsif ($numeric_value ne '') {
         $self->setPropertyContent($numeric_value);
-    }
-
-    #######
-    #ignore kid props for generated properties.
-    #######
-    if (defined($IgnorePropSheets{$name})) {
-        ++$IgnorePropSheets{$name};
-        return 0;
     }
 
     #now add kid prop if we have one:
@@ -3220,6 +3231,8 @@ require "os.pl";
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
 our @ISA = qw(ecdump::ecProjects);
 
+my %IgnorePropSheets = ();
+
 sub new
 {
     my ($invocant) = @_;
@@ -3252,6 +3265,9 @@ sub new
 
     #set output root for the properties (this will be in parent dir):
     $self->{'mRootDir'} = path::mkpathname($parent->rootDir(), $utils->ec2scm("properties"));
+
+    #copy IgnorePropSheets from configuraton:
+    %IgnorePropSheets = %{$self->config->getIgnorePropertiesHash()};
 
     return $self;
 }
@@ -3342,7 +3358,11 @@ sub addAllProps
 
     #now add one property obj. per retrieved property:
     for my $name (sort keys %{$self->getNameIdMap()}) {
-        $self->addOneProp($name);
+        if (defined($IgnorePropSheets{$name})) {
+            ++$IgnorePropSheets{$name};
+        } else {
+            $self->addOneProp($name);
+        }
     }
 
     return 0;
@@ -3726,8 +3746,8 @@ sub new
     my $self = bless {
         'mProgName' => undef,
         'mPathSeparator' => undef,
-        'mVersionNumber' => "0.16",
-        'mVersionDate' => "13-Mar-2013",
+        'mVersionNumber' => "0.17",
+        'mVersionDate' => "14-Mar-2013",
         'mUtils' => undef,
         'mDebug' => 0,
         'mDDebug' => 0,

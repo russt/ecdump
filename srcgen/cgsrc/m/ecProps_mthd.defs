@@ -82,7 +82,11 @@ sub addAllProps
 
     #now add one property obj. per retrieved property:
     for my $name (sort keys %{$self->getNameIdMap()}) {
-        $self->addOneProp($name);
+        if (defined($IgnorePropSheets{$name})) {
+            ++$IgnorePropSheets{$name};
+        } else {
+            $self->addOneProp($name);
+        }
     }
 
     return 0;

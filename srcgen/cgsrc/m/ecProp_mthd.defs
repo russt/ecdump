@@ -26,9 +26,10 @@ sub dumpProp
 #dump this property.
 {
     my ($self, $indent) = @_;
+    my ($name, $id) = ($self->propertyName(), $self->propertyId());
     my $outroot = $self->rootDir();
 
-    printf STDERR "%sDUMPING EC PROPERTY (%s,%s) -> %s\n", ' 'x$indent, $self->propertyName(), $self->propertyId(), $outroot if ($DEBUG);
+    printf STDERR "%sDUMPING EC PROPERTY (%s,%s) -> %s\n", ' 'x$indent, $name, $id, $outroot if ($DEBUG);
 
     os::createdir($outroot, 0775) unless (-d $outroot);
     if (!-d $outroot) {
@@ -171,14 +172,6 @@ sub fetchPropertyContent
         $self->setPropertyContent($string);
     } elsif ($numeric_value ne '') {
         $self->setPropertyContent($numeric_value);
-    }
-
-    #######
-    #ignore kid props for generated properties.
-    #######
-    if (defined($IgnorePropSheets{$name})) {
-        ++$IgnorePropSheets{$name};
-        return 0;
     }
 
     #now add kid prop if we have one:
