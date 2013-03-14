@@ -2090,10 +2090,10 @@ sub fetchProcStepContent
 
     my ($step_index, $subprocedure, $subproject, $command_clob_id, $post_processor_clob_id, $post_processor, $command) = @results;
 
-    $self->setDDebug(1);
+    #$self->setDDebug(1);
     printf STDERR "%s: (step_index,subprocedure,subproject,command_clob_id,post_processor_clob_id,post_processor,command)=(%s)\n",
         ::srline(), join(',', ($name,$id,@results)) if ($DDEBUG);
-    $self->setDDebug(0);
+    #$self->setDDebug(0);
 
     #Note:  if we have a string and a clob, we prefer the clob, which is the full content
 
