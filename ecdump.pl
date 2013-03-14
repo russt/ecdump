@@ -59,6 +59,7 @@ sub new
 
     #set up class attribute  hash and bless it into class:
     my $self = bless {
+        'mConfig' => $cfg,
         'mProgName' => $cfg->getProgName(),
         'mDebug' => $cfg->getDebug(),
         'mDDebug' => $cfg->getDDebug(),
@@ -242,6 +243,13 @@ sub createOutputDir
     return 0;
 }
 
+
+sub config
+#return value of mConfig
+{
+    my ($self) = @_;
+    return $self->{'mConfig'};
+}
 
 sub progName
 #return value of mProgName
@@ -446,6 +454,7 @@ sub new
 
     #set up class attribute  hash and bless it into class:
     my $self = bless {
+        'mConfig' => $cfg->config(),
         'mDebug' => $cfg->getDebug(),
         'mDDebug' => $cfg->getDDebug(),
         'mQuiet' => $cfg->getQuiet(),
@@ -483,10 +492,10 @@ sub new
 sub loadProject
 #load each project from the database
 {
-    my ($self) = @_;
+    my ($self, $indent) = @_;
 
     #first load myself the project:
-    printf STDERR "LOADING PROJECT '%s'\n", $self->projectName() if ($DDEBUG);
+    printf STDERR "%sLOADING PROJECT '%s'\n", ' 'x$indent, $self->projectName() if ($VERBOSE);
 
     #get my description (method defined in ecProjects):
     $self->fetchDescription('ec_project', $self->projectId);
@@ -521,6 +530,13 @@ sub dumpProject
 
     #then dump the procedures:
     return $self->ecProcedures->dumpProcedures($indent+2);
+}
+
+sub config
+#return value of mConfig
+{
+    my ($self) = @_;
+    return $self->{'mConfig'};
 }
 
 sub getDebug
@@ -704,6 +720,7 @@ sub new
 
     #set up class attribute  hash and bless it into class:
     my $self = bless {
+        'mConfig' => $cfg->config(),
         'mDebug' => $cfg->getDebug(),
         'mDDebug' => $cfg->getDDebug(),
         'mQuiet' => $cfg->getQuiet(),
@@ -746,7 +763,7 @@ sub loadDumpProjects
 
     my $errs = 0;
     for my $pj ($self->ecProjects()) {
-        if ($pj->loadProject() != 0) {
+        if ($pj->loadProject($indent+2) != 0) {
             printf STDERR "%s: ERROR:  failed to load project '%s'\n", ::srline(), $pj->projectName;
             ++$errs;
         } else {
@@ -1031,6 +1048,13 @@ sub dumpDescription
     return os::write_str2file(\$txt, path::mkpathname($outroot, "description"));
 }
 
+sub config
+#return value of mConfig
+{
+    my ($self) = @_;
+    return $self->{'mConfig'};
+}
+
 sub getDebug
 #return value of Debug
 {
@@ -1217,6 +1241,7 @@ sub new
 
     #set up class attribute  hash and bless it into class:
     my $self = bless {
+        'mConfig' => $cfg->config(),
         'mDebug' => $cfg->getDebug(),
         'mDDebug' => $cfg->getDDebug(),
         'mQuiet' => $cfg->getQuiet(),
@@ -1296,6 +1321,13 @@ sub dumpProcedure
 
     #then dump procedure steps:
     return $self->ecProcedureSteps->dumpProcedureSteps($indent+2);
+}
+
+sub config
+#return value of mConfig
+{
+    my ($self) = @_;
+    return $self->{'mConfig'};
 }
 
 sub getDebug
@@ -1480,6 +1512,7 @@ sub new
 
     #set up class attribute  hash and bless it into class:
     my $self = bless {
+        'mConfig' => $proj->config(),
         'mDebug' => $proj->getDebug(),
         'mDDebug' => $proj->getDDebug(),
         'mQuiet' => $proj->getQuiet(),
@@ -1636,6 +1669,13 @@ sub addAllProcedures
     }
 
     return 0;
+}
+
+sub config
+#return value of mConfig
+{
+    my ($self) = @_;
+    return $self->{'mConfig'};
 }
 
 sub getDebug
@@ -1838,6 +1878,7 @@ sub new
 
     #set up class attribute  hash and bless it into class:
     my $self = bless {
+        'mConfig' => $cfg->config(),
         'mDebug' => $cfg->getDebug(),
         'mDDebug' => $cfg->getDDebug(),
         'mQuiet' => $cfg->getQuiet(),
@@ -1851,6 +1892,7 @@ sub new
         'mProcStepPostProcessor' => '',
         'mProcStepIndex' => -1,
         'mProcStepSubprocedure' => '',
+        'mProcStepSubproject' => '',
         'mDescription' => '',
         'mPropertySheetId' => $propertySheetId,
         'mEcProps' => undef,
@@ -1889,7 +1931,7 @@ sub loadProcedureStep
     my $step_index = $self->getProcStepIndex();
 
     #now we can finally set RootDir:
-    $self->setRootDir(path::mkpathname($outroot, sprintf("%02d_%s", $step_index, $name)));
+    $self->setRootDir(path::mkpathname($outroot, sprintf("%02d_%s", $step_index, $utils->ec2scm($name))));
 
     #$self->setDDebug(1);
     printf STDERR "%s: outroot:  '%s'->'%s'\n", ::srline(), $outroot, $self->getRootDir() if ($DDEBUG);
@@ -1948,10 +1990,16 @@ sub dumpProcStepSubprocedure
 #return 0 if successful
 {
     my ($self) = @_;
-    my $txt = $self->getProcStepSubprocedure();
+    my $subprocedure = $self->getProcStepSubprocedure();
+    my $subproject   = $self->getProcStepSubproject();
+    my $txt = $subprocedure;
 
     #don't create empty files:
     return 0 if ($txt eq '');
+
+    if ($subprocedure ne '' && $subproject ne '') {
+        $txt = sprintf("%s/%s", $subproject, $subprocedure);
+    }
 
     my $outroot = $self->getRootDir();
 
@@ -2009,11 +2057,14 @@ sub fetchProcStepContent
     $self->setProcStepPostProcessor('');
 
     # ec_procedure_step partial schema:
-    # (id, name, command, description, resource_name, workspace_name, property_sheet_id, actual_parameters_id,
-    #  command_clob_id, description_clob_id, post_processor_clob_id, procedure_id, step_index, subprocedure)
+    #(id, name, exclusive_mode, release_mode, always_run, broadcast, command, step_condition,
+    # description, post_processor, error_handling, log_file_name, parallel, resource_name,
+    # shell, subprocedure, subproject, time_limit, time_limit_units, working_directory, workspace_name,
+    # acl_id, property_sheet_id, actual_parameters_id, command_clob_id, step_condition_clob_id,
+    # description_clob_id, post_processor_clob_id, procedure_id, step_index)
 
     #this query should return only one row:
-    my $lbuf = sprintf("select step_index,subprocedure,command_clob_id,post_processor_clob_id,command from ec_procedure_step where id=%d",$id);
+    my $lbuf = sprintf("select step_index,subprocedure,subproject,command_clob_id,post_processor_clob_id,post_processor,command from ec_procedure_step where id=%d",$id);
 
     printf STDERR "%s: running sql query to get procedure step content fields\n", ::srline() if ($DDEBUG);
 
@@ -2024,10 +2075,10 @@ sub fetchProcStepContent
 
     #o'wise, stash results (query returns a ref to a list of list refs):
     my @results = map {
-        @{$_};    #dereference each row.  we expect one row with (step_index, subprocedure, command_clob_id, post_processor_clob_id, command)
+        @{$_};    #dereference each row.  we expect one row with (step_index,subprocedure,subproject,command_clob_id,post_processor_clob_id,post_processor,command)
     } @{$sqlpj->getQueryResult()};
 
-    if ( $#results+1 != 5 ) {
+    if ( $#results+1 != 7 ) {
         printf STDERR "%s:  ERROR:  query '%s' returned wrong number of results (%d).\n", ::srline(), $lbuf, $#results+1;
         return 1;
     }
@@ -2037,11 +2088,12 @@ sub fetchProcStepContent
         defined($_) ? $_ : '';
     } @results;
 
-    my ($step_index, $subprocedure, $command_clob_id, $post_processor_clob_id, $command) = @results;
+    my ($step_index, $subprocedure, $subproject, $command_clob_id, $post_processor_clob_id, $post_processor, $command) = @results;
 
-    #$self->setDDebug(1);
-    printf STDERR "%s: (name, id, step_index, command_clob_id, post_processor_clob_id, command)=(%s)\n", ::srline(), join(',', ($name,$id,@results)) if ($DDEBUG);
-    #$self->setDDebug(0);
+    $self->setDDebug(1);
+    printf STDERR "%s: (step_index,subprocedure,subproject,command_clob_id,post_processor_clob_id,post_processor,command)=(%s)\n",
+        ::srline(), join(',', ($name,$id,@results)) if ($DDEBUG);
+    $self->setDDebug(0);
 
     #Note:  if we have a string and a clob, we prefer the clob, which is the full content
 
@@ -2064,15 +2116,25 @@ sub fetchProcStepContent
             return 1;
         }
         $self->setProcStepPostProcessor($clobtxt);
+    } elsif ($post_processor ne '') {
+        $self->setProcStepPostProcessor($post_processor);
     }
 
-    #set subprocedure:
+    #set subprocedure, subproject:
     $self->setProcStepSubprocedure($subprocedure);
+    $self->setProcStepSubproject($subproject);
 
     #set step index for procedure step:
     $self->setProcStepIndex($step_index);
 
     return 0;
+}
+
+sub config
+#return value of mConfig
+{
+    my ($self) = @_;
+    return $self->{'mConfig'};
 }
 
 sub getDebug
@@ -2247,6 +2309,22 @@ sub setProcStepSubprocedure
     return $self->{'mProcStepSubprocedure'};
 }
 
+sub getProcStepSubproject
+#return value of ProcStepSubproject
+{
+    my ($self) = @_;
+    return $self->{'mProcStepSubproject'};
+}
+
+sub setProcStepSubproject
+#set value of ProcStepSubproject and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mProcStepSubproject'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mProcStepSubproject'};
+}
+
 sub getDescription
 #return value of Description
 {
@@ -2323,6 +2401,7 @@ sub new
 
     #set up class attribute  hash and bless it into class:
     my $self = bless {
+        'mConfig' => $cfg->config(),
         'mDebug' => $cfg->getDebug(),
         'mDDebug' => $cfg->getDDebug(),
         'mQuiet' => $cfg->getQuiet(),
@@ -2477,6 +2556,13 @@ sub initProcedureStepKeys
 
     $self->setDbKeysInitialized(1);
     return 0;
+}
+
+sub config
+#return value of mConfig
+{
+    my ($self) = @_;
+    return $self->{'mConfig'};
 }
 
 sub getDebug
@@ -2664,15 +2750,7 @@ my $pkgname = __PACKAGE__;
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
 our @ISA = qw(ecdump::ecProjects);
 
-#we do not traverse these property sheets as they are generated and numerous:
-my %IgnorePropSheets = (
-    'buildNumbers'      => 0,
-    'buildResults'      => 0,
-    'ec_savedSearches'  => 0,
-    'ecscm_snapshots'   => 0,
-    'jobsForReaping'    => 0,
-);
-
+my %IgnorePropSheets = ();
 
 sub new
 {
@@ -2686,6 +2764,7 @@ sub new
 
     #set up class attribute  hash and bless it into class:
     my $self = bless {
+        'mConfig' => $pprop->config(),
         'mDebug' => $pprop->getDebug(),
         'mDDebug' => $pprop->getDDebug(),
         'mQuiet' => $pprop->getQuiet(),
@@ -2708,6 +2787,9 @@ sub new
 
     #set output root for the properties (this will be in parent dir):
     $self->{'mRootDir'} = path::mkpathname($pprop->rootDir(), $utils->ec2scm($propertyName));
+
+    #copy IgnorePropSheets from configuraton:
+    %IgnorePropSheets = %{$self->config->getIgnorePropertiesHash()};
 
     return $self;
 }
@@ -2908,6 +2990,13 @@ sub fetchPropertyContent
     }
 
     return 0;
+}
+
+sub config
+#return value of mConfig
+{
+    my ($self) = @_;
+    return $self->{'mConfig'};
 }
 
 sub getDebug
@@ -3143,6 +3232,7 @@ sub new
 
     #set up class attribute  hash and bless it into class:
     my $self = bless {
+        'mConfig' => $parent->config(),
         'mDebug' => $parent->getDebug(),
         'mDDebug' => $parent->getDDebug(),
         'mQuiet' => $parent->getQuiet(),
@@ -3295,6 +3385,13 @@ sub initPropKeys
 
     $self->setDbKeysInitialized(1);
     return 0;
+}
+
+sub config
+#return value of mConfig
+{
+    my ($self) = @_;
+    return $self->{'mConfig'};
 }
 
 sub getDebug
@@ -3629,8 +3726,8 @@ sub new
     my $self = bless {
         'mProgName' => undef,
         'mPathSeparator' => undef,
-        'mVersionNumber' => "0.15",
-        'mVersionDate' => "12-Mar-2013",
+        'mVersionNumber' => "0.16",
+        'mVersionDate' => "13-Mar-2013",
         'mUtils' => undef,
         'mDebug' => 0,
         'mDDebug' => 0,
@@ -3651,6 +3748,7 @@ sub new
         'mDumpAllProjects' => 0,
         'mHaveListCommand' => 0,
         'mHaveDumpCommand' => 0,
+        'mIgnorePropertiesHash' => undef,
         }, $class;
 
     #post-attribute init after we bless our $self (allows use of accessor methods):
@@ -4085,6 +4183,22 @@ sub setHaveDumpCommand
     return $self->{'mHaveDumpCommand'};
 }
 
+sub getIgnorePropertiesHash
+#return value of IgnorePropertiesHash
+{
+    my ($self) = @_;
+    return $self->{'mIgnorePropertiesHash'};
+}
+
+sub setIgnorePropertiesHash
+#set value of IgnorePropertiesHash and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mIgnorePropertiesHash'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mIgnorePropertiesHash'};
+}
+
 sub update_static_class_attributes
 #method to update package level attributess as required
 {
@@ -4126,6 +4240,22 @@ my $ecdumpImpl = undef;
 
 #file containing list of projects:
 my $PJLIST = undef;
+
+#default ignore list for property sheets that we do not traverse.
+#user can override this list via ECDUMP_IGNORES env. var
+my %DefaultIgnorePropSheets = (
+    'buildNumbers'      => 0,
+    'buildResults'      => 0,
+    'ec_savedSearches'  => 0,
+    'ecscm_snapshots'   => 0,
+    'jobsForReaping'    => 0,
+);
+
+#this is just for the usage message:
+my $DefaultIgnorePropSheets = join(';', sort keys %DefaultIgnorePropSheets);
+
+#set up based on environment:
+my %IgnorePropSheets = ();
 
 &init;      #init globals
 
@@ -4218,6 +4348,29 @@ sub checkJdbcSettings
     return($errs == 0);
 }
 
+sub parseEcdumpIgnores
+#parse ECDUMP_IGNORE environment variable if it is defined:
+#returns a reference to the ignore hash.
+{
+    if (defined($ENV{'ECDUMP_IGNORES'})) {
+        my @ignores = split(';', $ENV{'ECDUMP_IGNORES'});
+
+        if ($#ignores >= 0) {
+            #set global IgnorePropSheets to contents of ECDUMP_IGNORES:
+            %IgnorePropSheets = map {
+                $_, 0;
+            } @ignores;
+        } else {
+            printf STDERR "%s: WARNING:  ECDUMP_IGNORES defined, but empty - setting default ignores.\n", $p;
+            %IgnorePropSheets = %DefaultIgnorePropSheets;
+        }
+    } else {
+        %IgnorePropSheets = %DefaultIgnorePropSheets;
+    }
+
+    return \%IgnorePropSheets;
+}
+
 sub rec_signal
 # we only want to abort sqlexec in progress, not program.
 {
@@ -4290,13 +4443,16 @@ OPTIONS
 
 ENVIRONMENT
 
+  ECDUMP_IGNORES    List of EC property sheet names to ignore, delimited by semi-colons.
+  DEFAULT: ECDUMP_IGNORES="$DefaultIgnorePropSheets"
+
   CLASSPATH         Java CLASSPATH, inherited by JDBC.pm
 
   PERL_INLINE_JAVA_EXTRA_JAVA_ARGS
                     Extra args for java vm, e.g. -Xmx1024m to increase memory.
 
 EXAMPLES
-  Initialize JDBC properties and dump EC database to directory `ecbackup'.
+  Initialize JDBC properties and dump EC projects to directory `ecbackup'.
       $pkgname -props ~/.jdbc/lcommander.props ecbackup
 
 SEE ALSO
@@ -4423,6 +4579,8 @@ sub parse_args
     $edmpcfg->setDDebug($DDEBUGFLAG);
     $edmpcfg->setQuiet($QUIET);
     $edmpcfg->setVerbose($VERBOSE);
+
+    $edmpcfg->setIgnorePropertiesHash(parseEcdumpIgnores());
 
     #eliminate empty args (this happens on some platforms):
     @ARGV = grep(!/^$/, @ARGV);

@@ -55,6 +55,7 @@ ProcStepCommand	pl_getset	''
 ProcStepPostProcessor	pl_getset	''
 ProcStepIndex	pl_getset	-1
 ProcStepSubprocedure	pl_getset	''
+ProcStepSubproject	pl_getset	''
 #description of the procedure step:
 Description	pl_getset	''
 #this is the EC properties object:
