@@ -6,7 +6,12 @@ if [ "$ECDUMPROOT" = "" ]; then
     bldmsg -p $p -error please set ECDUMPROOT to the dump directory
     exit 1
 fi
+if [ "$LOGROOT" = "" ]; then
+    bldmsg -p $p -error please set ECDUMPROOT to the dump directory
+    exit 1
+fi
 
+bldmsg -p $p Using `ecdump -V`
 bldmsg -p $p ECDUMPROOT=$ECDUMPROOT
 bldmsg -p $p ECDUMP_IGNORES=$ECDUMP_IGNORES
 
@@ -31,7 +36,7 @@ nfiles=`echo $LAST2RUNS | wc -w`
 
 if [ $nfiles -eq 2 ]; then
     bldmsg -p $p -markbeg ddiff
-    ddiff -fdiffonly $LAST2RUNS
+    ddiff -fdiffonly $LAST2RUNS > $LOGROOT/ddiff.log 2>&1
     bldmsg -p $p -markend -status $? ddiff
 else
     bldmsg -error -p $0 wrong number of files to diff, file list= "'$LAST2RUNS'"
