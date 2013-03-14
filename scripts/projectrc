@@ -18,7 +18,9 @@ setenv FORTE_PORT macosx
 setenv TOOLROOT $HOME/ftools
 setenv CG_TEMPLATE_PATH ".;$TOOLROOT/lib/cmn/templates;$TOOLROOT/lib/cmn/templates/java"
 
-set path = ( /usr/local/perl/bin $path )
+#make sure project dir is in path:
+set path = ( /usr/local/perl/bin $PROJECT $path )
+
 #setenv PERL5LIB "$PROJECT/src/lib:$PERL5LIB"
 #setenv PERL5LIB "$PROJECT/bld/main/tools/build/lib/perl:$PROJECT/src/lib:/usr/local/perl/Library/Perl/Updates/5.10.0:/usr/local/perl/lib/perl5/site_perl"
 #setenv PERL_LIBPATH "/Users/russt/proj/tools/lib/cmn;/Users/russt/proj/tools/lib/cmn/perl5;/Users/russt/proj/tools/lib/cmn/perl5"
@@ -26,9 +28,11 @@ set path = ( /usr/local/perl/bin $path )
 #set extra memory for Inline::Java:
 setenv PERL_INLINE_JAVA_EXTRA_JAVA_ARGS '-Xmx1024m'
 
-echo use sqlpj -props ~/.jdbc/lcommander.props
+#echo use sqlpj -props ~/.jdbc/lcommander.props
 
 setenv ECDUMP_IGNORES "buildNumbers;buildResults;ec_savedSearches;ecscm_snapshots;jobsForReaping"
-setenv ECDUMP_IGNORES "$ECDUMP_IGNORES;ec_customEditorData"
+setenv ECDUMP_IGNORES "$ECDUMP_IGNORES;ec_customEditorData;lastBuildStartDate;lastBuildTrigger;depotRevision"
 
-echo ECDUMP_IGNORES is $ECDUMP_IGNORES
+#echo ECDUMP_IGNORES is $ECDUMP_IGNORES
+
+alias golog "cd $PROJECT && subpj `\ls -1d logs/* | grep '^logs/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' | tail -1`"
