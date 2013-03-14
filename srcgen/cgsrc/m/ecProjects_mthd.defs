@@ -24,6 +24,8 @@ sub loadDumpProjects
                 ++$errs;
             }
         }
+        #garbage collect the project since we are now done with it:
+        $self->freeProject($pj, $indent+2);
     }
 
     return $errs;
@@ -298,4 +300,25 @@ sub dumpDescription
     $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
 
     return os::write_str2file(\$txt, path::mkpathname($outroot, "description"));
+}
+
+sub freeProject
+#free a project from our project list, which is the only ref to the project object
+#return 0 if successful
+{
+    my ($self, $pj, $indent) = @_;
+    my @pjs = ($self->ecProjects());
+
+    for (my $ii=0; $ii <= $#pjs; $ii++) {
+        if ( defined($pjs[$ii]) && $pjs[$ii] == $pj ) {
+            #kill the reference:
+            undef ${$self->{'mEcProjects'}}[$ii];
+            printf STDERR "%sFREED PROJECT '%s'\n", ' 'x$indent, $pj->projectName if ($VERBOSE);
+            return 0;
+        }
+    }
+
+    #didn't find it:
+    printf STDERR "%s:  WARNING:  could not free project %s\n", ::srline(), $pj->projectName;
+    return 1;
 }
