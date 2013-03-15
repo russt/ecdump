@@ -29,6 +29,66 @@
 
 {
 #
+#utils - ecdump utility routines
+#
+
+use strict;
+
+package ecdump::utils;
+my $pkgname = __PACKAGE__;
+
+#imports:
+use Exporter 'import';
+
+#package variables:
+#symbols we export by default:
+our @EXPORT = qw(ec2scm scm2ec dumpThisObject dumpDbKeys);
+
+################################### PACKAGE ####################################
+
+sub ec2scm
+#map EC entity names to legal scm filenames.
+#TODO:  decide on translation map, perhaps map unwanted chars to UTF-8?
+{
+    my ($name) = @_;
+
+    #delete quotes and backslashes until I can think of a better idea.  RT 3/8/13
+    $name =~ tr/\'\"\\//d;
+
+    return $name;
+}
+
+sub scm2ec
+#map scm filenames back to EC entity names.
+{
+    my ($name) = @_;
+
+    return $name;
+}
+
+sub dumpThisObject
+{
+    my ($aref) = @_;
+
+    for my $kk (keys %$aref) {
+        printf STDERR "DUMP kk='%s' aref{%s}='%s'\n", $kk, $kk, defined($$aref{$kk})? $$aref{$kk} : "UNDEF";
+    }
+}
+
+sub dumpDbKeys
+#dump the name, id pairs commonly used to index a db table
+{
+    my ($aref) = @_;
+
+    for my $kk (sort keys %$aref) {
+        printf STDERR "dbKey{%s}='%s'\n", $kk, $$aref{$kk};
+    }
+}
+
+1;
+} #end of ecdump::utils
+{
+#
 #ecdumpImpl - ecdump implementation
 #
 
@@ -242,6 +302,12 @@ sub createOutputDir
     return 0;
 }
 
+sub cleanup
+#call sqlpj cleanup.
+{
+    my ($self) = @_;
+    $self->sqlpj->cleanup();
+} 
 
 sub config
 #return value of mConfig
@@ -429,6 +495,7 @@ require "os.pl";
 
 
 #package variables:
+ecdump::utils->import;
 #standard debugging attributes:
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 our @ISA = qw(ecdump::ecProjects);
@@ -687,6 +754,7 @@ require "os.pl";
 
 
 #package variables:
+ecdump::utils->import;
 #standard debugging attributes:
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 
@@ -1221,6 +1289,7 @@ require "os.pl";
 
 
 #package variables:
+ecdump::utils->import;
 #standard debugging attributes:
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 our @ISA = qw(ecdump::ecProjects);
@@ -1483,6 +1552,7 @@ require "os.pl";
 
 
 #package variables:
+ecdump::utils->import;
 #standard debugging attributes:
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 our @ISA = qw(ecdump::ecProjects);
@@ -1840,6 +1910,7 @@ require "os.pl";
 
 
 #package variables:
+ecdump::utils->import;
 #standard debugging attributes:
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 our @ISA = qw(ecdump::ecProjects);
@@ -2354,6 +2425,7 @@ require "os.pl";
 
 
 #package variables:
+ecdump::utils->import;
 #standard debugging attributes:
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 our @ISA = qw(ecdump::ecProjects);
@@ -2706,6 +2778,7 @@ my $pkgname = __PACKAGE__;
 #imports:
 
 #package variables:
+ecdump::utils->import;
 #standard debugging attributes:
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 our @ISA = qw(ecdump::ecProjects);
@@ -3166,6 +3239,7 @@ require "os.pl";
 
 
 #package variables:
+ecdump::utils->import;
 #standard debugging attributes:
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 our @ISA = qw(ecdump::ecProjects);
@@ -3517,7 +3591,7 @@ sub new
     my $self = bless {
         'mProgName' => undef,
         'mPathSeparator' => undef,
-        'mVersionNumber' => "0.19",
+        'mVersionNumber' => "0.20",
         'mVersionDate' => "15-Mar-2013",
         'mDebug' => 0,
         'mDDebug' => 0,
@@ -3982,66 +4056,6 @@ sub update_static_class_attributes
 } #end of ecdump::pkgconfig
 {
 #
-#utils - ecdump utility routines
-#
-
-use strict;
-
-package ecdump::utils;
-my $pkgname = __PACKAGE__;
-
-#imports:
-use Exporter 'import';
-
-#package variables:
-#symbols we export by default:
-our @EXPORT = qw(ec2scm scm2ec dumpThisObject dumpDbKeys);
-
-################################### PACKAGE ####################################
-
-sub ec2scm
-#map EC entity names to legal scm filenames.
-#TODO:  decide on translation map, perhaps map unwanted chars to UTF-8?
-{
-    my ($name) = @_;
-
-    #delete quotes and backslashes until I can think of a better idea.  RT 3/8/13
-    $name =~ tr/\'\"\\//d;
-
-    return $name;
-}
-
-sub scm2ec
-#map scm filenames back to EC entity names.
-{
-    my ($name) = @_;
-
-    return $name;
-}
-
-sub dumpThisObject
-{
-    my ($aref) = @_;
-
-    for my $kk (keys %$aref) {
-        printf STDERR "DUMP kk='%s' aref{%s}='%s'\n", $kk, $kk, defined($$aref{$kk})? $$aref{$kk} : "UNDEF";
-    }
-}
-
-sub dumpDbKeys
-#dump the name, id pairs commonly used to index a db table
-{
-    my ($aref) = @_;
-
-    for my $kk (sort keys %$aref) {
-        printf STDERR "dbKey{%s}='%s'\n", $kk, $$aref{$kk};
-    }
-}
-
-1;
-} #end of ecdump::utils
-{
-#
 #ecdump - Main driver for ecdump - a tool to dump the Electric Commander database in a form that can be checked into an SCM
 #
 
@@ -4061,6 +4075,8 @@ my $p = $main::p;
 my ($VERBOSE, $HELPFLAG, $DEBUGFLAG, $DDEBUGFLAG, $QUIET) = (0,0,0,0,0);
 
 #package global variables:
+ecdump::utils->import;
+
 my $edmpcfg = new ecdump::pkgconfig();
 
 #sqlpj config object:
@@ -4212,19 +4228,7 @@ sub rec_signal
     $SIG{$SIG} = $prevHandler;
     printf STDERR ("\n%s:  Received SIG%s%s\n", $p, $SIG, ($SIG eq "HUP")? " - IGNORED" : "");
 
-#printf STDERR "ecdumpImpl=%s connection=%s\n", ref($ecdumpImpl), ref($ecdumpImpl->getConnection());
-
-    #reinitialize the connection if we got that far:
-    if ($ecdumpImpl->getConnection()) {
-        #none of this works...don't know how to recover the JVM or SQL connections.  RT 2/8/13
-        #Inline::Java->reconnect_JVM();
-        #JDBC->load_driver($ecdumpImpl->jdbcDriver());
-        #$ecdumpImpl->sql_init_connection() 
-    } else {
-        #if we have not initialized Inline::Java, then we can safetly continue.
-        return;
-    }
-
+    #note - this calls my cleanup:
     main::abort("Shutting down.\n");
 }
 
@@ -4485,6 +4489,10 @@ sub init
 
 sub cleanup
 {
+    printf STDERR "%s:  clean-up has been called!\n", $p if ($DEBUGFLAG);
+    if (defined($ecdumpImpl)) {
+        $ecdumpImpl->cleanup();
+    }
 }
 
 1;

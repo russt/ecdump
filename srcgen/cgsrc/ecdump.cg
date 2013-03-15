@@ -15,23 +15,28 @@ CG_ROOT = $CG_ROOT_BASE/objects
 #now use to generate new objects:
 CG_ROOT = $CG_ROOT_BASE
 %pragma trim_multiline_rnewline 1
-%include ecdump_new.cg
 #####
 
 {
-    #configuration object (for main):
-    PL_PACKAGE = $PKGCONFIG_PACKAGE
-    _PL_PACKAGE = $_PKGCONFIG_PACKAGE
-    module_defs = $PL_PACKAGE.defs
-    %call generate_a_module
-}
-{
-    #utilities module:
+    #WARNING:  "utils" module must be included BEFORE first use when GEN_ONE_MODULE in effect.
+    #when testing, we use "require" to avoid an automatic call to import that is provided by "use".
+    #(we cannot import with "use" in the one-module case because there is no separate file in the package path.)
+    #then we use ecdump::utils->import to pull in its exported symbols.  This will only work
+    #if perl has already seen the utils package.  RT 3/15/13
+
     PL_PACKAGE = $UTILS_PACKAGE
     _PL_PACKAGE = $_UTILS_PACKAGE
     module_defs = $PL_PACKAGE.defs
     #this is a simple module, not a template:
     perl_template = perl/prlmod.ptpl
+    %call generate_a_module
+}
+%include ecdump_new.cg
+{
+    #configuration object (for main):
+    PL_PACKAGE = $PKGCONFIG_PACKAGE
+    _PL_PACKAGE = $_PKGCONFIG_PACKAGE
+    module_defs = $PL_PACKAGE.defs
     %call generate_a_module
 }
 {

@@ -18,7 +18,7 @@ require "os.pl";
 PL_PKG_IMPORTS = << [
 use $_PKGCONFIG_PACKAGE;
 use $_ECDUMPIMPL_PACKAGE;
-use $_UTILS_PACKAGE;
+require $_UTILS_PACKAGE;
 ]
 %if    $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS:rnewline
 %ifnot $GEN_ONE_MODULE   PL_PKG_IMPORTS = ${PL_EXTERN_PKG_IMPORTS:rnewline}$PL_PKG_IMPORTS
@@ -26,6 +26,8 @@ use $_UTILS_PACKAGE;
 
 {
 PL_PKG_ATTRIBUTES := << [
+{=_UTILS_PACKAGE=}->import;
+
 my $edmpcfg = new {=_PKGCONFIG_PACKAGE=}();
 
 #sqlpj config object:
@@ -170,19 +172,7 @@ sub rec_signal
     $SIG{$SIG} = $prevHandler;
     printf STDERR ("\n%s:  Received SIG%s%s\n", $p, $SIG, ($SIG eq "HUP")? " - IGNORED" : "");
 
-#printf STDERR "ecdumpImpl=%s connection=%s\n", ref($ecdumpImpl), ref($ecdumpImpl->getConnection());
-
-    #reinitialize the connection if we got that far:
-    if ($ecdumpImpl->getConnection()) {
-        #none of this works...don't know how to recover the JVM or SQL connections.  RT 2/8/13
-        #Inline::Java->reconnect_JVM();
-        #JDBC->load_driver($ecdumpImpl->jdbcDriver());
-        #$ecdumpImpl->sql_init_connection() 
-    } else {
-        #if we have not initialized Inline::Java, then we can safetly continue.
-        return;
-    }
-
+    #note - this calls my cleanup:
     main::abort("Shutting down.\n");
 }
 //
@@ -418,3 +408,11 @@ $edmpcfg->getSqlpjConfig->checkSetClasspath();
 %evalmacro PL_PARSE_ARGS_POST PL_PARSE_ARGS_POST
 
 } #end of parse arg defs
+
+PL_CLEANUP_ROUTINE := << [
+printf STDERR "%s:  clean-up has been called!\n", $p if ($DEBUGFLAG);
+if (defined($ecdumpImpl)) {
+    $ecdumpImpl->cleanup();
+}
+]
+%evalmacro PL_CLEANUP_ROUTINE PL_CLEANUP_ROUTINE

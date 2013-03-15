@@ -150,3 +150,9 @@ sub createOutputDir
     return 0;
 }
 
+sub cleanup
+#call sqlpj cleanup.
+{
+    my ($self) = @_;
+    $self->sqlpj->cleanup();
+} 
