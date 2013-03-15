@@ -26,6 +26,15 @@ CG_ROOT = $CG_ROOT_BASE
     %call generate_a_module
 }
 {
+    #utilities module:
+    PL_PACKAGE = $UTILS_PACKAGE
+    _PL_PACKAGE = $_UTILS_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    #this is a simple module, not a template:
+    perl_template = perl/prlmod.ptpl
+    %call generate_a_module
+}
+{
     #this is the main program:
     PL_PACKAGE = $ECDUMP_PACKAGE
     _PL_PACKAGE = $_ECDUMP_PACKAGE

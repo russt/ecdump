@@ -45,7 +45,7 @@ require "sqlpj.pl";
 
 #package variables:
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 
 sub new
 {
@@ -65,7 +65,6 @@ sub new
         'mDDebug' => $cfg->getDDebug(),
         'mQuiet' => $cfg->getQuiet(),
         'mVerbose' => $cfg->getVerbose(),
-        'mUtils' => $cfg->getUtils(),
         'mSqlpjConfig' => $cfg->getSqlpjConfig(),
         'mSqlpj' => $cfg->getSqlpjImpl(),
         'mHaveDumpCommand' => $cfg->getHaveDumpCommand(),
@@ -322,13 +321,6 @@ sub setVerbose
     return $self->{'mVerbose'};
 }
 
-sub utils
-#return value of mUtils
-{
-    my ($self) = @_;
-    return $self->{'mUtils'};
-}
-
 sub sqlpjConfig
 #return value of mSqlpjConfig
 {
@@ -417,7 +409,6 @@ sub update_static_class_attributes
     $DDEBUG  = $self->getDDebug();
     $QUIET   = $self->getQuiet();
     $VERBOSE = $self->getVerbose();
-    $utils = $self->utils();
 }
 
 1;
@@ -439,7 +430,7 @@ require "os.pl";
 
 #package variables:
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 our @ISA = qw(ecdump::ecProjects);
 
 sub new
@@ -459,7 +450,6 @@ sub new
         'mDDebug' => $cfg->getDDebug(),
         'mQuiet' => $cfg->getQuiet(),
         'mVerbose' => $cfg->getVerbose(),
-        'mUtils' => $cfg->utils(),
         'mSqlpj' => $cfg->sqlpj(),
         'mRootDir' => undef,
         'mProjectName' => $projectName,
@@ -475,7 +465,7 @@ sub new
     $self->update_static_class_attributes();
 
     #set output root for this project:
-    $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), $utils->ec2scm($projectName));
+    $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm($projectName));
 
     #create properties container object, which will contain the list of our properties:
     $self->{'mEcProps'} = new ecdump::ecProps($self);
@@ -603,13 +593,6 @@ sub setVerbose
     return $self->{'mVerbose'};
 }
 
-sub utils
-#return value of mUtils
-{
-    my ($self) = @_;
-    return $self->{'mUtils'};
-}
-
 sub sqlpj
 #return value of mSqlpj
 {
@@ -684,7 +667,6 @@ sub update_static_class_attributes
     $DDEBUG  = $self->getDDebug();
     $QUIET   = $self->getQuiet();
     $VERBOSE = $self->getVerbose();
-    $utils = $self->utils();
 }
 
 1;
@@ -706,7 +688,7 @@ require "os.pl";
 
 #package variables:
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 
 sub new
 {
@@ -725,7 +707,6 @@ sub new
         'mDDebug' => $cfg->getDDebug(),
         'mQuiet' => $cfg->getQuiet(),
         'mVerbose' => $cfg->getVerbose(),
-        'mUtils' => $cfg->utils(),
         'mSqlpj' => $cfg->sqlpj(),
         'mRootDir' => undef,
         'mEcProjects' => undef,
@@ -739,7 +720,7 @@ sub new
     #cache initial debugging and vebosity values in local package variables:
     $self->update_static_class_attributes();
 
-    $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), $utils->ec2scm("projects"));
+    $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm("projects"));
 
     return $self;
 }
@@ -933,10 +914,10 @@ sub initDbKeys
 
     if ($DDEBUG) {
         printf STDERR "%s: nameId result=\n", ::srline();
-        $utils->dumpDbKeys(\%nameId);
+        dumpDbKeys(\%nameId);
 
         printf STDERR "%s: namePropId result=\n", ::srline();
-        $utils->dumpDbKeys(\%namePropId);
+        dumpDbKeys(\%namePropId);
     }
 
     $self->setDbKeysInitialized(1);
@@ -1142,13 +1123,6 @@ sub setVerbose
     return $self->{'mVerbose'};
 }
 
-sub utils
-#return value of mUtils
-{
-    my ($self) = @_;
-    return $self->{'mUtils'};
-}
-
 sub sqlpj
 #return value of mSqlpj
 {
@@ -1227,7 +1201,6 @@ sub update_static_class_attributes
     $DDEBUG  = $self->getDDebug();
     $QUIET   = $self->getQuiet();
     $VERBOSE = $self->getVerbose();
-    $utils = $self->utils();
 }
 
 1;
@@ -1249,7 +1222,7 @@ require "os.pl";
 
 #package variables:
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 our @ISA = qw(ecdump::ecProjects);
 
 sub new
@@ -1269,7 +1242,6 @@ sub new
         'mDDebug' => $cfg->getDDebug(),
         'mQuiet' => $cfg->getQuiet(),
         'mVerbose' => $cfg->getVerbose(),
-        'mUtils' => $cfg->utils(),
         'mSqlpj' => $cfg->sqlpj(),
         'mRootDir' => undef,
         'mProcedureName' => $procedureName,
@@ -1285,7 +1257,7 @@ sub new
     $self->update_static_class_attributes();
 
     #set output root for this the procedures:
-    $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), $utils->ec2scm($procedureName));
+    $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm($procedureName));
 
     #create properties container object, which will contain the list of our properties:
     $self->{'mEcProps'} = new ecdump::ecProps($self);
@@ -1417,13 +1389,6 @@ sub setVerbose
     return $self->{'mVerbose'};
 }
 
-sub utils
-#return value of mUtils
-{
-    my ($self) = @_;
-    return $self->{'mUtils'};
-}
-
 sub sqlpj
 #return value of mSqlpj
 {
@@ -1498,7 +1463,6 @@ sub update_static_class_attributes
     $DDEBUG  = $self->getDDebug();
     $QUIET   = $self->getQuiet();
     $VERBOSE = $self->getVerbose();
-    $utils = $self->utils();
 }
 
 1;
@@ -1520,7 +1484,7 @@ require "os.pl";
 
 #package variables:
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 our @ISA = qw(ecdump::ecProjects);
 
 sub new
@@ -1540,7 +1504,6 @@ sub new
         'mDDebug' => $proj->getDDebug(),
         'mQuiet' => $proj->getQuiet(),
         'mVerbose' => $proj->getVerbose(),
-        'mUtils' => $proj->utils(),
         'mSqlpj' => $proj->sqlpj(),
         'mRootDir' => undef,
         'mProjectName' => $proj->projectName(),
@@ -1556,7 +1519,7 @@ sub new
     $self->update_static_class_attributes();
 
     #set output root for this the procedures:
-    $self->{'mRootDir'} = path::mkpathname($proj->rootDir(), $utils->ec2scm("procedures"));
+    $self->{'mRootDir'} = path::mkpathname($proj->rootDir(), ec2scm("procedures"));
 
     return $self;
 }
@@ -1638,10 +1601,10 @@ sub initProcedureKeys
 
     if ($DDEBUG) {
         printf STDERR "%s: nameId result=\n", ::srline();
-        $utils->dumpDbKeys(\%nameId);
+        dumpDbKeys(\%nameId);
 
         printf STDERR "%s: namePropId result=\n", ::srline();
-        $utils->dumpDbKeys(\%namePropId);
+        dumpDbKeys(\%namePropId);
     }
 
     $self->setDbKeysInitialized(1);
@@ -1765,13 +1728,6 @@ sub setVerbose
     return $self->{'mVerbose'};
 }
 
-sub utils
-#return value of mUtils
-{
-    my ($self) = @_;
-    return $self->{'mUtils'};
-}
-
 sub sqlpj
 #return value of mSqlpj
 {
@@ -1864,7 +1820,6 @@ sub update_static_class_attributes
     $DDEBUG  = $self->getDDebug();
     $QUIET   = $self->getQuiet();
     $VERBOSE = $self->getVerbose();
-    $utils = $self->utils();
 }
 
 1;
@@ -1886,7 +1841,7 @@ require "os.pl";
 
 #package variables:
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 our @ISA = qw(ecdump::ecProjects);
 
 sub new
@@ -1906,7 +1861,6 @@ sub new
         'mDDebug' => $cfg->getDDebug(),
         'mQuiet' => $cfg->getQuiet(),
         'mVerbose' => $cfg->getVerbose(),
-        'mUtils' => $cfg->utils(),
         'mSqlpj' => $cfg->sqlpj(),
         'mRootDir' => $cfg->rootDir(),
         'mProcedureStepName' => $procedureStepName,
@@ -1954,7 +1908,7 @@ sub loadProcedureStep
     my $step_index = $self->getProcStepIndex();
 
     #now we can finally set RootDir:
-    $self->setRootDir(path::mkpathname($outroot, sprintf("%02d_%s", $step_index, $utils->ec2scm($name))));
+    $self->setRootDir(path::mkpathname($outroot, sprintf("%02d_%s", $step_index, ec2scm($name))));
 
     #$self->setDDebug(1);
     printf STDERR "%s: outroot:  '%s'->'%s'\n", ::srline(), $outroot, $self->getRootDir() if ($DDEBUG);
@@ -2224,13 +2178,6 @@ sub setVerbose
     return $self->{'mVerbose'};
 }
 
-sub utils
-#return value of mUtils
-{
-    my ($self) = @_;
-    return $self->{'mUtils'};
-}
-
 sub sqlpj
 #return value of mSqlpj
 {
@@ -2387,7 +2334,6 @@ sub update_static_class_attributes
     $DDEBUG  = $self->getDDebug();
     $QUIET   = $self->getQuiet();
     $VERBOSE = $self->getVerbose();
-    $utils = $self->utils();
 }
 
 1;
@@ -2409,7 +2355,7 @@ require "os.pl";
 
 #package variables:
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 our @ISA = qw(ecdump::ecProjects);
 
 sub new
@@ -2429,7 +2375,6 @@ sub new
         'mDDebug' => $cfg->getDDebug(),
         'mQuiet' => $cfg->getQuiet(),
         'mVerbose' => $cfg->getVerbose(),
-        'mUtils' => $cfg->utils(),
         'mSqlpj' => $cfg->sqlpj(),
         'mRootDir' => undef,
         'mProcedureName' => $cfg->procedureName,
@@ -2445,7 +2390,7 @@ sub new
     $self->update_static_class_attributes();
 
     #set output root for this the procedures:
-    $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), $utils->ec2scm("proceduresteps"));
+    $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm("proceduresteps"));
 
     return $self;
 }
@@ -2571,10 +2516,10 @@ sub initProcedureStepKeys
 
     if ($DDEBUG) {
         printf STDERR "%s: nameId result=\n", ::srline();
-        $utils->dumpDbKeys(\%nameId);
+        dumpDbKeys(\%nameId);
 
         printf STDERR "%s: namePropId result=\n", ::srline();
-        $utils->dumpDbKeys(\%namePropId);
+        dumpDbKeys(\%namePropId);
     }
 
     $self->setDbKeysInitialized(1);
@@ -2650,13 +2595,6 @@ sub setVerbose
     $self->{'mVerbose'} = $value;
     $self->update_static_class_attributes();
     return $self->{'mVerbose'};
-}
-
-sub utils
-#return value of mUtils
-{
-    my ($self) = @_;
-    return $self->{'mUtils'};
 }
 
 sub sqlpj
@@ -2751,7 +2689,6 @@ sub update_static_class_attributes
     $DDEBUG  = $self->getDDebug();
     $QUIET   = $self->getQuiet();
     $VERBOSE = $self->getVerbose();
-    $utils = $self->utils();
 }
 
 1;
@@ -2770,7 +2707,7 @@ my $pkgname = __PACKAGE__;
 
 #package variables:
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 our @ISA = qw(ecdump::ecProjects);
 
 my %IgnorePropSheets = ();
@@ -2792,7 +2729,6 @@ sub new
         'mDDebug' => $pprop->getDDebug(),
         'mQuiet' => $pprop->getQuiet(),
         'mVerbose' => $pprop->getVerbose(),
-        'mUtils' => $pprop->utils(),
         'mSqlpj' => $pprop->sqlpj(),
         'mRootDir' => undef,
         'mPropertyName' => $propertyName,
@@ -2809,7 +2745,7 @@ sub new
     $self->update_static_class_attributes();
 
     #set output root for the properties (this will be in parent dir):
-    $self->{'mRootDir'} = path::mkpathname($pprop->rootDir(), $utils->ec2scm($propertyName));
+    $self->{'mRootDir'} = path::mkpathname($pprop->rootDir(), ec2scm($propertyName));
 
     #copy IgnorePropSheets from configuraton:
     %IgnorePropSheets = %{$self->config->getIgnorePropertiesHash()};
@@ -3085,13 +3021,6 @@ sub setVerbose
     return $self->{'mVerbose'};
 }
 
-sub utils
-#return value of mUtils
-{
-    my ($self) = @_;
-    return $self->{'mUtils'};
-}
-
 sub sqlpj
 #return value of mSqlpj
 {
@@ -3217,7 +3146,6 @@ sub update_static_class_attributes
     $DDEBUG  = $self->getDDebug();
     $QUIET   = $self->getQuiet();
     $VERBOSE = $self->getVerbose();
-    $utils = $self->utils();
 }
 
 1;
@@ -3239,7 +3167,7 @@ require "os.pl";
 
 #package variables:
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 our @ISA = qw(ecdump::ecProjects);
 
 my %IgnorePropSheets = ();
@@ -3261,7 +3189,6 @@ sub new
         'mDDebug' => $parent->getDDebug(),
         'mQuiet' => $parent->getQuiet(),
         'mVerbose' => $parent->getVerbose(),
-        'mUtils' => $parent->utils(),
         'mSqlpj' => $parent->sqlpj(),
         'mRootDir' => undef,
         'mParentPropertySheetId' => $parent->propertySheetId(),
@@ -3275,7 +3202,7 @@ sub new
     $self->update_static_class_attributes();
 
     #set output root for the properties (this will be in parent dir):
-    $self->{'mRootDir'} = path::mkpathname($parent->rootDir(), $utils->ec2scm("properties"));
+    $self->{'mRootDir'} = path::mkpathname($parent->rootDir(), ec2scm("properties"));
 
     #copy IgnorePropSheets from configuraton:
     %IgnorePropSheets = %{$self->config->getIgnorePropertiesHash()};
@@ -3411,7 +3338,7 @@ sub initPropKeys
 
     if ($DDEBUG) {
         printf STDERR "%s: nameId result=\n", ::srline();
-        $utils->dumpDbKeys(\%nameId);
+        dumpDbKeys(\%nameId);
     }
 
     $self->setDbKeysInitialized(1);
@@ -3489,13 +3416,6 @@ sub setVerbose
     return $self->{'mVerbose'};
 }
 
-sub utils
-#return value of mUtils
-{
-    my ($self) = @_;
-    return $self->{'mUtils'};
-}
-
 sub sqlpj
 #return value of mSqlpj
 {
@@ -3565,170 +3485,10 @@ sub update_static_class_attributes
     $DDEBUG  = $self->getDDebug();
     $QUIET   = $self->getQuiet();
     $VERBOSE = $self->getVerbose();
-    $utils = $self->utils();
 }
 
 1;
 } #end of ecdump::ecProps
-{
-#
-#utils - ecdump utilility routines
-#
-
-use strict;
-
-package ecdump::utils;
-my $pkgname = __PACKAGE__;
-
-#imports:
-
-#package variables:
-#standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
-
-sub new
-{
-    my ($invocant) = @_;
-    shift @_;
-
-    #allows this constructor to be invoked with reference or with explicit package name:
-    my $class = ref($invocant) || $invocant;
-
-
-    #set up class attribute  hash and bless it into class:
-    my $self = bless {
-        'mDebug' => 0,
-        'mDDebug' => 0,
-        'mQuiet' => 0,
-        'mVerbose' => 0,
-        }, $class;
-
-    #post-attribute init after we bless our $self (allows use of accessor methods):
-
-    #cache initial debugging and vebosity values in local package variables:
-    $self->update_static_class_attributes();
-
-    return $self;
-}
-
-################################### PACKAGE ####################################
-
-sub ec2scm
-#map EC entity names to legal scm filenames.
-#TODO:  decide on translation map, perhaps map unwanted chars to UTF-8?
-{
-    my ($self, $name) = @_;
-
-    #delete quotes and backslashes until I can think of a better idea.  RT 3/8/13
-    $name =~ tr/\'\"\\//d;
-
-    return $name;
-}
-
-sub scm2ec
-#map scm filenames back to EC entity names.
-{
-    my ($self, $name) = @_;
-
-    return $name;
-}
-
-sub dumpThisObject
-{
-    my ($self, $aref) = @_;
-
-    for my $kk (keys %$aref) {
-        printf STDERR "DUMP kk='%s' aref{%s}='%s'\n", $kk, $kk, defined($$aref{$kk})? $$aref{$kk} : "UNDEF";
-    }
-}
-
-sub dumpDbKeys
-#dump the name, id pairs commonly used to index a db table
-{
-    my ($self, $aref) = @_;
-
-    for my $kk (sort keys %$aref) {
-        printf STDERR "dbKey{%s}='%s'\n", $kk, $$aref{$kk};
-    }
-}
-
-sub getDebug
-#return value of Debug
-{
-    my ($self) = @_;
-    return $self->{'mDebug'};
-}
-
-sub setDebug
-#set value of Debug and return value.
-{
-    my ($self, $value) = @_;
-    $self->{'mDebug'} = $value;
-    $self->update_static_class_attributes();
-    return $self->{'mDebug'};
-}
-
-sub getDDebug
-#return value of DDebug
-{
-    my ($self) = @_;
-    return $self->{'mDDebug'};
-}
-
-sub setDDebug
-#set value of DDebug and return value.
-{
-    my ($self, $value) = @_;
-    $self->{'mDDebug'} = $value;
-    $self->update_static_class_attributes();
-    return $self->{'mDDebug'};
-}
-
-sub getQuiet
-#return value of Quiet
-{
-    my ($self) = @_;
-    return $self->{'mQuiet'};
-}
-
-sub setQuiet
-#set value of Quiet and return value.
-{
-    my ($self, $value) = @_;
-    $self->{'mQuiet'} = $value;
-    $self->update_static_class_attributes();
-    return $self->{'mQuiet'};
-}
-
-sub getVerbose
-#return value of Verbose
-{
-    my ($self) = @_;
-    return $self->{'mVerbose'};
-}
-
-sub setVerbose
-#set value of Verbose and return value.
-{
-    my ($self, $value) = @_;
-    $self->{'mVerbose'} = $value;
-    $self->update_static_class_attributes();
-    return $self->{'mVerbose'};
-}
-
-sub update_static_class_attributes
-#static class method to update package level attributess as required
-#used to set verbosity and debugging for all objects of the class post-instantiation.
-{
-    my ($self) = @_;
-    $DEBUG   = $self->getDebug();
-    $DDEBUG  = $self->getDDebug();
-    $QUIET   = $self->getQuiet();
-    $VERBOSE = $self->getVerbose();
-}
-
-1;
-} #end of ecdump::utils
 {
 #
 #pkgconfig - Configuration parameters for sqlpj package
@@ -3757,9 +3517,8 @@ sub new
     my $self = bless {
         'mProgName' => undef,
         'mPathSeparator' => undef,
-        'mVersionNumber' => "0.18",
-        'mVersionDate' => "14-Mar-2013",
-        'mUtils' => undef,
+        'mVersionNumber' => "0.19",
+        'mVersionDate' => "15-Mar-2013",
         'mDebug' => 0,
         'mDDebug' => 0,
         'mQuiet' => 0,
@@ -3884,22 +3643,6 @@ sub versionDate
 {
     my ($self) = @_;
     return $self->{'mVersionDate'};
-}
-
-sub getUtils
-#return value of Utils
-{
-    my ($self) = @_;
-    return $self->{'mUtils'};
-}
-
-sub setUtils
-#set value of Utils and return value.
-{
-    my ($self, $value) = @_;
-    $self->{'mUtils'} = $value;
-    $self->update_static_class_attributes();
-    return $self->{'mUtils'};
 }
 
 sub getDebug
@@ -4239,6 +3982,66 @@ sub update_static_class_attributes
 } #end of ecdump::pkgconfig
 {
 #
+#utils - ecdump utility routines
+#
+
+use strict;
+
+package ecdump::utils;
+my $pkgname = __PACKAGE__;
+
+#imports:
+use Exporter 'import';
+
+#package variables:
+#symbols we export by default:
+our @EXPORT = qw(ec2scm scm2ec dumpThisObject dumpDbKeys);
+
+################################### PACKAGE ####################################
+
+sub ec2scm
+#map EC entity names to legal scm filenames.
+#TODO:  decide on translation map, perhaps map unwanted chars to UTF-8?
+{
+    my ($name) = @_;
+
+    #delete quotes and backslashes until I can think of a better idea.  RT 3/8/13
+    $name =~ tr/\'\"\\//d;
+
+    return $name;
+}
+
+sub scm2ec
+#map scm filenames back to EC entity names.
+{
+    my ($name) = @_;
+
+    return $name;
+}
+
+sub dumpThisObject
+{
+    my ($aref) = @_;
+
+    for my $kk (keys %$aref) {
+        printf STDERR "DUMP kk='%s' aref{%s}='%s'\n", $kk, $kk, defined($$aref{$kk})? $$aref{$kk} : "UNDEF";
+    }
+}
+
+sub dumpDbKeys
+#dump the name, id pairs commonly used to index a db table
+{
+    my ($aref) = @_;
+
+    for my $kk (sort keys %$aref) {
+        printf STDERR "dbKey{%s}='%s'\n", $kk, $$aref{$kk};
+    }
+}
+
+1;
+} #end of ecdump::utils
+{
+#
 #ecdump - Main driver for ecdump - a tool to dump the Electric Commander database in a form that can be checked into an SCM
 #
 
@@ -4262,9 +4065,6 @@ my $edmpcfg = new ecdump::pkgconfig();
 
 #sqlpj config object:
 my $scfg    = new sqlpj::pkgconfig();
-
-#collection utilities for common use:
-my $utils    = new ecdump::utils();
 
 #this will be initialized after configuration is set up:
 my $ecdumpImpl = undef;
@@ -4501,7 +4301,6 @@ sub parse_args
     #set defaults:
     $edmpcfg->setProgName($p);
     $edmpcfg->setPathSeparator($Config{path_sep});
-    $edmpcfg->setUtils($utils);
 
     #eat up flag args:
     my ($flag);

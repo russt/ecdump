@@ -19,6 +19,7 @@ require "os.pl";
 )
 PL_PKG_IMPORTS = << (
 use $_ECPROCEDURE_PACKAGE;
+use $_UTILS_PACKAGE;
 )
 %if    $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS:rnewline
 %ifnot $GEN_ONE_MODULE   PL_PKG_IMPORTS = ${PL_EXTERN_PKG_IMPORTS:rnewline}$PL_PKG_IMPORTS
@@ -26,7 +27,7 @@ use $_ECPROCEDURE_PACKAGE;
 
 PL_PKG_ATTRIBUTES := << (
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 our @ISA = qw({=_ECPROJECTS_PACKAGE=});
 )
 %evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
@@ -42,8 +43,6 @@ Debug	pl_getset	$proj->getDebug()
 DDebug	pl_getset	$proj->getDDebug()
 Quiet	pl_getset	$proj->getQuiet()
 Verbose	pl_getset	$proj->getVerbose()
-#utils class:
-Utils	pl_attr_method	$proj->utils()
 #sqlpj interface (r/o):
 Sqlpj	pl_attr_method	$proj->sqlpj()
 #local project attributes:
@@ -79,7 +78,7 @@ PL_POST_ATTRIBUTE_INIT := << (
 $self->update_static_class_attributes();
 
 #set output root for this the procedures:
-$self->{'mRootDir'} = path::mkpathname($proj->rootDir(), $utils->ec2scm("procedures"));
+$self->{'mRootDir'} = path::mkpathname($proj->rootDir(), ec2scm("procedures"));
 )
 %evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }
@@ -89,7 +88,6 @@ $DEBUG   = $self->getDebug();
 $DDEBUG  = $self->getDDebug();
 $QUIET   = $self->getQuiet();
 $VERBOSE = $self->getVerbose();
-$utils = $self->utils();
 )
 
 { ## class methods

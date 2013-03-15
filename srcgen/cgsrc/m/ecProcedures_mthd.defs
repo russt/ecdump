@@ -73,10 +73,10 @@ sub initProcedureKeys
 
     if ($DDEBUG) {
         printf STDERR "%s: nameId result=\n", ::srline();
-        $utils->dumpDbKeys(\%nameId);
+        dumpDbKeys(\%nameId);
 
         printf STDERR "%s: namePropId result=\n", ::srline();
-        $utils->dumpDbKeys(\%namePropId);
+        dumpDbKeys(\%namePropId);
     }
 
     $self->setDbKeysInitialized(1);

@@ -19,7 +19,7 @@ sub loadProcedureStep
     my $step_index = $self->getProcStepIndex();
 
     #now we can finally set RootDir:
-    $self->setRootDir(path::mkpathname($outroot, sprintf("%02d_%s", $step_index, $utils->ec2scm($name))));
+    $self->setRootDir(path::mkpathname($outroot, sprintf("%02d_%s", $step_index, ec2scm($name))));
 
     #$self->setDDebug(1);
     printf STDERR "%s: outroot:  '%s'->'%s'\n", ::srline(), $outroot, $self->getRootDir() if ($DDEBUG);

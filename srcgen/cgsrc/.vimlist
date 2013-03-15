@@ -19,6 +19,7 @@ ecProcedureStep.defs
 ecProps.defs
 ecProp.defs
 pkgconfig.defs
+utils.defs
 ../build_setup.defs
 TODO.txt
 bld/objects/ecdump_new.cg

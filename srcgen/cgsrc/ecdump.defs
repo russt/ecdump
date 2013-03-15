@@ -31,9 +31,6 @@ my $edmpcfg = new {=_PKGCONFIG_PACKAGE=}();
 #sqlpj config object:
 my $scfg    = new {=_SQLPJ_CONFIG_PACKAGE=}();
 
-#collection utilities for common use:
-my $utils    = new {=_UTILS_PACKAGE=}();
-
 #this will be initialized after configuration is set up:
 my $ecdumpImpl = undef;
 
@@ -257,7 +254,6 @@ PL_PARSE_ARGS_PRE := << [
 #set defaults:
 $edmpcfg->setProgName($p);
 $edmpcfg->setPathSeparator($Config{path_sep});
-$edmpcfg->setUtils($utils);
 ]
 %evalmacro PL_PARSE_ARGS_PRE PL_PARSE_ARGS_PRE
 

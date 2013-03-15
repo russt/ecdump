@@ -7,68 +7,27 @@
 
 { ## header section
 PL_PACKAGE = $UTILS_PACKAGE
-PL_PACKAGE_DESCRIPTION = ecdump utilility routines
-
-#not a base class - use standard constuctor name:
-PL_CONSTRUCTOR_NAME = new
+PL_PACKAGE_DESCRIPTION = ecdump utility routines
 
 {
 PL_EXTERN_PKG_IMPORTS = << (
+use Exporter 'import';
 )
+
 PL_PKG_IMPORTS = << (
 )
+
 %if    $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS
 %ifnot $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS$PL_PKG_IMPORTS
 }
 
 PL_PKG_ATTRIBUTES := << (
-#standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
+#symbols we export by default:
+our @EXPORT = qw(ec2scm scm2ec dumpThisObject dumpDbKeys);
 )
 %evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
 
-####
-#add to ATTRIBUTE_LIST as required.
-#templates are: (r/w) pl_getset, pl_getsetlist; (r/o) pl_attr_method, pl_attrlist_method
-####
-ATTRIBUTE_LIST := << (
-Debug	pl_getset	0
-DDebug	pl_getset	0
-Quiet	pl_getset	0
-Verbose	pl_getset	0
-)
-%evalmacro ATTRIBUTE_LIST ATTRIBUTE_LIST
-#generate attribute accessors (this creates class_attribute_dcls, getset_methods):
-%include perl/genattr.defs
-%call generate_attribute_accessors
-}
-{ ## constructor section
-PL_CONSTRUCTOR_BODY := << (
-)
-%evalmacro PL_CONSTRUCTOR_BODY PL_CONSTRUCTOR_BODY
-
-PL_OBJ_ATTRIBUTES := << (
-{=class_attribute_dcls=}
-)
-%evalmacro PL_OBJ_ATTRIBUTES PL_OBJ_ATTRIBUTES
-
-#this is for further initialzation of attributes, since hash init cannot be self-referential:
-PL_POST_ATTRIBUTE_INIT := << (
-
-#cache initial debugging and vebosity values in local package variables:
-$self->update_static_class_attributes();
-)
-%evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
-}
-
-PL_UPDATE_CLASS_STATIC_ATTRIBUTES := << (
-$DEBUG   = $self->getDebug();
-$DDEBUG  = $self->getDDebug();
-$QUIET   = $self->getQuiet();
-$VERBOSE = $self->getVerbose();
-)
-
-{ ## class methods
+{ ## module methods
 
 PL_PKG_METHODS := << (
 
@@ -76,7 +35,7 @@ sub ec2scm
 #map EC entity names to legal scm filenames.
 #TODO:  decide on translation map, perhaps map unwanted chars to UTF-8?
 {
-    my ($self, $name) = @_;
+    my ($name) = @_;
 
     #delete quotes and backslashes until I can think of a better idea.  RT 3/8/13
     $name =~ tr/\'\"\\//d;
@@ -87,14 +46,14 @@ sub ec2scm
 sub scm2ec
 #map scm filenames back to EC entity names.
 {
-    my ($self, $name) = @_;
+    my ($name) = @_;
 
     return $name;
 }
 
 sub dumpThisObject
 {
-    my ($self, $aref) = @_;
+    my ($aref) = @_;
 
     for my $kk (keys %$aref) {
         printf STDERR "DUMP kk='%s' aref{%s}='%s'\n", $kk, $kk, defined($$aref{$kk})? $$aref{$kk} : "UNDEF";
@@ -104,21 +63,11 @@ sub dumpThisObject
 sub dumpDbKeys
 #dump the name, id pairs commonly used to index a db table
 {
-    my ($self, $aref) = @_;
+    my ($aref) = @_;
 
     for my $kk (sort keys %$aref) {
         printf STDERR "dbKey{%s}='%s'\n", $kk, $$aref{$kk};
     }
-}
-
-{=getset_methods=}
-
-sub update_static_class_attributes
-#static class method to update package level attributess as required
-#used to set verbosity and debugging for all objects of the class post-instantiation.
-{
-    my ($self) = @_;
-{=$PL_UPDATE_CLASS_STATIC_ATTRIBUTES:indent=}
 }
 )
 

@@ -124,7 +124,7 @@ sub initPropKeys
 
     if ($DDEBUG) {
         printf STDERR "%s: nameId result=\n", ::srline();
-        $utils->dumpDbKeys(\%nameId);
+        dumpDbKeys(\%nameId);
     }
 
     $self->setDbKeysInitialized(1);

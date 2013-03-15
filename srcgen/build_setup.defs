@@ -7,8 +7,8 @@
 ###########
 # note - version is initialized in pkgconfig.defs
 # TODO:  initialize these from:  cvs log -h ecdumpImpl.defs
-VERSION_STR  = 0.18
-VERSION_DATE = 14-Mar-2013
+VERSION_STR  = 0.19
+VERSION_DATE = 15-Mar-2013
 ###########
 
 %pragma trim_multiline_rnewline 1
@@ -57,6 +57,10 @@ _ECDUMPIMPL_PACKAGE  = ${ECDUMP_PACKAGE}::${ECDUMPIMPL_PACKAGE}
 #ecdump configuration parameters:
 PKGCONFIG_PACKAGE  = pkgconfig
 _PKGCONFIG_PACKAGE = ${ECDUMP_PACKAGE}::${PKGCONFIG_PACKAGE}
+
+#utils object:
+UTILS_PACKAGE  = utils
+_UTILS_PACKAGE = ${ECDUMP_PACKAGE}::${UTILS_PACKAGE}
 
 ######
 #sqlpj packages:

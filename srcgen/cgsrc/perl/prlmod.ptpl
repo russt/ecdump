@@ -1,0 +1,21 @@
+{
+#
+#{=PL_PACKAGE=} - {=PL_PACKAGE_DESCRIPTION=}
+#
+
+use strict;
+
+package {=$PL_PACKAGE_PREFIX:clrifndef=}{=PL_PACKAGE=};
+my $pkgname = __PACKAGE__;
+
+#imports:
+{=PL_PKG_IMPORTS=}
+
+#package variables:
+{=PL_PKG_ATTRIBUTES=}
+
+################################### PACKAGE ####################################
+{=PL_PKG_METHODS=}
+
+1;
+} #end of {=PL_PACKAGE_PREFIX=}{=PL_PACKAGE=}

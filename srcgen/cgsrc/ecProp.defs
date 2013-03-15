@@ -16,6 +16,7 @@ PL_CONSTRUCTOR_NAME = new
 PL_EXTERN_PKG_IMPORTS = << (
 )
 PL_PKG_IMPORTS = << (
+use $_UTILS_PACKAGE;
 )
 %if    $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS:rnewline
 %ifnot $GEN_ONE_MODULE   PL_PKG_IMPORTS = ${PL_EXTERN_PKG_IMPORTS:rnewline}$PL_PKG_IMPORTS
@@ -23,7 +24,7 @@ PL_PKG_IMPORTS = << (
 
 PL_PKG_ATTRIBUTES := << (
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET, $utils) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
 our @ISA = qw({=_ECPROJECTS_PACKAGE=});
 
 my %IgnorePropSheets = ();
@@ -41,8 +42,6 @@ Debug	pl_getset	$pprop->getDebug()
 DDebug	pl_getset	$pprop->getDDebug()
 Quiet	pl_getset	$pprop->getQuiet()
 Verbose	pl_getset	$pprop->getVerbose()
-#utils class:
-Utils	pl_attr_method	$pprop->utils()
 #sqlpj interface (r/o):
 Sqlpj	pl_attr_method	$pprop->sqlpj()
 #local project attributes:
@@ -81,7 +80,7 @@ PL_POST_ATTRIBUTE_INIT := << (
 $self->update_static_class_attributes();
 
 #set output root for the properties (this will be in parent dir):
-$self->{'mRootDir'} = path::mkpathname($pprop->rootDir(), $utils->ec2scm($propertyName));
+$self->{'mRootDir'} = path::mkpathname($pprop->rootDir(), ec2scm($propertyName));
 
 #copy IgnorePropSheets from configuraton:
 %IgnorePropSheets = %{$self->config->getIgnorePropertiesHash()};
@@ -94,7 +93,6 @@ $DEBUG   = $self->getDebug();
 $DDEBUG  = $self->getDDebug();
 $QUIET   = $self->getQuiet();
 $VERBOSE = $self->getVerbose();
-$utils = $self->utils();
 )
 
 { ## class methods
