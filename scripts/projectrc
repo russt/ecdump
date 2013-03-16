@@ -32,7 +32,8 @@ setenv PERL_INLINE_JAVA_EXTRA_JAVA_ARGS '-Xmx1024m'
 
 setenv ECDUMP_IGNORES "buildNumbers;buildResults;ec_savedSearches;ecscm_snapshots;jobsForReaping"
 setenv ECDUMP_IGNORES "$ECDUMP_IGNORES;ec_customEditorData;lastBuildStartDate;lastBuildTrigger;depotRevision"
+setenv ECDUMP_IGNORES "$ECDUMP_IGNORES;reportDate;lastGroomedDate"
 
 #echo ECDUMP_IGNORES is $ECDUMP_IGNORES
 
-alias golog "cd $PROJECT && subpj `\ls -1d logs/* | grep '^logs/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' | tail -1`"
+alias golog 'cd $PROJECT && subpj `\ls -1d logs/* | grep "^logs/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" | tail -1`'
