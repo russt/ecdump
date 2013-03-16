@@ -4,7 +4,7 @@
 remove_if_nodiffs()
 #Usage:  remove_if_nodiffs lastdumpdir newdumpdir
 {
-    #see if we can delete the previous dump.  we are looking for a ddiff file that
+    #see if we can delete the new dump.  we are looking for a ddiff file that
     #looks like this:
     #+-----------------------------------------------------------------+
     #|### In 1303151230 but not in 1303151330:                         |
@@ -23,20 +23,22 @@ remove_if_nodiffs()
 
     #note - first char is actually a tab, but grep does not allow \t.  RT 3/15/13
     nullcnt=`grep '^.NULL$' logs/$newrun/ddiff.log | wc -w`
+    _rind_status=0
 
     if [ "$nullcnt" -eq 3 ]; then
-        bldmsg -p $p -mark New run has no changes, removing identical new dump: $newrun
+        bldmsg -p $p -mark New run has no changes, removing it: $newrun
         bldmsg -p $p -markbeg remove identical dump
         rm -rf "$newrun"
-        status=$?
-        bldmsg -p $p -status $status -markbeg remove identical dump
-        if [ $status -ne  0 ]; then
-            bldmsg -p $p -error -status $status command failed:  rm -rf "$newrun"
-            exit 1
+        _rind_status=$?
+        bldmsg -p $p -status $_rind_status -markend remove identical dump
+        if [ $_rind_status -ne  0 ]; then
+            bldmsg -p $p -error -status $_rind_status command failed:  rm -rf "$newrun"
         fi
     else
         bldmsg -p $p -mark New run has changes - see logs/$newrun/ddiff.log for differences
     fi
+
+    return $_rind_status
 }
 
 p=`basename $0`
