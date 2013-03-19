@@ -36,10 +36,23 @@ my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
 #templates are: (r/w) pl_getset, pl_getsetlist; (r/o) pl_attr_method, pl_attrlist_method
 ####
 ATTRIBUTE_LIST := << (
-Debug	pl_getset	0
-DDebug	pl_getset	0
-Quiet	pl_getset	0
-Verbose	pl_getset	0
+#debugging and verbosity levels, inherited from parent (r/w):
+Debug	pl_getset	$cfg->getDebug()
+DDebug	pl_getset	$cfg->getDDebug()
+Quiet	pl_getset	$cfg->getQuiet()
+Verbose	pl_getset	$cfg->getVerbose()
+#sqlpj interface (r/o):
+Sqlpj	pl_attr_method	$cfg->sqlpj()
+#local project attributes:
+RootDir	pl_attr_method	undef
+ParameterName	pl_attr_method	$parameterName
+ParameterId	pl_attr_method	$parameterId
+#value of the parameter:
+ParameterContent	pl_getset	''
+#misc. switches associated with this parameter:
+SwitchText	pl_getset	''
+#description of the parameter:
+Description	pl_getset	''
 )
 #see also:  m/ecParameter_mthd.defs
 %evalmacro ATTRIBUTE_LIST ATTRIBUTE_LIST
@@ -49,6 +62,7 @@ Verbose	pl_getset	0
 }
 { ## constructor section
 PL_CONSTRUCTOR_BODY := << (
+my ($cfg, $parameterName, $parameterId) = @_;
 )
 %evalmacro PL_CONSTRUCTOR_BODY PL_CONSTRUCTOR_BODY
 
@@ -59,6 +73,8 @@ PL_OBJ_ATTRIBUTES := << (
 
 #this is for further initialzation of attributes, since hash init cannot be self-referential:
 PL_POST_ATTRIBUTE_INIT := << (
+#set output root for the properties (this will be in parent dir):
+$self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm($self->parameterName()));
 
 #cache initial debugging and vebosity values in local package variables:
 $self->update_static_class_attributes();

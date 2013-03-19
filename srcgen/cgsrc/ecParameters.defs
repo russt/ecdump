@@ -67,7 +67,6 @@ EcParameterList	pl_attrlist_method	[]
 { ## constructor section
 PL_CONSTRUCTOR_BODY := << (
 my ($cfg, $parentName, $parentId, $parentParameterTable, $parentParameterTableIdColumn) = @_;
-# e.g. 'ec_procedure_formal_parameter', 'procedure_id'
 )
 %evalmacro PL_CONSTRUCTOR_BODY PL_CONSTRUCTOR_BODY
 
