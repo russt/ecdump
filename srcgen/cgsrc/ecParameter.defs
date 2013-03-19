@@ -1,26 +1,21 @@
 #
-#ecProcedure.defs -  definitions for ecProcedure object.
+#ecParameter.defs -  definitions for ecParameter object.
 #
 
 #allows us to run stand-alone:
 %ifndef CG_ROOT %include ../build_setup.defs
 
 { ## header section
-PL_PACKAGE = $ECPROCEDURE_PACKAGE
-PL_PACKAGE_DESCRIPTION = object representing an EC Procedure
+PL_PACKAGE = $ECPARAMETER_PACKAGE
+PL_PACKAGE_DESCRIPTION = object representing a single EC Parameter
 
 #not a base class - use standard constuctor name:
 PL_CONSTRUCTOR_NAME = new
 
 {
 PL_EXTERN_PKG_IMPORTS = << (
-require "path.pl";
-require "os.pl";
 )
 PL_PKG_IMPORTS = << (
-use $_ECPROCEDURESTEPS_PACKAGE;
-use $_ECPROPS_PACKAGE;
-use $_ECPARAMETERS_PACKAGE;
 require $_UTILS_PACKAGE;
 )
 %if    $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS:rnewline
@@ -29,9 +24,10 @@ require $_UTILS_PACKAGE;
 
 PL_PKG_ATTRIBUTES := << (
 {=_UTILS_PACKAGE=}->import;
+our @ISA = qw({=_ECPROJECTS_PACKAGE=});
+
 #standard debugging attributes:
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
-our @ISA = qw({=_ECPROJECTS_PACKAGE=});
 )
 %evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
 
@@ -40,28 +36,12 @@ our @ISA = qw({=_ECPROJECTS_PACKAGE=});
 #templates are: (r/w) pl_getset, pl_getsetlist; (r/o) pl_attr_method, pl_attrlist_method
 ####
 ATTRIBUTE_LIST := << (
-Config	pl_attr_method	$cfg->config()
-#debugging and verbosity levels, inherited from parent (r/w):
-Debug	pl_getset	$cfg->getDebug()
-DDebug	pl_getset	$cfg->getDDebug()
-Quiet	pl_getset	$cfg->getQuiet()
-Verbose	pl_getset	$cfg->getVerbose()
-#sqlpj interface (r/o):
-Sqlpj	pl_attr_method	$cfg->sqlpj()
-#local project attributes:
-RootDir	pl_attr_method	undef
-ProcedureName	pl_attr_method	$procedureName
-ProcedureId	pl_attr_method	$procedureId
-#description of the project:
-Description	pl_getset	''
-#this is the EC procedure steps object:
-EcProcedureSteps	pl_attr_method	undef
-#this is the EC properties object:
-PropertySheetId	pl_attr_method	$propertySheetId
-EcProps	pl_attr_method	undef
-EcParameters	pl_attr_method	undef
+Debug	pl_getset	0
+DDebug	pl_getset	0
+Quiet	pl_getset	0
+Verbose	pl_getset	0
 )
-#see also:  m/ecProcedure_mthd.defs
+#see also:  m/ecParameter_mthd.defs
 %evalmacro ATTRIBUTE_LIST ATTRIBUTE_LIST
 #generate attribute accessors (this creates class_attribute_dcls, getset_methods):
 %include perl/genattr.defs
@@ -69,7 +49,6 @@ EcParameters	pl_attr_method	undef
 }
 { ## constructor section
 PL_CONSTRUCTOR_BODY := << (
-my ($cfg, $procedureName, $procedureId, $propertySheetId) = @_;
 )
 %evalmacro PL_CONSTRUCTOR_BODY PL_CONSTRUCTOR_BODY
 
@@ -80,20 +59,9 @@ PL_OBJ_ATTRIBUTES := << (
 
 #this is for further initialzation of attributes, since hash init cannot be self-referential:
 PL_POST_ATTRIBUTE_INIT := << (
+
 #cache initial debugging and vebosity values in local package variables:
 $self->update_static_class_attributes();
-
-#set output root for this the procedures:
-$self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm($procedureName));
-
-#create parameters container object, which will contain the list of our parameters:
-$self->{'mEcParameters'} = new {=_ECPARAMETERS_PACKAGE=}($self, $procedureName, $procedureId, 'ec_procedure_formal_parameter', 'procedure_id');
-
-#create properties container object, which will contain the list of our properties:
-$self->{'mEcProps'} = new {=_ECPROPS_PACKAGE=}($self);
-
-#create procedure steps container object, which will contain the list of our procedure steps:
-$self->{'mEcProcedureSteps'} = new {=_ECPROCEDURESTEPS_PACKAGE=}($self);
 )
 %evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }
@@ -109,7 +77,7 @@ $VERBOSE = $self->getVerbose();
 
 PL_PKG_METHODS := << (
 
-{=%include m/ecProcedure_mthd.defs=}
+{=%include m/ecParameter_mthd.defs=}
 
 {=getset_methods=}
 

@@ -11,6 +11,9 @@ sub loadProcedure
     #get my description (method defined in ecProjects):
     $self->fetchDescription('ec_procedure', $self->procedureId);
 
+    #load my parameters:
+    $self->ecParameters->loadParameters();
+
     #load my properties:
     $self->ecProps->loadProps();
 
@@ -38,6 +41,9 @@ sub dumpProcedure
 
     #write my description out:
     $self->dumpDescription();
+
+    #dump my parameters:
+    $self->ecParameters->dumpParameters($indent+2);
 
     #dump my properties:
     $self->ecProps->dumpProps($indent+2);

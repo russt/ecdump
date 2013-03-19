@@ -18,14 +18,16 @@ PARENT_PACKAGE := ${ECDUMP_PACKAGE}::
 
 OBJECTLIST := << [
 ecdumpImpl	ecdump implementation
-ecProject	object representing an EC Project
 ecProjects	collection of EC Projects
-ecProcedure	object representing an EC Procedure
+ecProject	object representing an EC Project
 ecProcedures	collection of EC Procedures
-ecProcedureStep	object representing an EC Procedure Step
+ecProcedure	object representing an EC Procedure
 ecProcedureSteps	collection of Procedure Steps
-ecProp	object representing an EC Property
+ecProcedureStep	object representing an EC Procedure Step
 ecProps	collection of EC Properties
+ecProp	object representing an EC Property
+ecParameters	collection of EC Parameters
+ecParameter	object representing a single EC Parameter
 ]
 
 %call newobj_create_objects
