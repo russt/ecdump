@@ -25,6 +25,14 @@ sub loadProcedureStep
     printf STDERR "%s: outroot:  '%s'->'%s'\n", ::srline(), $outroot, $self->getRootDir() if ($DDEBUG);
     #$self->setDDebug(0);
 
+    #load my formal parameters (most steps do not have):
+    #$self->ecParameters->setDDebug(1);
+    $self->ecParameters->loadParameters();
+    #$self->ecParameters->setDDebug(0);
+
+    #load my actual parameters:
+    $self->ecActualParameters->loadActualParameters();
+
     #load my properties:
     $self->ecProps->loadProps();
 
@@ -52,6 +60,13 @@ sub dumpProcedureStep
 
     #write my content out:
     $self->dumpProcStepContent();
+
+    #dump my formal parameters: 
+    #skip this step for now as these are not really used.  RT 3/19/13
+    #$self->ecParameters->dumpParameters($indent+2);
+
+    #dump my actual parameters:
+    $self->ecActualParameters->dumpActualParameters();
 
     #dump my properties:
     $self->ecProps->dumpProps($indent+2);

@@ -19,6 +19,7 @@ require "os.pl";
 )
 PL_PKG_IMPORTS = << (
 use $_ECPROPS_PACKAGE;
+use $_ECPARAMETERS_PACKAGE;
 require $_UTILS_PACKAGE;
 )
 %if    $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS:rnewline
@@ -61,6 +62,8 @@ Description	pl_getset	''
 #this is the EC properties object:
 PropertySheetId	pl_attr_method	$propertySheetId
 EcProps	pl_attr_method	undef
+EcParameters	pl_attr_method	undef
+EcActualParameters	pl_attr_method	undef
 )
 #see also: m/ecProcedureStep_mthd.defs
 %evalmacro ATTRIBUTE_LIST ATTRIBUTE_LIST
@@ -70,7 +73,7 @@ EcProps	pl_attr_method	undef
 }
 { ## constructor section
 PL_CONSTRUCTOR_BODY := << (
-my ($cfg, $procedureStepName, $procedureStepId, $propertySheetId) = @_;
+my ($cfg, $procedureStepName, $procedureStepId, $propertySheetId, $actualParametersId) = @_;
 )
 %evalmacro PL_CONSTRUCTOR_BODY PL_CONSTRUCTOR_BODY
 
@@ -84,8 +87,14 @@ PL_POST_ATTRIBUTE_INIT := << (
 #cache initial debugging and vebosity values in local package variables:
 $self->update_static_class_attributes();
 
+#create parameters container object, which will contain the list of our parameters:
+$self->{'mEcParameters'} = new {=_ECPARAMETERS_PACKAGE=}($self, $procedureStepName, $procedureStepId, 'ec_procedure_step_parameter', 'procedure_step_id');
+
 #create properties container object, which will contain the list of our properties:
-$self->{'mEcProps'} = new {=_ECPROPS_PACKAGE=}($self);
+$self->{'mEcProps'} = new {=_ECPROPS_PACKAGE=}($self, $propertySheetId);
+
+#create actual parameters container object, which in actuality is a list of properties:
+$self->{'mEcActualParameters'} = new {=_ECPROPS_PACKAGE=}($self, $actualParametersId);
 )
 %evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }

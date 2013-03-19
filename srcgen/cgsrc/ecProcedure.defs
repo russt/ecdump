@@ -90,7 +90,7 @@ $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm($procedureName));
 $self->{'mEcParameters'} = new {=_ECPARAMETERS_PACKAGE=}($self, $procedureName, $procedureId, 'ec_procedure_formal_parameter', 'procedure_id');
 
 #create properties container object, which will contain the list of our properties:
-$self->{'mEcProps'} = new {=_ECPROPS_PACKAGE=}($self);
+$self->{'mEcProps'} = new {=_ECPROPS_PACKAGE=}($self, $propertySheetId);
 
 #create procedure steps container object, which will contain the list of our procedure steps:
 $self->{'mEcProcedureSteps'} = new {=_ECPROCEDURESTEPS_PACKAGE=}($self);

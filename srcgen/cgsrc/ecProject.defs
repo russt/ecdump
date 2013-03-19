@@ -85,7 +85,7 @@ $self->update_static_class_attributes();
 $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm($projectName));
 
 #create properties container object, which will contain the list of our properties:
-$self->{'mEcProps'} = new {=_ECPROPS_PACKAGE=}($self);
+$self->{'mEcProps'} = new {=_ECPROPS_PACKAGE=}($self, $propertySheetId);
 
 #create procedure container object, which will contain the list of our procedures:
 $self->{'mEcProcedures'} = new {=_ECPROCEDURES_PACKAGE=}($self);

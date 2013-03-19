@@ -42,6 +42,20 @@ sub dumpProps
     return $errs;
 }
 
+sub loadActualParameters
+#alias for loadProp
+{
+    my ($self) = @_;
+    return $self->loadProps(@_);
+}
+
+sub dumpActualParameters
+#alias for dumpProps
+{
+    my ($self) = @_;
+    return $self->dumpProps(@_);
+}
+
 sub addOneProp
 #supports list and dump commands.
 #add a single property to the collection.

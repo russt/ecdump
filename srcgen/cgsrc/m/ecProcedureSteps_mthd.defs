@@ -61,7 +61,11 @@ sub addOneProcedureStep
 
     #no setter, for mEcProcedureStepsList - so use direct ref:
     push @{$self->{'mEcProcedureStepsList'}},
-        (new {=_ECPROCEDURESTEP_PACKAGE=}($self, $procedureStepName, $self->getNameIdMap->{$procedureStepName}, $self->getNamePropIdMap->{$procedureStepName}));
+        (new {=_ECPROCEDURESTEP_PACKAGE=}($self,
+            $procedureStepName,
+            $self->getNameIdMap->{$procedureStepName},
+            $self->getNamePropIdMap->{$procedureStepName},
+            $self->getNameActualParamsIdMap->{$procedureStepName}));
 
     return 0;
 }
@@ -91,7 +95,7 @@ sub initProcedureStepKeys
     my ($self) = @_;
     my ($sqlpj) = $self->sqlpj();
 
-    my $lbuf = sprintf("select name,id,property_sheet_id from ec_procedure_step where procedure_id=%s", $self->procedureId);
+    my $lbuf = sprintf("select name,id,property_sheet_id,actual_parameters_id from ec_procedure_step where procedure_id=%s", $self->procedureId);
 
     printf STDERR "%s: running sql query to get procedureSteps for procedure (%s,%s)\n", ::srline(), $self->procedureName, $self->procedureId  if ($DDEBUG);
 
@@ -102,18 +106,20 @@ sub initProcedureStepKeys
 
     #o'wise, stash results (query returns a ref to a list of list refs):
     my @results = map {
-        @{$_};    #dereference each row.  we expect an even number of name,id pairs
+        @{$_};    #dereference each row.
     } @{$sqlpj->getQueryResult()};
 
-    #map (name,id,propert_sheet_id) triples into nameId and namePropId hashes:
-    my (%nameId, %namePropId);
-    for (my $ii=0; $ii < $#results; $ii += 3) {
+    #map (name,id,propert_sheet_id,actual_parameters_id) tuples into hashes:
+    my (%nameId, %namePropId, %nameActualParamsId);
+    for (my $ii=0; $ii < $#results; $ii += 4) {
         $nameId{$results[$ii]} = $results[$ii+1];
         $namePropId{$results[$ii]} = $results[$ii+2];
+        $nameActualParamsId{$results[$ii]} = $results[$ii+3];
     }
     
     $self->setNameIdMap(\%nameId);
     $self->setNamePropIdMap(\%namePropId);
+    $self->setNameActualParamsIdMap(\%nameActualParamsId);
 
     if ($DDEBUG) {
         printf STDERR "%s: nameId result=\n", ::srline();
@@ -121,6 +127,9 @@ sub initProcedureStepKeys
 
         printf STDERR "%s: namePropId result=\n", ::srline();
         dumpDbKeys(\%namePropId);
+
+        printf STDERR "%s: nameActualParamsId result=\n", ::srline();
+        dumpDbKeys(\%nameActualParamsId);
     }
 
     $self->setDbKeysInitialized(1);

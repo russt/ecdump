@@ -53,6 +53,7 @@ ProcedureId	pl_attr_method	$cfg->procedureId
 DbKeysInitialized	pl_getset	0
 NameIdMap	pl_getset	undef
 NamePropIdMap	pl_getset	undef
+NameActualParamsIdMap	pl_getset	undef
 #this is my list of EC procedure step objects:
 EcProcedureStepsList	pl_attrlist_method	[]
 )

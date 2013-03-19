@@ -50,7 +50,7 @@ Verbose	pl_getset	$parent->getVerbose()
 Sqlpj	pl_attr_method	$parent->sqlpj()
 #local project attributes:
 RootDir	pl_attr_method	undef
-ParentPropertySheetId	pl_attr_method	$parent->propertySheetId()
+ParentPropertySheetId	pl_attr_method	$parentPropertySheetId
 DbKeysInitialized	pl_getset	0
 NameIdMap	pl_getset	undef
 #this is my list of EC properties objects:
@@ -64,7 +64,7 @@ EcPropsList	pl_attrlist_method	[]
 }
 { ## constructor section
 PL_CONSTRUCTOR_BODY := << (
-my ($parent) = @_;
+my ($parent, $parentPropertySheetId) = @_;
 )
 %evalmacro PL_CONSTRUCTOR_BODY PL_CONSTRUCTOR_BODY
 
