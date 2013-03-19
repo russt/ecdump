@@ -27,7 +27,7 @@ use $_ECPROJECTS_PACKAGE;
 {
 PL_PKG_ATTRIBUTES := << (
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
 )
 %evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
 

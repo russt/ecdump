@@ -42,20 +42,42 @@ use Exporter 'import';
 
 #package variables:
 #symbols we export by default:
-our @EXPORT = qw(ec2scm scm2ec dumpThisObject dumpDbKeys);
+our @EXPORT = qw(ec2scm scm2ec dumpThisObject dumpDbKeys init_utils);
+
+#standard debugging attributes:
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
 
 ################################### PACKAGE ####################################
 
+sub init_utils
+{
+    my ($cfg) = @_;
+
+    $DEBUG   = $cfg->getDebug();
+    $DDEBUG  = $cfg->getDDebug();
+    $QUIET   = $cfg->getQuiet();
+    $VERBOSE = $cfg->getVerbose();
+}
+
 sub ec2scm
 #map EC entity names to legal scm filenames.
+#WARNING:  do not call on a full path name!
 #TODO:  decide on translation map, perhaps map unwanted chars to UTF-8?
 {
-    my ($name) = @_;
+    my ($orig) = @_;
+    my ($new) = $orig;
 
-    #delete quotes and backslashes until I can think of a better idea.  RT 3/8/13
-    $name =~ tr/\'\"\\//d;
+    #delete quotes, etc until I can think of a better idea.  RT 3/8/13
+    $new =~ tr|\'\"\*\\||d;
 
-    return $name;
+    #we cannot allow slashes - map them to ':' for now:
+    $new =~ tr|\/|:|;
+
+    if ($VERBOSE && $new ne $orig) {
+        printf STDERR "\tec2scm mapped '$orig' -> '$new'\n", $orig, $new;
+    }
+
+    return $new;
 }
 
 sub scm2ec
@@ -105,7 +127,7 @@ require "sqlpj.pl";
 
 #package variables:
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
 
 sub new
 {
@@ -497,7 +519,7 @@ require "os.pl";
 #package variables:
 ecdump::utils->import;
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
 our @ISA = qw(ecdump::ecProjects);
 
 sub new
@@ -756,7 +778,7 @@ require "os.pl";
 #package variables:
 ecdump::utils->import;
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
 
 sub new
 {
@@ -1291,7 +1313,7 @@ require "os.pl";
 #package variables:
 ecdump::utils->import;
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
 our @ISA = qw(ecdump::ecProjects);
 
 sub new
@@ -1554,7 +1576,7 @@ require "os.pl";
 #package variables:
 ecdump::utils->import;
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
 our @ISA = qw(ecdump::ecProjects);
 
 sub new
@@ -1912,7 +1934,7 @@ require "os.pl";
 #package variables:
 ecdump::utils->import;
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
 our @ISA = qw(ecdump::ecProjects);
 
 sub new
@@ -2427,7 +2449,7 @@ require "os.pl";
 #package variables:
 ecdump::utils->import;
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
 our @ISA = qw(ecdump::ecProjects);
 
 sub new
@@ -2780,7 +2802,7 @@ my $pkgname = __PACKAGE__;
 #package variables:
 ecdump::utils->import;
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
 our @ISA = qw(ecdump::ecProjects);
 
 my %IgnorePropSheets = ();
@@ -3241,7 +3263,7 @@ require "os.pl";
 #package variables:
 ecdump::utils->import;
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
 our @ISA = qw(ecdump::ecProjects);
 
 my %IgnorePropSheets = ();
@@ -3591,8 +3613,8 @@ sub new
     my $self = bless {
         'mProgName' => undef,
         'mPathSeparator' => undef,
-        'mVersionNumber' => "0.20",
-        'mVersionDate' => "15-Mar-2013",
+        'mVersionNumber' => "0.21",
+        'mVersionDate' => "18-Mar-2013",
         'mDebug' => 0,
         'mDDebug' => 0,
         'mQuiet' => 0,
@@ -4478,6 +4500,9 @@ sub parse_args
 
     #add to the CLASSPATH if required:
     $edmpcfg->getSqlpjConfig->checkSetClasspath();
+
+    #initialize util debug settings:
+    init_utils($edmpcfg);
     return 0;
 }
 

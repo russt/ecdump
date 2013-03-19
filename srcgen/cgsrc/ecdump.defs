@@ -404,6 +404,9 @@ if (!$edmpcfg->getSqlpjConfig->checkJdbcSettings()) {
 
 #add to the CLASSPATH if required:
 $edmpcfg->getSqlpjConfig->checkSetClasspath();
+
+#initialize util debug settings:
+init_utils($edmpcfg);
 ]
 %evalmacro PL_PARSE_ARGS_POST PL_PARSE_ARGS_POST
 

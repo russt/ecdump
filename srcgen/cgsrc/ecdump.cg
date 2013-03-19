@@ -9,7 +9,7 @@ ECHO_TXT =
 #this is temporary until the object model is finalized.
 CG_ROOT = $CG_ROOT_BASE/objects
 %pragma trim_multiline_rnewline 0
-%include mkobjs.cg
+#%include mkobjs.cg
 %include ecdump_new.defs
 
 #now use to generate new objects:

@@ -28,7 +28,7 @@ use $_ECPROP_PACKAGE;
 PL_PKG_ATTRIBUTES := << (
 {=_UTILS_PACKAGE=}->import;
 #standard debugging attributes:
-my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0,undef);
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
 our @ISA = qw({=_ECPROJECTS_PACKAGE=});
 
 my %IgnorePropSheets = ();
