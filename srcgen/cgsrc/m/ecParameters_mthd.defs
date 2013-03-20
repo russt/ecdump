@@ -1,0 +1,142 @@
+#see also:  ecParameters.defs
+sub loadParameters
+#load each EC parameter from the database
+#return 0 on success.
+{
+    my ($self) = @_;
+
+    #first load myself the Parameter collection:
+    printf STDERR "      LOADING PARAMETERS\n" if ($DDEBUG);
+    $self->addAllParameters();
+
+    #then load each parameter:
+    for my $proc ($self->ecParameterList()) {
+        $proc->loadParameter();
+    }
+
+    return 0;
+}
+
+sub dumpParameters
+#dump each EC parameter to the dump tree.
+#return 0 on success.
+{
+    my ($self, $indent) = @_;
+    my $outroot = $self->rootDir();
+
+    #first dump myself the Parameter collection:
+    printf STDERR "%sDUMPING PARAMETERS -> %s\n", ' 'x$indent, $outroot if ($DEBUG);
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
+        return 1;
+    }
+
+    #then dump each parameter:
+    my $errs = 0;
+    for my $param ($self->ecParameterList()) {
+        $errs += $param->dumpParameter($indent+2);
+    }
+
+    return $errs;
+}
+
+sub addOneParameter
+#supports list and dump commands.
+#add a single parameter to the collection.
+#does not fully populate sub-objects. for that, use loadParameters();
+#return 0 on success.
+{
+    my ($self, $parameterName) = @_;
+
+    #initialize parameter keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->initParameterKeys());
+
+    #check that we have a legitimate parameter name:
+    if (!defined($self->getNameIdMap->{$parameterName})) {
+        printf STDERR "%s:  ERROR:  parameter '%s' is not in the database.\n", ::srline(), $parameterName;
+        return 1;
+    }
+
+    #no setter, for mEcParameterList - so use direct ref:
+    push @{$self->{'mEcParameterList'}}, (new {=_ECPARAMETER_PACKAGE=}($self, $parameterName, $self->getNameIdMap->{$parameterName}));
+
+    return 0;
+}
+
+sub addAllParameters
+#add all of the EC parameters to the collection.
+#returns 0 on success
+{
+    my ($self) = @_;
+
+    #initialize parameter keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->initParameterKeys());
+
+    #make sure we start with a clean list, in the event this routine has already been called:
+    $self->{'mEcParameterList'} = [];
+
+    #now add one parameter obj. per retrieved parameter:
+    for my $name (sort keys %{$self->getNameIdMap()}) {
+        $self->addOneParameter($name);
+    }
+
+    return 0;
+}
+
+sub initParameterKeys
+#create a table mapping ec_formal_parameter:(name,id) pairs to parent entity.
+#similar to EcProps except for differing linking tables names for different parent entities.
+{
+    my ($self) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    #result hash:
+    my %nameId = ();
+    $self->setNameIdMap(\%nameId);
+
+    #okay if no parameter sheet is null, I guess...
+    return 0 unless ($self->parentEntityId());
+
+# ec_formal_parameter:(id, version, name, created, created_millis, deleted, last_modified_by, modified, modified_millis, owner, default_value, description, entity_id, entity_type, expansion_deferred, required, type, acl_id, default_value_clob_id, description_clob_id)
+# ec_procedure_formal_parameter:(procedure_id, formal_parameter_id)
+# ec_procedure:(id, name, description, job_name_template, resource_name, workspace_name, acl_id, property_sheet_id, description_clob_id, job_name_template_clob_id, project_id)
+# select R.id, R.name, R.project_id, J.name, F.id, F.name, F.default_value, F.description, F.type, F.required, F.expansion_deferred
+#     from ec_procedure R, ec_project J, ec_procedure_formal_parameter M, ec_formal_parameter F
+#     where R.name='Module.CollectSources'and R.project_id = 399 and R.project_id = J.id
+#          and F.id = M.formal_parameter_id and M.procedure_id = R.id
+
+    my $lbuf = sprintf("select F.name, F.id
+            from ec_formal_parameter F, %s M
+            where F.id = M.formal_parameter_id and M.%s = %s",
+        $self->parameterTable,
+        $self->parameterTableIdColumn,
+        $self->parentEntityId());
+
+    printf STDERR "%s: running sql query to get parameters for parent (%s,%s)\n", ::srline(), $self->rootDir(), $self->parentEntityName  if ($DDEBUG);
+    printf STDERR "%s: sql query='%s'\n", ::srline(), $lbuf  if ($DDEBUG);
+
+    #note zero results is okay - just means parent entity has no parameters.
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.  we expect an even number of name,id pairs
+    } @{$sqlpj->getQueryResult()};
+
+
+    #map name,id rows into hash:
+    %nameId = @results;
+
+    if ($DEBUG) {
+        printf STDERR "%s: nameId result=\n", ::srline();
+        dumpDbKeys(\%nameId);
+    }
+
+    $self->setDbKeysInitialized(1);
+    return 0;
+}
