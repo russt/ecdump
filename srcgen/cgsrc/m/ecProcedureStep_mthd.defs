@@ -97,32 +97,9 @@ sub dumpProcStepContent
     $errs += $self->dumpProcStepCommand();
     $errs += $self->dumpProcStepPostProcessor();
     $errs += $self->dumpProcStepSubprocedure();
+    $errs += $self->dumpProcStepSwitches();
 
     return $errs;
-}
-
-sub dumpProcStepSubprocedure
-#write the subprocedure call to a file called subprocedure
-#return 0 if successful
-{
-    my ($self) = @_;
-    my $subprocedure = $self->getProcStepSubprocedure();
-    my $subproject   = $self->getProcStepSubproject();
-    my $txt = $subprocedure;
-
-    #don't create empty files:
-    return 0 if ($txt eq '');
-
-    if ($subprocedure ne '' && $subproject ne '') {
-        $txt = sprintf("%s/%s", $subproject, $subprocedure);
-    }
-
-    my $outroot = $self->getRootDir();
-
-    #fix eol:
-    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
-
-    return os::write_str2file(\$txt, path::mkpathname($outroot, "subprocedure"));
 }
 
 sub dumpProcStepCommand
@@ -161,6 +138,49 @@ sub dumpProcStepPostProcessor
     return os::write_str2file(\$txt, path::mkpathname($outroot, "postprocessor"));
 }
 
+sub dumpProcStepSubprocedure
+#write the subprocedure call to a file called subprocedure
+#return 0 if successful
+{
+    my ($self) = @_;
+    my $subprocedure = $self->getProcStepSubprocedure();
+    my $subproject   = $self->getProcStepSubproject();
+    my $txt = $subprocedure;
+
+    #don't create empty files:
+    return 0 if ($txt eq '');
+
+    if ($subprocedure ne '' && $subproject ne '') {
+        $txt = sprintf("%s/%s", $subproject, $subprocedure);
+    }
+
+    my $outroot = $self->getRootDir();
+
+    #fix eol:
+    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
+
+    return os::write_str2file(\$txt, path::mkpathname($outroot, "subprocedure"));
+}
+
+sub dumpProcStepSwitches
+#write the misc. parameter properties
+#return 0 if successful
+{
+    my ($self) = @_;
+    my $txt = $self->getSwitchText();
+    my $contentfn = $self->switchTextFname();
+
+    #don't create empty files:
+    return 0 if ($txt eq '');
+
+    my $outroot = $self->rootDir();
+
+    #fix eol:
+    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
+
+    return os::write_str2file(\$txt, path::mkpathname($outroot, $contentfn));
+}
+
 sub fetchProcStepContent
 #fetch the procedure step content for a given procedure step id.
 #return 0 if successful
@@ -180,7 +200,32 @@ sub fetchProcStepContent
     # description_clob_id, post_processor_clob_id, procedure_id, step_index)
 
     #this query should return only one row:
-    my $lbuf = sprintf("select step_index,subprocedure,subproject,command_clob_id,post_processor_clob_id,post_processor,command from ec_procedure_step where id=%d",$id);
+    my $lbuf = sprintf("select
+        step_index,
+        subprocedure,
+        subproject,
+        acl_id,
+        always_run,
+        broadcast,
+        error_handling,
+        exclusive_mode,
+        log_file_name,
+        parallel,
+        release_mode,
+        resource_name,
+        shell,
+        time_limit,
+        time_limit_units,
+        working_directory,
+        workspace_name,
+        command_clob_id,
+        post_processor_clob_id,
+        step_condition_clob_id,
+        post_processor,
+        step_condition,
+        command
+from ec_procedure_step
+where id=%d", $id);
 
     printf STDERR "%s: running sql query to get procedure step content fields\n", ::srline() if ($DDEBUG);
 
@@ -191,10 +236,10 @@ sub fetchProcStepContent
 
     #o'wise, stash results (query returns a ref to a list of list refs):
     my @results = map {
-        @{$_};    #dereference each row.  we expect one row with (step_index,subprocedure,subproject,command_clob_id,post_processor_clob_id,post_processor,command)
+        @{$_};    #dereference each row.  we expect one row
     } @{$sqlpj->getQueryResult()};
 
-    if ( $#results+1 != 7 ) {
+    if ( $#results+1 != 23 ) {
         printf STDERR "%s:  ERROR:  query '%s' returned wrong number of results (%d).\n", ::srline(), $lbuf, $#results+1;
         return 1;
     }
@@ -204,10 +249,32 @@ sub fetchProcStepContent
         defined($_) ? $_ : '';
     } @results;
 
-    my ($step_index, $subprocedure, $subproject, $command_clob_id, $post_processor_clob_id, $post_processor, $command) = @results;
+    my ($step_index,
+        $subprocedure,
+        $subproject,
+        $acl_id,
+        $always_run,
+        $broadcast,
+        $error_handling,
+        $exclusive_mode,
+        $log_file_name,
+        $parallel,
+        $release_mode,
+        $resource_name,
+        $shell,
+        $time_limit,
+        $time_limit_units,
+        $working_directory,
+        $workspace_name,
+        $command_clob_id,
+        $post_processor_clob_id,
+        $step_condition_clob_id,
+        $post_processor,
+        $step_condition,
+        $command) = @results;
 
     #$self->setDDebug(1);
-    printf STDERR "%s: (step_index,subprocedure,subproject,command_clob_id,post_processor_clob_id,post_processor,command)=(%s)\n",
+    printf STDERR "%s: (step_index,subprocedure,subproject,acl_id,always_run,broadcast,error_handling,exclusive_mode,log_file_name,parallel,release_mode,resource_name,shell,time_limit,time_limit_units,working_directory,workspace_name,command_clob_id,post_processor_clob_id,step_condition_clob_id,post_processor,step_condition,command)=(%s)\n",
         ::srline(), join(',', ($name,$id,@results)) if ($DDEBUG);
     #$self->setDDebug(0);
 
@@ -242,6 +309,26 @@ sub fetchProcStepContent
 
     #set step index for procedure step:
     $self->setProcStepIndex($step_index);
+
+    #create switches text:
+    my $switches = sprintf("procstep.always_run = %s
+procstep.broadcast = %s
+procstep.error_handling = %s
+procstep.exclusive_mode = %s
+procstep.log_file_name = %s
+procstep.parallel = %s
+procstep.release_mode = %s
+procstep.resource_name = %s
+procstep.shell = %s
+procstep.time_limit = %s
+procstep.time_limit_units = %s
+procstep.working_directory = %s
+procstep.workspace_name = %s
+", $always_run, $broadcast, $error_handling, $exclusive_mode, $log_file_name,
+    $parallel, $release_mode, $resource_name, $shell, $time_limit, $time_limit_units,
+    $working_directory, $workspace_name);
+
+    $self->setSwitchText($switches);
 
     return 0;
 }
