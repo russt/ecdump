@@ -61,6 +61,7 @@ ProcStepSubproject	pl_getset	''
 Description	pl_getset	''
 #this is the EC properties object:
 PropertySheetId	pl_attr_method	$propertySheetId
+ActualParametersId	pl_attr_method	$actualParametersId
 EcProps	pl_attr_method	undef
 EcParameters	pl_attr_method	undef
 EcActualParameters	pl_attr_method	undef
@@ -86,15 +87,6 @@ PL_OBJ_ATTRIBUTES := << (
 PL_POST_ATTRIBUTE_INIT := << (
 #cache initial debugging and vebosity values in local package variables:
 $self->update_static_class_attributes();
-
-#create parameters container object, which will contain the list of our parameters:
-$self->{'mEcParameters'} = new {=_ECPARAMETERS_PACKAGE=}($self, $procedureStepName, $procedureStepId, 'ec_procedure_step_parameter', 'procedure_step_id');
-
-#create properties container object, which will contain the list of our properties:
-$self->{'mEcProps'} = new {=_ECPROPS_PACKAGE=}($self, $propertySheetId);
-
-#create actual parameters container object, which in actuality is a list of properties:
-$self->{'mEcActualParameters'} = new {=_ECPROPS_PACKAGE=}($self, $actualParametersId);
 )
 %evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }

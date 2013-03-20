@@ -49,6 +49,7 @@ Sqlpj	pl_attr_method	$pprop->sqlpj()
 RootDir	pl_attr_method	undef
 PropertyName	pl_attr_method	$propertyName
 PropertyId	pl_attr_method	$propertyId
+PropertyContentFname	pl_attr_method	$pprop->propertyContentFname()
 #some properties have children:
 KidPropName	pl_getset	undef
 KidPropSheetId	pl_getset	undef

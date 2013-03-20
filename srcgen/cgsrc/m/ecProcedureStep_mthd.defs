@@ -25,6 +25,19 @@ sub loadProcedureStep
     printf STDERR "%s: outroot:  '%s'->'%s'\n", ::srline(), $outroot, $self->getRootDir() if ($DDEBUG);
     #$self->setDDebug(0);
 
+
+    #### we had to delay creating our sub-objects until root was set. ###
+    my ($psid, $apid) = ($self->propertySheetId(), $self->actualParametersId());
+
+    #create properties container object, which will contain the list of our properties:
+    $self->{'mEcProps'} = new {=_ECPROPS_PACKAGE=}($self, $psid);
+
+    #create parameters container object, which will contain the list of our formal parameters:
+    $self->{'mEcParameters'} = new {=_ECPARAMETERS_PACKAGE=}($self, $name, $id, 'ec_procedure_step_parameter', 'procedure_step_id');
+
+    #create actual parameters container object, which in actuality is a list of properties:
+    $self->{'mEcActualParameters'} = new {=_ECPROPS_PACKAGE=}($self, $apid, "actualparameters", "defaultvalue");
+
     #load my formal parameters (most steps do not have):
     #$self->ecParameters->setDDebug(1);
     $self->ecParameters->loadParameters();

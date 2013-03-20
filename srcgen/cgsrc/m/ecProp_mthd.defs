@@ -56,6 +56,7 @@ sub dumpPropertyContent
 {
     my ($self) = @_;
     my $txt = $self->getPropertyContent();
+    my $contentfn = $self->propertyContentFname();
 
     #don't create empty files:
     return 0 if ($txt eq '');
@@ -65,7 +66,7 @@ sub dumpPropertyContent
     #fix eol:
     $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
 
-    return os::write_str2file(\$txt, path::mkpathname($outroot, "content"));
+    return os::write_str2file(\$txt, path::mkpathname($outroot, $contentfn));
 }
 
 sub addKidProps

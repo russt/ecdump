@@ -49,8 +49,10 @@ ParameterName	pl_attr_method	$parameterName
 ParameterId	pl_attr_method	$parameterId
 #value of the parameter:
 ParameterContent	pl_getset	''
+PropertyContentFname	pl_attr_method	'defaultvalue'
 #misc. switches associated with this parameter:
 SwitchText	pl_getset	''
+SwitchTextFname	pl_attr_method	'parameter.settings'
 #description of the parameter:
 Description	pl_getset	''
 )
