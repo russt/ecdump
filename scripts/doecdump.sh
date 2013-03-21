@@ -57,7 +57,7 @@ bldmsg -p $p ECDUMP_IGNORES=$ECDUMP_IGNORES
 
 p=`basename $0`
 bldmsg -p $p -markbeg ecdump
-ecdump -clean -verbose -props $HOME/.jdbc/commander-slave.props -dump "$ECDUMPROOT" -P "$PROJECT/bnrprojects2.txt"
+ecdump -clean -verbose -props $PROJECT/.jdbc/commander-slave.props -dump "$ECDUMPROOT" -P "$PROJECT/bnrprojects2.txt"
 status=$?
 bldmsg -p $p -status $status -markend ecdump
 
@@ -73,7 +73,7 @@ fi
 #find the last 2 dumps:
 # yymmddhhmm
 #                             yy        mm        dd        hh        mm
-LAST2RUNS=`\ls -1 | grep '[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' | tail -2`
+LAST2RUNS=`\ls -1 | grep '^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$' | tail -2`
 nfiles=`echo $LAST2RUNS | wc -w`
 
 if [ $nfiles -eq 2 ]; then
