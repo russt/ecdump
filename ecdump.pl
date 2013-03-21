@@ -70,8 +70,8 @@ sub ec2scm
     #delete quotes, etc until I can think of a better idea.  RT 3/8/13
     $new =~ tr|\'\"\*\\||d;
 
-    #we cannot allow slashes - map them to ':' for now:
-    $new =~ tr|\/|:|;
+    #we cannot allow slashes - map them to '.', following the java convention:
+    $new =~ tr|\/|.|;
 
     if ($VERBOSE && $new ne $orig) {
         printf STDERR "\tec2scm mapped '$orig' -> '$new'\n", $orig, $new;
@@ -82,6 +82,9 @@ sub ec2scm
 
 sub scm2ec
 #map scm filenames back to EC entity names.
+#there is no backward translation defined as of yet.
+#this would only come into play for a "restore" feature.
+#RT 3/21/13
 {
     my ($name) = @_;
 
@@ -4589,8 +4592,8 @@ sub new
     my $self = bless {
         'mProgName' => undef,
         'mPathSeparator' => undef,
-        'mVersionNumber' => "0.22",
-        'mVersionDate' => "20-Mar-2013",
+        'mVersionNumber' => "0.23",
+        'mVersionDate' => "21-Mar-2013",
         'mDebug' => 0,
         'mDDebug' => 0,
         'mQuiet' => 0,
