@@ -1132,10 +1132,10 @@ sub fetchParameterContent
     printf STDERR "%s: (type, expansion_deferred, required, acl_id, default_value_clob_id, default_value)=(%s)\n", ::srline(), join(',', @results) if ($DDEBUG);
     #$self->setDDebug(0);
 
-    #create switches text:
-    my $switches = sprintf("parameter.type = %s
-parameter.expansion_deferred = %s
-parameter.required = %s
+    #create switches text (in a form that can be consumed by a posix shell):
+    my $switches=sprintf("parameter_type='%s'
+parameter_expansion_deferred='%s'
+parameter_required='%s'
 ", $type, $expansion_deferred, $required);
 
     $self->setSwitchText($switches);
@@ -1721,6 +1721,7 @@ sub new
         'mQuiet' => $cfg->getQuiet(),
         'mVerbose' => $cfg->getVerbose(),
         'mSqlpj' => $cfg->sqlpj(),
+        'mIndexProcedureStepNames' => $cfg->config->getIndexProcedureStepNameOption(),
         'mRootDir' => $cfg->rootDir(),
         'mProcedureStepName' => $procedureStepName,
         'mProcedureStepId' => $procedureStepId,
@@ -1755,6 +1756,7 @@ sub loadProcedureStep
     my ($self) = @_;
     my($name, $id) = ($self->procedureStepName(), $self->procedureStepId());
     my $outroot = $self->getRootDir();
+    my $addStepIndex = $self->indexProcedureStepNames();
 
     #first load this Procedure Step:
     printf STDERR "LOADING PROCEDURE STEP (%s,%s)\n", $name, $id  if ($DDEBUG);
@@ -1769,7 +1771,11 @@ sub loadProcedureStep
     my $step_index = $self->getProcStepIndex();
 
     #now we can finally set RootDir:
-    $self->setRootDir(path::mkpathname($outroot, sprintf("%02d_%s", $step_index, ec2scm($name))));
+    if ($addStepIndex) {
+        $self->setRootDir(path::mkpathname($outroot, sprintf("%02d_%s", $step_index, ec2scm($name))));
+    } else {
+        $self->setRootDir(path::mkpathname($outroot, ec2scm($name)));
+    }
 
     #$self->setDDebug(1);
     printf STDERR "%s: outroot:  '%s'->'%s'\n", ::srline(), $outroot, $self->getRootDir() if ($DDEBUG);
@@ -2060,22 +2066,23 @@ where id=%d", $id);
     #set step index for procedure step:
     $self->setProcStepIndex($step_index);
 
-    #create switches text:
-    my $switches = sprintf("procstep.always_run = %s
-procstep.broadcast = %s
-procstep.error_handling = %s
-procstep.exclusive_mode = %s
-procstep.log_file_name = %s
-procstep.parallel = %s
-procstep.release_mode = %s
-procstep.resource_name = %s
-procstep.shell = %s
-procstep.time_limit = %s
-procstep.time_limit_units = %s
-procstep.working_directory = %s
-procstep.workspace_name = %s
+    #create switches text (in a form that can be consumed by a posix shell):
+    my $switches=sprintf("procstep_always_run='%s'
+procstep_broadcast='%s'
+procstep_error_handling='%s'
+procstep_exclusive_mode='%s'
+procstep_log_file_name='%s'
+procstep_parallel='%s'
+procstep_release_mode='%s'
+procstep_resource_name='%s'
+procstep_shell='%s'
+procstep_step_index='%s'
+procstep_time_limit='%s'
+procstep_time_limit_units='%s'
+procstep_working_directory='%s'
+procstep_workspace_name='%s'
 ", $always_run, $broadcast, $error_handling, $exclusive_mode, $log_file_name,
-    $parallel, $release_mode, $resource_name, $shell, $time_limit, $time_limit_units,
+    $parallel, $release_mode, $resource_name, $shell, $step_index, $time_limit, $time_limit_units,
     $working_directory, $workspace_name);
 
     $self->setSwitchText($switches);
@@ -2159,6 +2166,13 @@ sub sqlpj
 {
     my ($self) = @_;
     return $self->{'mSqlpj'};
+}
+
+sub indexProcedureStepNames
+#return value of mIndexProcedureStepNames
+{
+    my ($self) = @_;
+    return $self->{'mIndexProcedureStepNames'};
 }
 
 sub getRootDir
@@ -4244,6 +4258,7 @@ sub execEcdump
 {
 
     my ($self) = @_;
+    my $outroot = $self->rootDir();
 
     if (!$self->haveListCommand() && !$self->haveDumpCommand()) {
         printf STDERR "%s:  nothing to do - please specify a list or dump command.\n", $self->progName();
@@ -4256,6 +4271,12 @@ sub execEcdump
             if ($self->cleanOutputDir() != 0) {
                 printf STDERR "%s: ERROR: clean output directory step failed. ABORT\n", $self->progName();
                 return 1;
+            }
+        } else {
+            if (-d $outroot) {
+                #this can give unpredictable results - warn the user.  RT 3/21/13
+                printf STDERR "%s: WARNING: dumping to existing directory '%s', use -clean to remove.\n",
+                    $self->progName(), $outroot unless ($QUIET);
             }
         }
 
@@ -4377,12 +4398,15 @@ sub createOutputDir
     my ($self) = @_;
     my $outroot = $self->rootDir();
 
-    printf STDERR "Creating output dir '%s'...\n", $outroot if $VERBOSE;
-
-    os::createdir($outroot, 0775) if (! -d $outroot);
     if (!-d $outroot) {
-        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
-        return 1;
+        printf STDERR "Creating output dir '%s'...\n", $outroot if $VERBOSE;
+
+        os::createdir($outroot, 0775);
+        #if still not there...
+        if (!-d $outroot) {
+            printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
+            return 1;
+        }
     }
     return 0;
 }
@@ -4592,7 +4616,7 @@ sub new
     my $self = bless {
         'mProgName' => undef,
         'mPathSeparator' => undef,
-        'mVersionNumber' => "0.23",
+        'mVersionNumber' => "0.24",
         'mVersionDate' => "21-Mar-2013",
         'mDebug' => 0,
         'mDDebug' => 0,
@@ -4614,6 +4638,8 @@ sub new
         'mHaveListCommand' => 0,
         'mHaveDumpCommand' => 0,
         'mIgnorePropertiesHash' => undef,
+        'mIndexProcedureStepNameOption' => 0,
+        'mHtmlDecorationOption' => 0,
         }, $class;
 
     #post-attribute init after we bless our $self (allows use of accessor methods):
@@ -5048,6 +5074,38 @@ sub setIgnorePropertiesHash
     return $self->{'mIgnorePropertiesHash'};
 }
 
+sub getIndexProcedureStepNameOption
+#return value of IndexProcedureStepNameOption
+{
+    my ($self) = @_;
+    return $self->{'mIndexProcedureStepNameOption'};
+}
+
+sub setIndexProcedureStepNameOption
+#set value of IndexProcedureStepNameOption and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mIndexProcedureStepNameOption'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mIndexProcedureStepNameOption'};
+}
+
+sub getHtmlDecorationOption
+#return value of HtmlDecorationOption
+{
+    my ($self) = @_;
+    return $self->{'mHtmlDecorationOption'};
+}
+
+sub setHtmlDecorationOption
+#set value of HtmlDecorationOption and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mHtmlDecorationOption'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mHtmlDecorationOption'};
+}
+
 sub update_static_class_attributes
 #method to update package level attributess as required
 {
@@ -5257,10 +5315,12 @@ OPTIONS
   -quiet            Display severe errors only.
 
   -list             List all projects and exit.
-
   -dump dirname     Dump any named projects, output rooted at <dirname>.
   -P file           Dump only the projects listed in <file>.
   -clean            Remove <dirname> prior to dump.
+
+  -indexsteps       Add index prefixes to dump of procedure step names dirs, e.g. "01_foostep"
+  -addhtml          Decorate dump with browser-friendly html indexes.
 
                     ===============
                     JDBC PROPERTIES
@@ -5320,6 +5380,13 @@ sub parse_args
                 $edmpcfg->getProgName(), $edmpcfg->versionNumber(), $edmpcfg->versionDate();
             $HELPFLAG = 1;   #this forces exit.
             return 0;
+        } elsif ($flag =~ '^-addhtml') {
+            # -addhtml          Decorate dump with browser-friendly html indexes.
+            $edmpcfg->setHtmlDecorationOption(1);
+            printf STDERR "%s: TODO:  implement -addhtml option.\n", $p;
+        } elsif ($flag =~ '^-indexsteps') {
+            # -indexsteps             add index prefixes to all procedure step names, e.g. "01_foostep"
+            $edmpcfg->setIndexProcedureStepNameOption(1);
         } elsif ($flag =~ '^-list') {
             # -list             List all projects and exit.
             $edmpcfg->setHaveListCommand(1);
@@ -5461,6 +5528,11 @@ sub parse_args
     if ($edmpcfg->getHaveDumpCommand() && !$edmpcfg->getHaveProjects()) {
         printf STDERR "%s: INFO:  dump specified, but no projects specified - will dump all projects.\n", $p unless($QUIET);
         $edmpcfg->setDumpAllProjects(1);
+    }
+
+    if ($edmpcfg->getHtmlDecorationOption() && $edmpcfg->getIndexProcedureStepNameOption(1)) {
+        printf STDERR "%s: WARN:  -indexsteps and -addhtml specified - will do -addhtml only.\n", $p unless($QUIET);
+        $edmpcfg->setIndexProcedureStepNameOption(0);
     }
 
     #####

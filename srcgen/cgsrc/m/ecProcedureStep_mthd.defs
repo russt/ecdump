@@ -5,6 +5,7 @@ sub loadProcedureStep
     my ($self) = @_;
     my($name, $id) = ($self->procedureStepName(), $self->procedureStepId());
     my $outroot = $self->getRootDir();
+    my $addStepIndex = $self->indexProcedureStepNames();
 
     #first load this Procedure Step:
     printf STDERR "LOADING PROCEDURE STEP (%s,%s)\n", $name, $id  if ($DDEBUG);
@@ -19,7 +20,11 @@ sub loadProcedureStep
     my $step_index = $self->getProcStepIndex();
 
     #now we can finally set RootDir:
-    $self->setRootDir(path::mkpathname($outroot, sprintf("%02d_%s", $step_index, ec2scm($name))));
+    if ($addStepIndex) {
+        $self->setRootDir(path::mkpathname($outroot, sprintf("%02d_%s", $step_index, ec2scm($name))));
+    } else {
+        $self->setRootDir(path::mkpathname($outroot, ec2scm($name)));
+    }
 
     #$self->setDDebug(1);
     printf STDERR "%s: outroot:  '%s'->'%s'\n", ::srline(), $outroot, $self->getRootDir() if ($DDEBUG);
@@ -310,22 +315,23 @@ where id=%d", $id);
     #set step index for procedure step:
     $self->setProcStepIndex($step_index);
 
-    #create switches text:
-    my $switches = sprintf("procstep.always_run = %s
-procstep.broadcast = %s
-procstep.error_handling = %s
-procstep.exclusive_mode = %s
-procstep.log_file_name = %s
-procstep.parallel = %s
-procstep.release_mode = %s
-procstep.resource_name = %s
-procstep.shell = %s
-procstep.time_limit = %s
-procstep.time_limit_units = %s
-procstep.working_directory = %s
-procstep.workspace_name = %s
+    #create switches text (in a form that can be consumed by a posix shell):
+    my $switches=sprintf("procstep_always_run='%s'
+procstep_broadcast='%s'
+procstep_error_handling='%s'
+procstep_exclusive_mode='%s'
+procstep_log_file_name='%s'
+procstep_parallel='%s'
+procstep_release_mode='%s'
+procstep_resource_name='%s'
+procstep_shell='%s'
+procstep_step_index='%s'
+procstep_time_limit='%s'
+procstep_time_limit_units='%s'
+procstep_working_directory='%s'
+procstep_workspace_name='%s'
 ", $always_run, $broadcast, $error_handling, $exclusive_mode, $log_file_name,
-    $parallel, $release_mode, $resource_name, $shell, $time_limit, $time_limit_units,
+    $parallel, $release_mode, $resource_name, $shell, $step_index, $time_limit, $time_limit_units,
     $working_directory, $workspace_name);
 
     $self->setSwitchText($switches);

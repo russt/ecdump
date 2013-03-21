@@ -7,6 +7,7 @@ sub execEcdump
 {
 
     my ($self) = @_;
+    my $outroot = $self->rootDir();
 
     if (!$self->haveListCommand() && !$self->haveDumpCommand()) {
         printf STDERR "%s:  nothing to do - please specify a list or dump command.\n", $self->progName();
@@ -19,6 +20,12 @@ sub execEcdump
             if ($self->cleanOutputDir() != 0) {
                 printf STDERR "%s: ERROR: clean output directory step failed. ABORT\n", $self->progName();
                 return 1;
+            }
+        } else {
+            if (-d $outroot) {
+                #this can give unpredictable results - warn the user.  RT 3/21/13
+                printf STDERR "%s: WARNING: dumping to existing directory '%s', use -clean to remove.\n",
+                    $self->progName(), $outroot unless ($QUIET);
             }
         }
 
@@ -140,12 +147,15 @@ sub createOutputDir
     my ($self) = @_;
     my $outroot = $self->rootDir();
 
-    printf STDERR "Creating output dir '%s'...\n", $outroot if $VERBOSE;
-
-    os::createdir($outroot, 0775) if (! -d $outroot);
     if (!-d $outroot) {
-        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
-        return 1;
+        printf STDERR "Creating output dir '%s'...\n", $outroot if $VERBOSE;
+
+        os::createdir($outroot, 0775);
+        #if still not there...
+        if (!-d $outroot) {
+            printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
+            return 1;
+        }
     }
     return 0;
 }

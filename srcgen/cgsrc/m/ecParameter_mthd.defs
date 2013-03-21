@@ -121,10 +121,10 @@ sub fetchParameterContent
     printf STDERR "%s: (type, expansion_deferred, required, acl_id, default_value_clob_id, default_value)=(%s)\n", ::srline(), join(',', @results) if ($DDEBUG);
     #$self->setDDebug(0);
 
-    #create switches text:
-    my $switches = sprintf("parameter.type = %s
-parameter.expansion_deferred = %s
-parameter.required = %s
+    #create switches text (in a form that can be consumed by a posix shell):
+    my $switches=sprintf("parameter_type='%s'
+parameter_expansion_deferred='%s'
+parameter_required='%s'
 ", $type, $expansion_deferred, $required);
 
     $self->setSwitchText($switches);

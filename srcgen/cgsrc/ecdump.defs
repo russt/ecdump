@@ -197,10 +197,12 @@ OPTIONS
   -quiet            Display severe errors only.
 
   -list             List all projects and exit.
-
   -dump dirname     Dump any named projects, output rooted at <dirname>.
   -P file           Dump only the projects listed in <file>.
   -clean            Remove <dirname> prior to dump.
+
+  -indexsteps       Add index prefixes to dump of procedure step names dirs, e.g. "01_foostep"
+  -addhtml          Decorate dump with browser-friendly html indexes.
 
                     ===============
                     JDBC PROPERTIES
@@ -257,6 +259,13 @@ PL_PARSE_ARGS_LOOP := << [
         $edmpcfg->getProgName(), $edmpcfg->versionNumber(), $edmpcfg->versionDate();
     $HELPFLAG = 1;   #this forces exit.
     return 0;
+} elsif ($flag =~ '^-addhtml') {
+    # -addhtml          Decorate dump with browser-friendly html indexes.
+    $edmpcfg->setHtmlDecorationOption(1);
+    printf STDERR "%s: TODO:  implement -addhtml option.\n", $p;
+} elsif ($flag =~ '^-indexsteps') {
+    # -indexsteps             add index prefixes to all procedure step names, e.g. "01_foostep"
+    $edmpcfg->setIndexProcedureStepNameOption(1);
 } elsif ($flag =~ '^-list') {
     # -list             List all projects and exit.
     $edmpcfg->setHaveListCommand(1);
@@ -386,6 +395,11 @@ if ($edmpcfg->getHaveDumpCommand() && $edmpcfg->getHaveListCommand()) {
 if ($edmpcfg->getHaveDumpCommand() && !$edmpcfg->getHaveProjects()) {
     printf STDERR "%s: INFO:  dump specified, but no projects specified - will dump all projects.\n", $p unless($QUIET);
     $edmpcfg->setDumpAllProjects(1);
+}
+
+if ($edmpcfg->getHtmlDecorationOption() && $edmpcfg->getIndexProcedureStepNameOption(1)) {
+    printf STDERR "%s: WARN:  -indexsteps and -addhtml specified - will do -addhtml only.\n", $p unless($QUIET);
+    $edmpcfg->setIndexProcedureStepNameOption(0);
 }
 
 #####

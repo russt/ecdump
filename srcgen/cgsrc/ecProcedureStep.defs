@@ -49,6 +49,8 @@ Verbose	pl_getset	$cfg->getVerbose()
 Sqlpj	pl_attr_method	$cfg->sqlpj()
 #local project attributes:
 #note that we do not set RootDir until we have fetched procedure step contents, which contains a step_index:
+#do we have -stepindex option?
+IndexProcedureStepNames	pl_attr_method	$cfg->config->getIndexProcedureStepNameOption()
 RootDir	pl_getset	$cfg->rootDir()
 ProcedureStepName	pl_attr_method	$procedureStepName
 ProcedureStepId	pl_attr_method	$procedureStepId
