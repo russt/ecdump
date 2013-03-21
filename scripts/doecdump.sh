@@ -57,7 +57,7 @@ bldmsg -p $p ECDUMP_IGNORES=$ECDUMP_IGNORES
 
 p=`basename $0`
 bldmsg -p $p -markbeg ecdump
-ecdump -clean -verbose -props $PROJECT/.jdbc/commander-slave.props -dump "$ECDUMPROOT" -P "$PROJECT/bnrprojects2.txt"
+ecdump -indexsteps -clean -verbose -props $PROJECT/.jdbc/commander-slave.props -dump "$ECDUMPROOT" -P "$PROJECT/bnrprojects2.txt"
 status=$?
 bldmsg -p $p -status $status -markend ecdump
 
