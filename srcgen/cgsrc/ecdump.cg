@@ -1,3 +1,6 @@
+#normal usage:            cado -u ecdump.cg
+#usage (if new objects):  cado -u -DMKOBJS ecdump.cg
+
 %ifndef BUILD_SETUP_COMPLETE %include ../build_setup.defs
 %ifdef DEBUG %echo ${CG_INFILE}:  CG_ROOT is $CG_ROOT
 
@@ -5,12 +8,19 @@
 ECHO_TXT =
 %if $GEN_ONE_MODULE	echo /$ONE_MODULE
 
+%ifdef  MKOBJS    MKOBJS = 1
+%ifndef MKOBJS    MKOBJS = 0
+
 #####
 #this is temporary until the object model is finalized.
 CG_ROOT = $CG_ROOT_BASE/objects
 %pragma trim_multiline_rnewline 0
-%include mkobjs.cg
-%include ecdump_new.defs
+
+#if we are developing new objects, define MKOBJS on the command line:
+%if    $MKOBJS %include mkobjs.cg
+
+%ifnot $MKOBJS %include ecdump_objs.defs
+%if    $MKOBJS %include ecdump_new.defs
 
 #now use to generate new objects:
 CG_ROOT = $CG_ROOT_BASE
@@ -31,7 +41,8 @@ CG_ROOT = $CG_ROOT_BASE
     perl_template = perl/prlmod.ptpl
     %call generate_a_module
 }
-%include ecdump_new.cg
+%ifnot $MKOBJS %include ecdump_objs.cg
+%if    $MKOBJS %include ecdump_new.cg
 {
     #configuration object (for main):
     PL_PACKAGE = $PKGCONFIG_PACKAGE

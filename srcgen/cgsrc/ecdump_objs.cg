@@ -1,0 +1,77 @@
+{
+    #ecProp
+    PL_PACKAGE = $ECPROP_PACKAGE
+    _PL_PACKAGE = $_ECPROP_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+{
+    #ecProps
+    PL_PACKAGE = $ECPROPS_PACKAGE
+    _PL_PACKAGE = $_ECPROPS_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+{
+    #ecParameter
+    PL_PACKAGE = $ECPARAMETER_PACKAGE
+    _PL_PACKAGE = $_ECPARAMETER_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+{
+    #ecParameters
+    PL_PACKAGE = $ECPARAMETERS_PACKAGE
+    _PL_PACKAGE = $_ECPARAMETERS_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+{
+    #ecProcedureStep
+    PL_PACKAGE = $ECPROCEDURESTEP_PACKAGE
+    _PL_PACKAGE = $_ECPROCEDURESTEP_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+{
+    #ecProcedureSteps
+    PL_PACKAGE = $ECPROCEDURESTEPS_PACKAGE
+    _PL_PACKAGE = $_ECPROCEDURESTEPS_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+{
+    #ecProcedure
+    PL_PACKAGE = $ECPROCEDURE_PACKAGE
+    _PL_PACKAGE = $_ECPROCEDURE_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+{
+    #ecProcedures
+    PL_PACKAGE = $ECPROCEDURES_PACKAGE
+    _PL_PACKAGE = $_ECPROCEDURES_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+{
+    #ecProject
+    PL_PACKAGE = $ECPROJECT_PACKAGE
+    _PL_PACKAGE = $_ECPROJECT_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+{
+    #ecProjects
+    PL_PACKAGE = $ECPROJECTS_PACKAGE
+    _PL_PACKAGE = $_ECPROJECTS_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+{
+    #ecdumpImpl
+    PL_PACKAGE = $ECDUMPIMPL_PACKAGE
+    _PL_PACKAGE = $_ECDUMPIMPL_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}

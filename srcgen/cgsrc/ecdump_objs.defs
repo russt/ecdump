@@ -1,0 +1,67 @@
+#ecProp object:
+ECPROP_PACKAGE  = ecProp
+_ECPROP_PACKAGE = ${ECDUMP_PACKAGE}::${ECPROP_PACKAGE}
+
+#ecProps object:
+ECPROPS_PACKAGE  = ecProps
+_ECPROPS_PACKAGE = ${ECDUMP_PACKAGE}::${ECPROPS_PACKAGE}
+
+#ecParameter object:
+ECPARAMETER_PACKAGE  = ecParameter
+_ECPARAMETER_PACKAGE = ${ECDUMP_PACKAGE}::${ECPARAMETER_PACKAGE}
+
+#ecParameters object:
+ECPARAMETERS_PACKAGE  = ecParameters
+_ECPARAMETERS_PACKAGE = ${ECDUMP_PACKAGE}::${ECPARAMETERS_PACKAGE}
+
+#ecProcedureStep object:
+ECPROCEDURESTEP_PACKAGE  = ecProcedureStep
+_ECPROCEDURESTEP_PACKAGE = ${ECDUMP_PACKAGE}::${ECPROCEDURESTEP_PACKAGE}
+
+#ecProcedureSteps object:
+ECPROCEDURESTEPS_PACKAGE  = ecProcedureSteps
+_ECPROCEDURESTEPS_PACKAGE = ${ECDUMP_PACKAGE}::${ECPROCEDURESTEPS_PACKAGE}
+
+#ecProcedure object:
+ECPROCEDURE_PACKAGE  = ecProcedure
+_ECPROCEDURE_PACKAGE = ${ECDUMP_PACKAGE}::${ECPROCEDURE_PACKAGE}
+
+#ecProcedures object:
+ECPROCEDURES_PACKAGE  = ecProcedures
+_ECPROCEDURES_PACKAGE = ${ECDUMP_PACKAGE}::${ECPROCEDURES_PACKAGE}
+
+#ecProject object:
+ECPROJECT_PACKAGE  = ecProject
+_ECPROJECT_PACKAGE = ${ECDUMP_PACKAGE}::${ECPROJECT_PACKAGE}
+
+#ecProjects object:
+ECPROJECTS_PACKAGE  = ecProjects
+_ECPROJECTS_PACKAGE = ${ECDUMP_PACKAGE}::${ECPROJECTS_PACKAGE}
+
+#ecdumpImpl object:
+ECDUMPIMPL_PACKAGE  = ecdumpImpl
+_ECDUMPIMPL_PACKAGE = ${ECDUMP_PACKAGE}::${ECDUMPIMPL_PACKAGE}
+
+
+generate_a_module := << //
+#user-level macro to generate a single module and append to single module
+{
+#%echo generate_a_module module_defs=$module_defs PL_PACKAGE=$PL_PACKAGE GEN_ONE_MODULE=$GEN_ONE_MODULE
+    %ifndef  perl_template       perl_template = perl/prlobj.ptpl
+    %ifndef  perl_outputfn       perl_outputfn = $_PL_PACKAGE:pm2path
+
+    %ifndef   PL_PACKAGE_PREFIX    PL_PACKAGE_PREFIX = ${DEFAULT_PACKAGE}::
+    %include  $module_defs
+    %if       $GEN_ONE_MODULE    $perl_template >>    /$ONE_MODULE
+    %include  perl/reset_template_vars.ptpl
+
+    %include  $module_defs
+    %ifnot    $GEN_ONE_MODULE    $perl_template       lib/$perl_outputfn
+    %include  perl/reset_template_vars.ptpl
+
+    %undef  module_defs
+    %undef  perl_template
+    %undef  perl_outputfn
+    %undef  PL_PACKAGE_PREFIX
+}
+//

@@ -16,18 +16,19 @@ CG_ROOT = $CG_ROOT_BASE/objects
 
 PARENT_PACKAGE := ${ECDUMP_PACKAGE}::
 
+#WARNING:  this have to be declared in dependent order, with dependents first!  RT 3/20/13
 OBJECTLIST := << [
-ecdumpImpl	ecdump implementation
-ecProjects	collection of EC Projects
-ecProject	object representing an EC Project
-ecProcedures	collection of EC Procedures
-ecProcedure	object representing an EC Procedure
-ecProcedureSteps	collection of Procedure Steps
-ecProcedureStep	object representing an EC Procedure Step
-ecProps	collection of EC Properties
 ecProp	object representing an EC Property
-ecParameters	collection of EC Parameters
+ecProps	collection of EC Properties
 ecParameter	object representing a single EC Parameter
+ecParameters	collection of EC Parameters
+ecProcedureStep	object representing an EC Procedure Step
+ecProcedureSteps	collection of Procedure Steps
+ecProcedure	object representing an EC Procedure
+ecProcedures	collection of EC Procedures
+ecProject	object representing an EC Project
+ecProjects	collection of EC Projects
+ecdumpImpl	ecdump implementation
 ]
 
 %call newobj_create_objects
