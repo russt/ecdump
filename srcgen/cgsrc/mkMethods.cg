@@ -1,0 +1,98 @@
+#use new %foreach form:
+%pragma version 1.99
+
+%include ../build_setup.defs
+
+%ifdef  MKOBJS    MKOBJS = 1
+%ifndef MKOBJS    MKOBJS = 0
+
+%ifnot $MKOBJS %include ecdump_objs.defs
+%if    $MKOBJS %include ecdump_new.defs
+
+%ifndef CG_ROOT    CG_ROOT = ./bld/objects
+CG_ROOT = $CG_ROOT_BASE/objects
+
+#use local templates to create a collection,object pattern.
+
+
+generate_ec_methods := << //
+{
+    %echo generating methods for $EcOjectName ...
+
+    #these are derived from base defs:
+    EcOjectNamePlural = ${EcOjectName}s
+    ecOjectName       = $EcOjectName:uncap
+    ecObjectNamePlural= ${ecOjectName}s
+    ecobject_phrase_plural = ${ecobject_phrase}s
+    ECOBJECT_PHRASE        = $ecobject_phrase:toupper
+    ECOBJECT_PHRASE_PLURAL = $ecobject_phrase_plural:toupper
+
+    CG_STACK_DELIMITER = ,
+    CG_GREP_SPEC := $_ = '$' . $_
+    ecSelectStack          = $EcObjectDbSelectList:split
+    EcObjectSelectCount    = $ecSelectStack:stacksize
+    EcObjectPerlSelectList = $ecSelectStack:g:showstack
+
+    ecFetchStack          = $EcObjectDbFetchList:split
+    EcObjectFetchCount    = $ecFetchStack:stacksize
+    EcObjectPerlFetchList = $ecFetchStack:g:showstack
+
+    #write the collection implementation:
+    templates/ecCollection_template.defs	m/ec${EcOjectNamePlural}_mthd.defs
+
+    #write the object implementation:
+    templates/ecObject_template.defs	m/ec${EcOjectName}_mthd.defs
+}
+//
+
+clear_ec_defs := << //
+{
+    %undef /^Ec.*/
+    %undef /^ec.*/
+    %undef /EC.*/
+}
+//
+
+genProcedureStepMethods := << //
+{
+    %call clear_ec_defs
+
+    #base definitions:
+    EcOjectName     = ProcedureStep
+    EcOjectShortName= ProcStep
+    ecobject_phrase = procedure step
+    _ECOBJECT_PACKAGE = {=_ECPROCEDURESTEP_PACKAGE=}
+
+    EcObjectDbTable        = ec_procedure_step
+    EcObjectDbObjectKey    = procedure_id
+    EcObjectDbSelectList   = name,id,property_sheet_id,actual_parameters_id
+    EcObjectDbFetchList    = step_index,subprocedure,subproject,acl_id,always_run,broadcast,error_handling,exclusive_mode,log_file_name,parallel,release_mode,resource_name,shell,time_limit,time_limit_units,working_directory,workspace_name,command_clob_id,post_processor_clob_id,step_condition_clob_id,post_processor,step_condition,command
+
+    %call generate_ec_methods
+}
+//
+
+genScheduleMethods := << //
+{
+    %call clear_ec_defs
+
+    #base definitions:
+    EcOjectName     = Schedule
+    EcOjectShortName= Sched
+    ecobject_phrase = schedule
+    _ECOBJECT_PACKAGE       = $_ECSCHEDULE_PACKAGE:nameof:cgvar
+    _ECOBJECT_PROPS_PACKAGE = $_ECPROPS_PACKAGE:nameof:cgvar
+
+    EcObjectDbTable        = ec_schedule
+    EcObjectDbObjectKey    = project_id
+    EcObjectDbSelectList   = name,id,property_sheet_id,actual_parameters_id
+    EcObjectDbFetchList    = name,id,property_sheet_id,actual_parameters_id
+
+    %call generate_ec_methods
+}
+//
+
+CG_FOREACH_SPLIT_PATTERN = /,/
+generateList = genProcedureStepMethods,genScheduleMethods
+
+%foreach generator generateList %call $generator

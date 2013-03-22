@@ -1,35 +1,29 @@
 #
-#ecProcedureSteps.defs -  definitions for ecProcedureSteps object.
+#ecSchedule.defs -  definitions for ecSchedule object.
 #
 
 #allows us to run stand-alone:
 %ifndef CG_ROOT %include ../build_setup.defs
 
 { ## header section
-PL_PACKAGE = $ECPROCEDURESTEPS_PACKAGE
-PL_PACKAGE_DESCRIPTION = collection of Procedure Steps
+PL_PACKAGE = $ECSCHEDULE_PACKAGE
+PL_PACKAGE_DESCRIPTION = object representing a single EC Schedule
 
 #not a base class - use standard constuctor name:
 PL_CONSTRUCTOR_NAME = new
 
 {
 PL_EXTERN_PKG_IMPORTS = << (
-require "path.pl";
-require "os.pl";
 )
 PL_PKG_IMPORTS = << (
-use $_ECPROCEDURESTEP_PACKAGE;
-require $_UTILS_PACKAGE;
 )
 %if    $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS:rnewline
 %ifnot $GEN_ONE_MODULE   PL_PKG_IMPORTS = ${PL_EXTERN_PKG_IMPORTS:rnewline}$PL_PKG_IMPORTS
 }
 
 PL_PKG_ATTRIBUTES := << (
-{=_UTILS_PACKAGE=}->import;
 #standard debugging attributes:
 my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
-our @ISA = qw({=_ECPROJECTS_PACKAGE=});
 )
 %evalmacro PL_PKG_ATTRIBUTES PL_PKG_ATTRIBUTES
 
@@ -38,7 +32,6 @@ our @ISA = qw({=_ECPROJECTS_PACKAGE=});
 #templates are: (r/w) pl_getset, pl_getsetlist; (r/o) pl_attr_method, pl_attrlist_method
 ####
 ATTRIBUTE_LIST := << (
-Config	pl_attr_method	$cfg->config()
 #debugging and verbosity levels, inherited from parent (r/w):
 Debug	pl_getset	$cfg->getDebug()
 DDebug	pl_getset	$cfg->getDDebug()
@@ -48,16 +41,17 @@ Verbose	pl_getset	$cfg->getVerbose()
 Sqlpj	pl_attr_method	$cfg->sqlpj()
 #local project attributes:
 RootDir	pl_attr_method	undef
-ParentEntityName	pl_attr_method	$cfg->procedureName
-ParentEntityId	pl_attr_method	$cfg->procedureId
-DbKeysInitialized	pl_getset	0
-NameIdMap	pl_getset	undef
-NamePropIdMap	pl_getset	undef
-NameActualParamsIdMap	pl_getset	undef
-#this is my list of EC procedure step objects:
-EcProcedureStepList	pl_attrlist_method	[]
+ScheduleName	pl_attr_method	$scheduleName
+ScheduleId	pl_attr_method	$scheduleId
+ScheduleContent	pl_getset	''
+ScheduleContentFname	pl_attr_method	'defaultvalue'
+#misc. switches associated with this schedule:
+#SwitchText	pl_getset	''
+#SwitchTextFname	pl_attr_method	'schedule.settings'
+#description of the schedule:
+Description	pl_getset	''
 )
-#see also:  m/ecProcedureSteps_mthd.defs
+#see also: m/ecSchedule_mthd.defs
 %evalmacro ATTRIBUTE_LIST ATTRIBUTE_LIST
 #generate attribute accessors (this creates class_attribute_dcls, getset_methods):
 %include perl/genattr.defs
@@ -65,7 +59,7 @@ EcProcedureStepList	pl_attrlist_method	[]
 }
 { ## constructor section
 PL_CONSTRUCTOR_BODY := << (
-my ($cfg) = @_;
+my ($cfg, $scheduleName, $scheduleId) = @_;
 )
 %evalmacro PL_CONSTRUCTOR_BODY PL_CONSTRUCTOR_BODY
 
@@ -76,11 +70,11 @@ PL_OBJ_ATTRIBUTES := << (
 
 #this is for further initialzation of attributes, since hash init cannot be self-referential:
 PL_POST_ATTRIBUTE_INIT := << (
+#set output root for the properties (this will be in parent dir):
+$self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm($self->scheduleName()));
+
 #cache initial debugging and vebosity values in local package variables:
 $self->update_static_class_attributes();
-
-#set output root for this the procedures:
-$self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm("proceduresteps"));
 )
 %evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }
@@ -96,7 +90,7 @@ $VERBOSE = $self->getVerbose();
 
 PL_PKG_METHODS := << (
 
-{=%include m/ecProcedureSteps_mthd.defs=}
+{=%include m/ecSchedule_mthd.defs=}
 
 {=getset_methods=}
 

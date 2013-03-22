@@ -9,6 +9,8 @@ m/ecProps_mthd.defs
 m/ecProp_mthd.defs
 m/ecParameters_mthd.defs
 m/ecParameter_mthd.defs
+m/ecSchedules_mthd.defs
+m/ecSchedule_mthd.defs
 ecdump.cg
 ecdump.defs
 ecdumpImpl.defs
@@ -22,6 +24,8 @@ ecProps.defs
 ecProp.defs
 ecParameters.defs
 ecParameter.defs
+ecSchedules.defs
+ecSchedule.defs
 pkgconfig.defs
 utils.defs
 ../build_setup.defs

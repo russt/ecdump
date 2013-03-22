@@ -20,6 +20,8 @@ PARENT_PACKAGE := ${ECDUMP_PACKAGE}::
 OBJECTLIST := << [
 ecProp	object representing an EC Property
 ecProps	collection of EC Properties
+ecSchedule	object representing a single EC Schedule
+ecSchedules	collection of EC Schedules
 ecParameter	object representing a single EC Parameter
 ecParameters	collection of EC Parameters
 ecProcedureStep	object representing an EC Procedure Step

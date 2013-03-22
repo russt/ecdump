@@ -1,0 +1,137 @@
+#see also:  ecSchedules.defs
+sub loadSchedules
+#load each EC schedule from the database
+#return 0 on success.
+{
+    my ($self) = @_;
+
+    #first load myself, the schedule collection:
+    printf STDERR "      LOADING SCHEDULES\n" if ($DDEBUG);
+    $self->addAllSchedules();
+
+    #then load each schedule:
+    for my $proc ($self->ecScheduleList()) {
+        $proc->loadSchedule();
+    }
+
+    return 0;
+}
+
+sub dumpSchedules
+#dump each EC schedule to the dump tree.
+#return 0 on success.
+{
+    my ($self, $indent) = @_;
+    my $outroot = $self->rootDir();
+
+    #first dump myself, the schedule collection:
+    printf STDERR "%sDUMPING SCHEDULES -> %s\n", ' 'x$indent, $outroot if ($DEBUG);
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
+        return 1;
+    }
+
+    #then dump each schedule:
+    my $errs = 0;
+    for my $proc ($self->ecScheduleList()) {
+        $errs += $proc->dumpSchedule($indent+2);
+    }
+
+    return $errs;
+}
+
+sub addOneSchedule
+#supports list and dump commands.
+#add a single schedule to the collection.
+#does not fully populate sub-objects. for that, use loadSchedules();
+#return 0 on success.
+{
+    my ($self, $scheduleName) = @_;
+
+    #initialize schedule keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->initScheduleKeys());
+
+    #check that we have a legitimate schedule name:
+    if (!defined($self->getNameIdMap->{$scheduleName})) {
+        printf STDERR "%s:  ERROR:  schedule '%s' is not in the database.\n", ::srline(), $scheduleName;
+        return 1;
+    }
+
+    #no setter, for mEcScheduleList - so use direct ref:
+    push @{$self->{'mEcScheduleList'}},
+        (new {=_ECSCHEDULE_PACKAGE=}($self,
+            $scheduleName,
+            $self->getNameIdMap->{$scheduleName},
+            $self->getNamePropIdMap->{$scheduleName},
+            $self->getNameActualParamsIdMap->{$scheduleName}));
+
+    return 0;
+}
+
+sub addAllSchedules
+#add all of the EC schedules to the collection.
+#returns 0 on success
+{
+    my ($self) = @_;
+
+    #initialize schedule keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->initScheduleKeys());
+
+    #make sure we start with a clean list, in the event this routine has already been called:
+    $self->{'mEcScheduleList'} = [];
+
+    #now add one schedule obj. per retrieved schedule:
+    for my $name (sort keys %{$self->getNameIdMap()}) {
+        $self->addOneSchedule($name);
+    }
+
+    return 0;
+}
+
+sub initScheduleKeys
+{
+    my ($self) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    my $lbuf = sprintf("select name,id,property_sheet_id,actual_parameters_id from ec_schedule where project_id=%s", $self->parentEntityId);
+
+    printf STDERR "%s: running sql query to get schedules for (%s,%s)\n", ::srline(), $self->parentEntityName, $self->parentEntityId  if ($DDEBUG);
+
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.
+    } @{$sqlpj->getQueryResult()};
+
+    #map (name,id,property_sheet_id,actual_parameters_id) tuples into hashes:
+    my (%nameId, %namePropId, %nameActualParamsId);
+    for (my $ii=0; $ii < $#results; $ii += 4) {
+        $nameId{$results[$ii]} = $results[$ii+1];
+        $namePropId{$results[$ii]} = $results[$ii+2];
+        $nameActualParamsId{$results[$ii]} = $results[$ii+3];
+    }
+    
+    $self->setNameIdMap(\%nameId);
+    $self->setNamePropIdMap(\%namePropId);
+    $self->setNameActualParamsIdMap(\%nameActualParamsId);
+
+    if ($DDEBUG) {
+        printf STDERR "%s: nameId result=\n", ::srline();
+        dumpDbKeys(\%nameId);
+
+        printf STDERR "%s: namePropId result=\n", ::srline();
+        dumpDbKeys(\%namePropId);
+
+        printf STDERR "%s: nameActualParamsId result=\n", ::srline();
+        dumpDbKeys(\%nameActualParamsId);
+    }
+
+    $self->setDbKeysInitialized(1);
+    return 0;
+}

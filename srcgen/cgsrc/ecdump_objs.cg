@@ -13,6 +13,20 @@
     %call generate_a_module
 }
 {
+    #ecSchedule
+    PL_PACKAGE = $ECSCHEDULE_PACKAGE
+    _PL_PACKAGE = $_ECSCHEDULE_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+{
+    #ecSchedules
+    PL_PACKAGE = $ECSCHEDULES_PACKAGE
+    _PL_PACKAGE = $_ECSCHEDULES_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+{
     #ecParameter
     PL_PACKAGE = $ECPARAMETER_PACKAGE
     _PL_PACKAGE = $_ECPARAMETER_PACKAGE

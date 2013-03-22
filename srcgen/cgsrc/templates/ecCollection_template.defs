@@ -1,0 +1,137 @@
+#see also:  ec{=EcOjectNamePlural=}.defs
+sub load{=EcOjectNamePlural=}
+#load each EC {=ecobject_phrase=} from the database
+#return 0 on success.
+{
+    my ($self) = @_;
+
+    #first load myself, the {=ecobject_phrase=} collection:
+    printf STDERR "      LOADING {=ECOBJECT_PHRASE_PLURAL=}\n" if ($DDEBUG);
+    $self->addAll{=EcOjectNamePlural=}();
+
+    #then load each {=ecobject_phrase=}:
+    for my $proc ($self->ec{=EcOjectName=}List()) {
+        $proc->load{=EcOjectName=}();
+    }
+
+    return 0;
+}
+
+sub dump{=EcOjectNamePlural=}
+#dump each EC {=ecobject_phrase=} to the dump tree.
+#return 0 on success.
+{
+    my ($self, $indent) = @_;
+    my $outroot = $self->rootDir();
+
+    #first dump myself, the {=ecobject_phrase=} collection:
+    printf STDERR "%sDUMPING {=ECOBJECT_PHRASE_PLURAL=} -> %s\n", ' 'x$indent, $outroot if ($DEBUG);
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
+        return 1;
+    }
+
+    #then dump each {=ecobject_phrase=}:
+    my $errs = 0;
+    for my $proc ($self->ec{=EcOjectName=}List()) {
+        $errs += $proc->dump{=EcOjectName=}($indent+2);
+    }
+
+    return $errs;
+}
+
+sub addOne{=EcOjectName=}
+#supports list and dump commands.
+#add a single {=ecOjectName=} to the collection.
+#does not fully populate sub-objects. for that, use load{=EcOjectNamePlural=}();
+#return 0 on success.
+{
+    my ($self, ${=ecOjectName=}Name) = @_;
+
+    #initialize {=ecOjectName=} keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->init{=EcOjectName=}Keys());
+
+    #check that we have a legitimate {=ecOjectName=} name:
+    if (!defined($self->getNameIdMap->{${=ecOjectName=}Name})) {
+        printf STDERR "%s:  ERROR:  {=ecOjectName=} '%s' is not in the database.\n", ::srline(), ${=ecOjectName=}Name;
+        return 1;
+    }
+
+    #no setter, for mEc{=EcOjectName=}List - so use direct ref:
+    push @{$self->{'mEc{=EcOjectName=}List'}},
+        (new {=_ECOBJECT_PACKAGE=}($self,
+            ${=ecOjectName=}Name,
+            $self->getNameIdMap->{${=ecOjectName=}Name},
+            $self->getNamePropIdMap->{${=ecOjectName=}Name},
+            $self->getNameActualParamsIdMap->{${=ecOjectName=}Name}));
+
+    return 0;
+}
+
+sub addAll{=EcOjectNamePlural=}
+#add all of the EC {=ecObjectNamePlural=} to the collection.
+#returns 0 on success
+{
+    my ($self) = @_;
+
+    #initialize {=ecOjectName=} keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->init{=EcOjectName=}Keys());
+
+    #make sure we start with a clean list, in the event this routine has already been called:
+    $self->{'mEc{=EcOjectName=}List'} = [];
+
+    #now add one {=ecOjectName=} obj. per retrieved {=ecOjectName=}:
+    for my $name (sort keys %{$self->getNameIdMap()}) {
+        $self->addOne{=EcOjectName=}($name);
+    }
+
+    return 0;
+}
+
+sub init{=EcOjectName=}Keys
+{
+    my ($self) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    my $lbuf = sprintf("select {=EcObjectDbSelectList=} from {=EcObjectDbTable=} where {=EcObjectDbObjectKey=}=%s", $self->parentEntityId);
+
+    printf STDERR "%s: running sql query to get {=ecObjectNamePlural=} for (%s,%s)\n", ::srline(), $self->parentEntityName, $self->parentEntityId  if ($DDEBUG);
+
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.
+    } @{$sqlpj->getQueryResult()};
+
+    #map ({=EcObjectDbSelectList=}) tuples into hashes:
+    my (%nameId, %namePropId, %nameActualParamsId);
+    for (my $ii=0; $ii < $#results; $ii += {=EcObjectSelectCount=}) {
+        $nameId{$results[$ii]} = $results[$ii+1];
+        $namePropId{$results[$ii]} = $results[$ii+2];
+        $nameActualParamsId{$results[$ii]} = $results[$ii+3];
+    }
+    
+    $self->setNameIdMap(\%nameId);
+    $self->setNamePropIdMap(\%namePropId);
+    $self->setNameActualParamsIdMap(\%nameActualParamsId);
+
+    if ($DDEBUG) {
+        printf STDERR "%s: nameId result=\n", ::srline();
+        dumpDbKeys(\%nameId);
+
+        printf STDERR "%s: namePropId result=\n", ::srline();
+        dumpDbKeys(\%namePropId);
+
+        printf STDERR "%s: nameActualParamsId result=\n", ::srline();
+        dumpDbKeys(\%nameActualParamsId);
+    }
+
+    $self->setDbKeysInitialized(1);
+    return 0;
+}
