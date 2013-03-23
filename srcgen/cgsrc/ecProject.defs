@@ -18,6 +18,7 @@ require "path.pl";
 require "os.pl";
 )
 PL_PKG_IMPORTS = << (
+use $_ECSCHEDULES_PACKAGE;
 use $_ECPROCEDURES_PACKAGE;
 use $_ECPROPS_PACKAGE;
 require $_UTILS_PACKAGE;
@@ -55,6 +56,8 @@ ProjectId	pl_attr_method	$projectId
 Description	pl_getset	''
 #this is the EC procedures object:
 EcProcedures	pl_attr_method	undef
+#this is the EC schedules object:
+EcSchedules	pl_attr_method	undef
 #this is the EC properties object:
 PropertySheetId	pl_attr_method	$propertySheetId
 EcProps	pl_attr_method	undef
@@ -83,6 +86,9 @@ $self->update_static_class_attributes();
 
 #set output root for this project:
 $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm($projectName));
+
+#create properties container object, which will contain the list of our properties:
+$self->{'mEcSchedules'} = new {=_ECSCHEDULES_PACKAGE=}($self, $projectName, $projectId);
 
 #create properties container object, which will contain the list of our properties:
 $self->{'mEcProps'} = new {=_ECPROPS_PACKAGE=}($self, $propertySheetId);

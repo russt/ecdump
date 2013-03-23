@@ -4,7 +4,7 @@ sub load{=EcOjectName=}
 {
     my ($self) = @_;
     my($name, $id) = ($self->{=ecOjectName=}Name(), $self->{=ecOjectName=}Id());
-    my $outroot = $self->getRootDir();
+    my $outroot = $self->rootDir();
 
     #first load this {=ecobject_phrase=}:
     printf STDERR "LOADING {=ECOBJECT_PHRASE=} (%s,%s)\n", $name, $id  if ($DDEBUG);
@@ -29,7 +29,7 @@ sub dump{=EcOjectName=}
 #return 0 on success
 {
     my ($self, $indent) = @_;
-    my $outroot = $self->getRootDir();
+    my $outroot = $self->rootDir();
 
     #first dump this {=ecobject_phrase=}:
     printf STDERR "%sDUMPING {=ECOBJECT_PHRASE=} (%s,%s) -> %s\n", ' 'x$indent, $self->{=ecOjectName=}Name, $self->{=ecOjectName=}Id, $outroot if ($DEBUG);

@@ -51,6 +51,8 @@ ParentEntityId	pl_attr_method	$parentId
 ParentEntityName	pl_attr_method	$parentName
 DbKeysInitialized	pl_getset	0
 NameIdMap	pl_getset	undef
+NamePropIdMap	pl_getset	undef
+NameActualParamsIdMap	pl_getset	undef
 #this is my list of EC schedule objects:
 EcScheduleList	pl_attrlist_method	[]
 )

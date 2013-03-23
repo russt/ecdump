@@ -4,7 +4,7 @@ sub loadSchedule
 {
     my ($self) = @_;
     my($name, $id) = ($self->scheduleName(), $self->scheduleId());
-    my $outroot = $self->getRootDir();
+    my $outroot = $self->rootDir();
 
     #first load this schedule:
     printf STDERR "LOADING SCHEDULE (%s,%s)\n", $name, $id  if ($DDEBUG);
@@ -29,7 +29,7 @@ sub dumpSchedule
 #return 0 on success
 {
     my ($self, $indent) = @_;
-    my $outroot = $self->getRootDir();
+    my $outroot = $self->rootDir();
 
     #first dump this schedule:
     printf STDERR "%sDUMPING SCHEDULE (%s,%s) -> %s\n", ' 'x$indent, $self->scheduleName, $self->scheduleId, $outroot if ($DEBUG);

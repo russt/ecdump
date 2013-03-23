@@ -10,6 +10,9 @@ sub loadProject
     #get my description (method defined in ecProjects):
     $self->fetchDescription('ec_project', $self->projectId);
 
+    #load my schedules:
+    $self->ecSchedules->loadSchedules();
+
     #load my properties:
     $self->ecProps->loadProps();
 
@@ -34,6 +37,9 @@ sub dumpProject
 
     #write my description out:
     $self->dumpDescription();
+
+    #dump my schedules:
+    $self->ecSchedules->dumpSchedules($indent+2);
 
     #dump my properties:
     $self->ecProps->dumpProps($indent+2);
