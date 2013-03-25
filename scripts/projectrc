@@ -26,7 +26,7 @@ set path = ( /usr/local/perl/bin $PROJECT $path )
 #setenv PERL_LIBPATH "/Users/russt/proj/tools/lib/cmn;/Users/russt/proj/tools/lib/cmn/perl5;/Users/russt/proj/tools/lib/cmn/perl5"
 
 #set extra memory for Inline::Java:
-setenv PERL_INLINE_JAVA_EXTRA_JAVA_ARGS '-Xmx1024m'
+setenv PERL_INLINE_JAVA_EXTRA_JAVA_ARGS '-Xmx2048m'
 
 #echo use sqlpj -props ~/.jdbc/lcommander.props
 
