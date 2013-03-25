@@ -16,10 +16,10 @@ sub loadSchedule
     $self->fetchSchedContent($name, $id);
 
     #load my actual parameters:
-    #$self->ecActualParameters->loadActualParameters();
+    $self->ecActualParameters->loadActualParameters();
 
     #load my properties:
-    #$self->ecProps->loadProps();
+    $self->ecProps->loadProps();
 
     return 0;
 }
@@ -47,10 +47,10 @@ sub dumpSchedule
     $self->dumpSchedContent();
 
     #dump my actual parameters:
-    #$self->ecActualParameters->dumpActualParameters();
+    $self->ecActualParameters->dumpActualParameters();
 
     #dump my properties:
-    #$self->ecProps->dumpProps($indent+2);
+    $self->ecProps->dumpProps($indent+2);
 
     return 0;
 }
@@ -62,7 +62,8 @@ sub dumpSchedContent
     my ($self) = @_;
     my ($errs) = 0;
 
-    #$errs += $self->dumpSchedSwitches();
+    $errs += $self->dumpSchedSwitches();
+    $errs += $self->dumpSchedProcedure();
 
     return $errs;
 }
@@ -86,6 +87,31 @@ sub dumpSchedSwitches
     return os::write_str2file(\$txt, path::mkpathname($outroot, $contentfn));
 }
 
+sub dumpSchedProcedure
+#write the misc. schedule procedure content
+#return 0 if successful
+{
+    my ($self) = @_;
+    my $contentfn = $self->schedProcedureFname();
+    my $procedure = $self->getSchedProcedure();
+    my $project = $self->projectName();
+    my $txt = $procedure;
+
+    #don't create empty files:
+    return 0 if ($txt eq '');
+
+    my $outroot = $self->rootDir();
+
+    if ($procedure ne '' && $project ne '') {
+        $txt = sprintf("%s/%s", $project, $procedure);
+    }
+
+    #fix eol:
+    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
+
+    return os::write_str2file(\$txt, path::mkpathname($outroot, $contentfn));
+}
+
 sub fetchSchedContent
 #fetch the schedule content for a given schedule id.
 #return 0 if successful
@@ -93,8 +119,16 @@ sub fetchSchedContent
     my ($self, $name, $id) = @_;
     my ($sqlpj) = $self->sqlpj();
 
+    ###########
+    #Attributes of interest in ec_schedule
+    #    id, version, name, begin_date, description, disabled, end_date,
+    #    run_interval, interval_units, misfire_policy, month_days,
+    #    priority, procedure_name, start_time, stop_time, time_zone, week_days,
+    #    acl_id, property_sheet_id, actual_parameters_id, description_clob_id, project_id
+    ###########
+
     #this query should return only one row:
-    my $lbuf = sprintf("select name,id,property_sheet_id,actual_parameters_id from ec_schedule where id=%d", $id);
+    my $lbuf = sprintf("select project_id,procedure_name,version,begin_date,disabled,end_date,run_interval,interval_units,misfire_policy,month_days,priority,start_time,stop_time,time_zone,week_days from ec_schedule where id=%d", $id);
 
     printf STDERR "%s: running sql query to get schedule content fields\n", ::srline() if ($DDEBUG);
 
@@ -108,7 +142,7 @@ sub fetchSchedContent
         @{$_};    #dereference each row.  we expect one row
     } @{$sqlpj->getQueryResult()};
 
-    if ( $#results+1 != 4 ) {
+    if ( $#results+1 != 15 ) {
         printf STDERR "%s:  ERROR:  query '%s' returned wrong number of results (%d).\n", ::srline(), $lbuf, $#results+1;
         return 1;
     }
@@ -118,11 +152,30 @@ sub fetchSchedContent
         defined($_) ? $_ : '';
     } @results;
 
-    my ($name,$id,$property_sheet_id,$actual_parameters_id) = @results;
+    my ($project_id,$procedure_name,$version,$begin_date,$disabled,$end_date,$run_interval,$interval_units,$misfire_policy,$month_days,$priority,$start_time,$stop_time,$time_zone,$week_days) = @results;
 
     #$self->setDDebug(1);
-    printf STDERR "%s: (name,id,property_sheet_id,actual_parameters_id)=(%s)\n", ::srline(), join(',', ($name,$id,@results)) if ($DDEBUG);
+    printf STDERR "%s: (project_id,procedure_name,version,begin_date,disabled,end_date,run_interval,interval_units,misfire_policy,month_days,priority,start_time,stop_time,time_zone,week_days)=(%s)\n", ::srline(), join(',', (@results)) if ($DDEBUG);
     #$self->setDDebug(0);
+
+    $self->setSchedProcedure($procedure_name);
+
+    #create switches text (in a form that can be consumed by a posix shell):
+    my $switches = sprintf("sched_begin_date='%s'
+sched_disabled='%s'
+sched_end_date='%s'
+sched_run_interval='%s'
+sched_interval_units='%s'
+sched_misfire_policy='%s'
+sched_month_days='%s'
+sched_priority='%s'
+sched_start_time='%s'
+sched_stop_time='%s'
+sched_time_zone='%s'
+sched_week_days='%s'
+sched_version='%s'", $begin_date,$disabled,$end_date,$run_interval,$interval_units,$misfire_policy,$month_days,$priority,$start_time,$stop_time,$time_zone,$week_days,$version);
+
+    $self->setSwitchText($switches);
 
     return 0;
 }

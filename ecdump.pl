@@ -953,6 +953,855 @@ sub update_static_class_attributes
 } #end of ecdump::ecProps
 {
 #
+#ecSchedule - object representing a single EC Schedule
+#
+
+use strict;
+
+package ecdump::ecSchedule;
+my $pkgname = __PACKAGE__;
+
+#imports:
+
+#package variables:
+ecdump::utils->import;
+our @ISA = qw(ecdump::ecProjects);
+
+#standard debugging attributes:
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
+
+sub new
+{
+    my ($invocant) = @_;
+    shift @_;
+
+    #allows this constructor to be invoked with reference or with explicit package name:
+    my $class = ref($invocant) || $invocant;
+
+    my ($cfg, $scheduleName, $scheduleId, $propertySheetId, $actualParametersId) = @_;
+
+    #set up class attribute  hash and bless it into class:
+    my $self = bless {
+        'mConfig' => $cfg->config(),
+        'mDebug' => $cfg->getDebug(),
+        'mDDebug' => $cfg->getDDebug(),
+        'mQuiet' => $cfg->getQuiet(),
+        'mVerbose' => $cfg->getVerbose(),
+        'mSqlpj' => $cfg->sqlpj(),
+        'mDescription' => '',
+        'mRootDir' => undef,
+        'mProjectName' => $cfg->parentEntityName(),
+        'mProjectId' => $cfg->parentEntityId(),
+        'mScheduleName' => $scheduleName,
+        'mScheduleId' => $scheduleId,
+        'mSchedProcedure' => '',
+        'mSchedProcedureFname' => 'procedure',
+        'mPropertySheetId' => $propertySheetId,
+        'mActualParametersId' => $actualParametersId,
+        'mSwitchText' => '',
+        'mSwitchTextFname' => 'schedule.settings',
+        'mEcProps' => undef,
+        'mEcActualParameters' => undef,
+        }, $class;
+
+    #post-attribute init after we bless our $self (allows use of accessor methods):
+    #cache initial debugging and vebosity values in local package variables:
+    $self->update_static_class_attributes();
+
+    #set output root for the properties (this will be in parent dir):
+    $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm($self->scheduleName()));
+
+    #create properties container object, which will contain the list of our properties:
+    $self->{'mEcProps'} = new ecdump::ecProps($self, $propertySheetId);
+
+    #create actual parameters container object, which in actuality is a list of properties:
+    $self->{'mEcActualParameters'} = new ecdump::ecProps($self, $actualParametersId, "actualparameters", "parametervalue");
+
+    return $self;
+}
+
+################################### PACKAGE ####################################
+
+#see also:  ecSchedule.defs
+sub loadSchedule
+#load this schedule.
+{
+    my ($self) = @_;
+    my($name, $id) = ($self->scheduleName(), $self->scheduleId());
+    my $outroot = $self->rootDir();
+
+    #first load this schedule:
+    printf STDERR "LOADING SCHEDULE (%s,%s)\n", $name, $id  if ($DDEBUG);
+
+    #get my description (method defined in ecProjects):
+    $self->fetchDescription('ec_schedule', $id);
+
+    #get my content:
+    $self->fetchSchedContent($name, $id);
+
+    #load my actual parameters:
+    $self->ecActualParameters->loadActualParameters();
+
+    #load my properties:
+    $self->ecProps->loadProps();
+
+    return 0;
+}
+
+sub dumpSchedule
+#dump this schedule.
+#return 0 on success
+{
+    my ($self, $indent) = @_;
+    my $outroot = $self->rootDir();
+
+    #first dump this schedule:
+    printf STDERR "%sDUMPING SCHEDULE (%s,%s) -> %s\n", ' 'x$indent, $self->scheduleName, $self->scheduleId, $outroot if ($DEBUG);
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
+        return 1;
+    }
+
+    #write my description out:
+    $self->dumpDescription();
+
+    #write my content out:
+    $self->dumpSchedContent();
+
+    #dump my actual parameters:
+    $self->ecActualParameters->dumpActualParameters();
+
+    #dump my properties:
+    $self->ecProps->dumpProps($indent+2);
+
+    return 0;
+}
+
+sub dumpSchedContent
+#write the schedule content to files.
+#return 0 if successful
+{
+    my ($self) = @_;
+    my ($errs) = 0;
+
+    $errs += $self->dumpSchedSwitches();
+    $errs += $self->dumpSchedProcedure();
+
+    return $errs;
+}
+
+sub dumpSchedSwitches
+#write the misc. schedule properties
+#return 0 if successful
+{
+    my ($self) = @_;
+    my $txt = $self->getSwitchText();
+    my $contentfn = $self->switchTextFname();
+
+    #don't create empty files:
+    return 0 if ($txt eq '');
+
+    my $outroot = $self->rootDir();
+
+    #fix eol:
+    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
+
+    return os::write_str2file(\$txt, path::mkpathname($outroot, $contentfn));
+}
+
+sub dumpSchedProcedure
+#write the misc. schedule procedure content
+#return 0 if successful
+{
+    my ($self) = @_;
+    my $contentfn = $self->schedProcedureFname();
+    my $procedure = $self->getSchedProcedure();
+    my $project = $self->projectName();
+    my $txt = $procedure;
+
+    #don't create empty files:
+    return 0 if ($txt eq '');
+
+    my $outroot = $self->rootDir();
+
+    if ($procedure ne '' && $project ne '') {
+        $txt = sprintf("%s/%s", $project, $procedure);
+    }
+
+    #fix eol:
+    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
+
+    return os::write_str2file(\$txt, path::mkpathname($outroot, $contentfn));
+}
+
+sub fetchSchedContent
+#fetch the schedule content for a given schedule id.
+#return 0 if successful
+{
+    my ($self, $name, $id) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    ###########
+    #Attributes of interest in ec_schedule
+    #    id, version, name, begin_date, description, disabled, end_date,
+    #    run_interval, interval_units, misfire_policy, month_days,
+    #    priority, procedure_name, start_time, stop_time, time_zone, week_days,
+    #    acl_id, property_sheet_id, actual_parameters_id, description_clob_id, project_id
+    ###########
+
+    #this query should return only one row:
+    my $lbuf = sprintf("select project_id,procedure_name,version,begin_date,disabled,end_date,run_interval,interval_units,misfire_policy,month_days,priority,start_time,stop_time,time_zone,week_days from ec_schedule where id=%d", $id);
+
+    printf STDERR "%s: running sql query to get schedule content fields\n", ::srline() if ($DDEBUG);
+
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.  we expect one row
+    } @{$sqlpj->getQueryResult()};
+
+    if ( $#results+1 != 15 ) {
+        printf STDERR "%s:  ERROR:  query '%s' returned wrong number of results (%d).\n", ::srline(), $lbuf, $#results+1;
+        return 1;
+    }
+
+    #map undefined values:
+    @results = map {
+        defined($_) ? $_ : '';
+    } @results;
+
+    my ($project_id,$procedure_name,$version,$begin_date,$disabled,$end_date,$run_interval,$interval_units,$misfire_policy,$month_days,$priority,$start_time,$stop_time,$time_zone,$week_days) = @results;
+
+    #$self->setDDebug(1);
+    printf STDERR "%s: (project_id,procedure_name,version,begin_date,disabled,end_date,run_interval,interval_units,misfire_policy,month_days,priority,start_time,stop_time,time_zone,week_days)=(%s)\n", ::srline(), join(',', (@results)) if ($DDEBUG);
+    #$self->setDDebug(0);
+
+    $self->setSchedProcedure($procedure_name);
+
+    #create switches text (in a form that can be consumed by a posix shell):
+    my $switches = sprintf("sched_begin_date='%s'
+sched_disabled='%s'
+sched_end_date='%s'
+sched_run_interval='%s'
+sched_interval_units='%s'
+sched_misfire_policy='%s'
+sched_month_days='%s'
+sched_priority='%s'
+sched_start_time='%s'
+sched_stop_time='%s'
+sched_time_zone='%s'
+sched_week_days='%s'
+sched_version='%s'", $begin_date,$disabled,$end_date,$run_interval,$interval_units,$misfire_policy,$month_days,$priority,$start_time,$stop_time,$time_zone,$week_days,$version);
+
+    $self->setSwitchText($switches);
+
+    return 0;
+}
+
+sub config
+#return value of mConfig
+{
+    my ($self) = @_;
+    return $self->{'mConfig'};
+}
+
+sub getDebug
+#return value of Debug
+{
+    my ($self) = @_;
+    return $self->{'mDebug'};
+}
+
+sub setDebug
+#set value of Debug and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mDebug'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mDebug'};
+}
+
+sub getDDebug
+#return value of DDebug
+{
+    my ($self) = @_;
+    return $self->{'mDDebug'};
+}
+
+sub setDDebug
+#set value of DDebug and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mDDebug'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mDDebug'};
+}
+
+sub getQuiet
+#return value of Quiet
+{
+    my ($self) = @_;
+    return $self->{'mQuiet'};
+}
+
+sub setQuiet
+#set value of Quiet and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mQuiet'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mQuiet'};
+}
+
+sub getVerbose
+#return value of Verbose
+{
+    my ($self) = @_;
+    return $self->{'mVerbose'};
+}
+
+sub setVerbose
+#set value of Verbose and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mVerbose'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mVerbose'};
+}
+
+sub sqlpj
+#return value of mSqlpj
+{
+    my ($self) = @_;
+    return $self->{'mSqlpj'};
+}
+
+sub getDescription
+#return value of Description
+{
+    my ($self) = @_;
+    return $self->{'mDescription'};
+}
+
+sub setDescription
+#set value of Description and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mDescription'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mDescription'};
+}
+
+sub rootDir
+#return value of mRootDir
+{
+    my ($self) = @_;
+    return $self->{'mRootDir'};
+}
+
+sub projectName
+#return value of mProjectName
+{
+    my ($self) = @_;
+    return $self->{'mProjectName'};
+}
+
+sub projectId
+#return value of mProjectId
+{
+    my ($self) = @_;
+    return $self->{'mProjectId'};
+}
+
+sub scheduleName
+#return value of mScheduleName
+{
+    my ($self) = @_;
+    return $self->{'mScheduleName'};
+}
+
+sub scheduleId
+#return value of mScheduleId
+{
+    my ($self) = @_;
+    return $self->{'mScheduleId'};
+}
+
+sub getSchedProcedure
+#return value of SchedProcedure
+{
+    my ($self) = @_;
+    return $self->{'mSchedProcedure'};
+}
+
+sub setSchedProcedure
+#set value of SchedProcedure and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mSchedProcedure'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mSchedProcedure'};
+}
+
+sub schedProcedureFname
+#return value of mSchedProcedureFname
+{
+    my ($self) = @_;
+    return $self->{'mSchedProcedureFname'};
+}
+
+sub propertySheetId
+#return value of mPropertySheetId
+{
+    my ($self) = @_;
+    return $self->{'mPropertySheetId'};
+}
+
+sub actualParametersId
+#return value of mActualParametersId
+{
+    my ($self) = @_;
+    return $self->{'mActualParametersId'};
+}
+
+sub getSwitchText
+#return value of SwitchText
+{
+    my ($self) = @_;
+    return $self->{'mSwitchText'};
+}
+
+sub setSwitchText
+#set value of SwitchText and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mSwitchText'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mSwitchText'};
+}
+
+sub switchTextFname
+#return value of mSwitchTextFname
+{
+    my ($self) = @_;
+    return $self->{'mSwitchTextFname'};
+}
+
+sub ecProps
+#return value of mEcProps
+{
+    my ($self) = @_;
+    return $self->{'mEcProps'};
+}
+
+sub ecActualParameters
+#return value of mEcActualParameters
+{
+    my ($self) = @_;
+    return $self->{'mEcActualParameters'};
+}
+
+sub update_static_class_attributes
+#static class method to update package level attributess as required
+#used to set verbosity and debugging for all objects of the class post-instantiation.
+{
+    my ($self) = @_;
+    $DEBUG   = $self->getDebug();
+    $DDEBUG  = $self->getDDebug();
+    $QUIET   = $self->getQuiet();
+    $VERBOSE = $self->getVerbose();
+}
+
+1;
+} #end of ecdump::ecSchedule
+{
+#
+#ecSchedules - collection of EC Schedules
+#
+
+use strict;
+
+package ecdump::ecSchedules;
+my $pkgname = __PACKAGE__;
+
+#imports:
+
+#package variables:
+ecdump::utils->import;
+our @ISA = qw(ecdump::ecProjects);
+
+#standard debugging attributes:
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
+
+sub new
+{
+    my ($invocant) = @_;
+    shift @_;
+
+    #allows this constructor to be invoked with reference or with explicit package name:
+    my $class = ref($invocant) || $invocant;
+
+    my ($cfg, $parentName, $parentId) = @_;
+
+    #set up class attribute  hash and bless it into class:
+    my $self = bless {
+        'mConfig' => $cfg->config(),
+        'mDebug' => $cfg->getDebug(),
+        'mDDebug' => $cfg->getDDebug(),
+        'mQuiet' => $cfg->getQuiet(),
+        'mVerbose' => $cfg->getVerbose(),
+        'mSqlpj' => $cfg->sqlpj(),
+        'mRootDir' => undef,
+        'mParentEntityId' => $parentId,
+        'mParentEntityName' => $parentName,
+        'mDbKeysInitialized' => 0,
+        'mNameIdMap' => undef,
+        'mNamePropIdMap' => undef,
+        'mNameActualParamsIdMap' => undef,
+        'mEcScheduleList' => [],
+        }, $class;
+
+    #post-attribute init after we bless our $self (allows use of accessor methods):
+    #set output root for the properties (this will be in parent dir):
+    $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm('schedules'));
+
+    #cache initial debugging and vebosity values in local package variables:
+    $self->update_static_class_attributes();
+
+    return $self;
+}
+
+################################### PACKAGE ####################################
+
+#see also:  ecSchedules.defs
+sub loadSchedules
+#load each EC schedule from the database
+#return 0 on success.
+{
+    my ($self) = @_;
+
+    #first load myself, the schedule collection:
+    printf STDERR "      LOADING SCHEDULES\n" if ($DDEBUG);
+    $self->addAllSchedules();
+
+    #then load each schedule:
+    for my $proc ($self->ecScheduleList()) {
+        $proc->loadSchedule();
+    }
+
+    return 0;
+}
+
+sub dumpSchedules
+#dump each EC schedule to the dump tree.
+#return 0 on success.
+{
+    my ($self, $indent) = @_;
+    my $outroot = $self->rootDir();
+
+    #first dump myself, the schedule collection:
+    printf STDERR "%sDUMPING SCHEDULES -> %s\n", ' 'x$indent, $outroot if ($DEBUG);
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
+        return 1;
+    }
+
+    #then dump each schedule:
+    my $errs = 0;
+    for my $proc ($self->ecScheduleList()) {
+        $errs += $proc->dumpSchedule($indent+2);
+    }
+
+    return $errs;
+}
+
+sub addOneSchedule
+#supports list and dump commands.
+#add a single schedule to the collection.
+#does not fully populate sub-objects. for that, use loadSchedules();
+#return 0 on success.
+{
+    my ($self, $scheduleName) = @_;
+
+    #initialize schedule keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->initScheduleKeys());
+
+    #check that we have a legitimate schedule name:
+    if (!defined($self->getNameIdMap->{$scheduleName})) {
+        printf STDERR "%s:  ERROR:  schedule '%s' is not in the database.\n", ::srline(), $scheduleName;
+        return 1;
+    }
+
+    #no setter, for mEcScheduleList - so use direct ref:
+    push @{$self->{'mEcScheduleList'}},
+        (new ecdump::ecSchedule($self,
+            $scheduleName,
+            $self->getNameIdMap->{$scheduleName},
+            $self->getNamePropIdMap->{$scheduleName},
+            $self->getNameActualParamsIdMap->{$scheduleName}));
+
+    return 0;
+}
+
+sub addAllSchedules
+#add all of the EC schedules to the collection.
+#returns 0 on success
+{
+    my ($self) = @_;
+
+    #initialize schedule keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->initScheduleKeys());
+
+    #make sure we start with a clean list, in the event this routine has already been called:
+    $self->{'mEcScheduleList'} = [];
+
+    #now add one schedule obj. per retrieved schedule:
+    for my $name (sort keys %{$self->getNameIdMap()}) {
+        $self->addOneSchedule($name);
+    }
+
+    return 0;
+}
+
+sub initScheduleKeys
+{
+    my ($self) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    my $lbuf = sprintf("select name,id,property_sheet_id,actual_parameters_id from ec_schedule where project_id=%s", $self->parentEntityId);
+
+    printf STDERR "%s: running sql query to get schedules for (%s,%s)\n", ::srline(), $self->parentEntityName, $self->parentEntityId  if ($DDEBUG);
+
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.
+    } @{$sqlpj->getQueryResult()};
+
+    #map (name,id,property_sheet_id,actual_parameters_id) tuples into hashes:
+    my (%nameId, %namePropId, %nameActualParamsId);
+    for (my $ii=0; $ii < $#results; $ii += 4) {
+        $nameId{$results[$ii]} = $results[$ii+1];
+        $namePropId{$results[$ii]} = $results[$ii+2];
+        $nameActualParamsId{$results[$ii]} = $results[$ii+3];
+    }
+    
+    $self->setNameIdMap(\%nameId);
+    $self->setNamePropIdMap(\%namePropId);
+    $self->setNameActualParamsIdMap(\%nameActualParamsId);
+
+    if ($DDEBUG) {
+        printf STDERR "%s: nameId result=\n", ::srline();
+        dumpDbKeys(\%nameId);
+
+        printf STDERR "%s: namePropId result=\n", ::srline();
+        dumpDbKeys(\%namePropId);
+
+        printf STDERR "%s: nameActualParamsId result=\n", ::srline();
+        dumpDbKeys(\%nameActualParamsId);
+    }
+
+    $self->setDbKeysInitialized(1);
+    return 0;
+}
+
+sub config
+#return value of mConfig
+{
+    my ($self) = @_;
+    return $self->{'mConfig'};
+}
+
+sub getDebug
+#return value of Debug
+{
+    my ($self) = @_;
+    return $self->{'mDebug'};
+}
+
+sub setDebug
+#set value of Debug and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mDebug'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mDebug'};
+}
+
+sub getDDebug
+#return value of DDebug
+{
+    my ($self) = @_;
+    return $self->{'mDDebug'};
+}
+
+sub setDDebug
+#set value of DDebug and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mDDebug'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mDDebug'};
+}
+
+sub getQuiet
+#return value of Quiet
+{
+    my ($self) = @_;
+    return $self->{'mQuiet'};
+}
+
+sub setQuiet
+#set value of Quiet and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mQuiet'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mQuiet'};
+}
+
+sub getVerbose
+#return value of Verbose
+{
+    my ($self) = @_;
+    return $self->{'mVerbose'};
+}
+
+sub setVerbose
+#set value of Verbose and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mVerbose'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mVerbose'};
+}
+
+sub sqlpj
+#return value of mSqlpj
+{
+    my ($self) = @_;
+    return $self->{'mSqlpj'};
+}
+
+sub rootDir
+#return value of mRootDir
+{
+    my ($self) = @_;
+    return $self->{'mRootDir'};
+}
+
+sub parentEntityId
+#return value of mParentEntityId
+{
+    my ($self) = @_;
+    return $self->{'mParentEntityId'};
+}
+
+sub parentEntityName
+#return value of mParentEntityName
+{
+    my ($self) = @_;
+    return $self->{'mParentEntityName'};
+}
+
+sub getDbKeysInitialized
+#return value of DbKeysInitialized
+{
+    my ($self) = @_;
+    return $self->{'mDbKeysInitialized'};
+}
+
+sub setDbKeysInitialized
+#set value of DbKeysInitialized and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mDbKeysInitialized'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mDbKeysInitialized'};
+}
+
+sub getNameIdMap
+#return value of NameIdMap
+{
+    my ($self) = @_;
+    return $self->{'mNameIdMap'};
+}
+
+sub setNameIdMap
+#set value of NameIdMap and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mNameIdMap'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mNameIdMap'};
+}
+
+sub getNamePropIdMap
+#return value of NamePropIdMap
+{
+    my ($self) = @_;
+    return $self->{'mNamePropIdMap'};
+}
+
+sub setNamePropIdMap
+#set value of NamePropIdMap and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mNamePropIdMap'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mNamePropIdMap'};
+}
+
+sub getNameActualParamsIdMap
+#return value of NameActualParamsIdMap
+{
+    my ($self) = @_;
+    return $self->{'mNameActualParamsIdMap'};
+}
+
+sub setNameActualParamsIdMap
+#set value of NameActualParamsIdMap and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mNameActualParamsIdMap'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mNameActualParamsIdMap'};
+}
+
+sub ecScheduleList
+#return mEcScheduleList list
+{
+    my ($self) = @_;
+    return @{$self->{'mEcScheduleList'}};
+}
+
+sub update_static_class_attributes
+#static class method to update package level attributess as required
+#used to set verbosity and debugging for all objects of the class post-instantiation.
+{
+    my ($self) = @_;
+    $DEBUG   = $self->getDebug();
+    $DDEBUG  = $self->getDDebug();
+    $QUIET   = $self->getQuiet();
+    $VERBOSE = $self->getVerbose();
+}
+
+1;
+} #end of ecdump::ecSchedules
+{
+#
 #ecParameter - object representing a single EC Parameter
 #
 
@@ -1792,7 +2641,7 @@ sub loadProcedureStep
     $self->{'mEcParameters'} = new ecdump::ecParameters($self, $name, $id, 'ec_procedure_step_parameter', 'procedure_step_id');
 
     #create actual parameters container object, which in actuality is a list of properties:
-    $self->{'mEcActualParameters'} = new ecdump::ecProps($self, $apid, "actualparameters", "defaultvalue");
+    $self->{'mEcActualParameters'} = new ecdump::ecProps($self, $apid, "actualparameters", "parametervalue");
 
     #load my formal parameters (most steps do not have):
     #$self->ecParameters->setDDebug(1);
@@ -2412,13 +3261,13 @@ sub new
         'mVerbose' => $cfg->getVerbose(),
         'mSqlpj' => $cfg->sqlpj(),
         'mRootDir' => undef,
-        'mProcedureName' => $cfg->procedureName,
-        'mProcedureId' => $cfg->procedureId,
+        'mParentEntityName' => $cfg->procedureName,
+        'mParentEntityId' => $cfg->procedureId,
         'mDbKeysInitialized' => 0,
         'mNameIdMap' => undef,
         'mNamePropIdMap' => undef,
         'mNameActualParamsIdMap' => undef,
-        'mEcProcedureStepsList' => [],
+        'mEcProcedureStepList' => [],
         }, $class;
 
     #post-attribute init after we bless our $self (allows use of accessor methods):
@@ -2440,12 +3289,12 @@ sub loadProcedureSteps
 {
     my ($self) = @_;
 
-    #first load myself the Procedure Step collection:
-    printf STDERR "      LOADING PROCEDURE Steps\n" if ($DDEBUG);
+    #first load myself, the procedure step collection:
+    printf STDERR "      LOADING PROCEDURE STEPS\n" if ($DDEBUG);
     $self->addAllProcedureSteps();
 
-    #then load each procedures step:
-    for my $proc ($self->ecProcedureStepsList()) {
+    #then load each procedure step:
+    for my $proc ($self->ecProcedureStepList()) {
         $proc->loadProcedureStep();
     }
 
@@ -2459,8 +3308,8 @@ sub dumpProcedureSteps
     my ($self, $indent) = @_;
     my $outroot = $self->rootDir();
 
-    #first dump myself the Procedure Step collection:
-    printf STDERR "%sDUMPING PROCEDURE Steps -> %s\n", ' 'x$indent, $outroot if ($DEBUG);
+    #first dump myself, the procedure step collection:
+    printf STDERR "%sDUMPING PROCEDURE STEPS -> %s\n", ' 'x$indent, $outroot if ($DEBUG);
 
     os::createdir($outroot, 0775) unless (-d $outroot);
     if (!-d $outroot) {
@@ -2468,9 +3317,9 @@ sub dumpProcedureSteps
         return 1;
     }
 
-    #then dump each procedures step:
+    #then dump each procedure step:
     my $errs = 0;
-    for my $proc ($self->ecProcedureStepsList()) {
+    for my $proc ($self->ecProcedureStepList()) {
         $errs += $proc->dumpProcedureStep($indent+2);
     }
 
@@ -2494,8 +3343,8 @@ sub addOneProcedureStep
         return 1;
     }
 
-    #no setter, for mEcProcedureStepsList - so use direct ref:
-    push @{$self->{'mEcProcedureStepsList'}},
+    #no setter, for mEcProcedureStepList - so use direct ref:
+    push @{$self->{'mEcProcedureStepList'}},
         (new ecdump::ecProcedureStep($self,
             $procedureStepName,
             $self->getNameIdMap->{$procedureStepName},
@@ -2515,7 +3364,7 @@ sub addAllProcedureSteps
     return 1 unless ($self->getDbKeysInitialized() || !$self->initProcedureStepKeys());
 
     #make sure we start with a clean list, in the event this routine has already been called:
-    $self->{'mEcProcedureStepsList'} = [];
+    $self->{'mEcProcedureStepList'} = [];
 
     #now add one procedureStep obj. per retrieved procedureStep:
     for my $name (sort keys %{$self->getNameIdMap()}) {
@@ -2530,9 +3379,9 @@ sub initProcedureStepKeys
     my ($self) = @_;
     my ($sqlpj) = $self->sqlpj();
 
-    my $lbuf = sprintf("select name,id,property_sheet_id,actual_parameters_id from ec_procedure_step where procedure_id=%s", $self->procedureId);
+    my $lbuf = sprintf("select name,id,property_sheet_id,actual_parameters_id from ec_procedure_step where procedure_id=%s", $self->parentEntityId);
 
-    printf STDERR "%s: running sql query to get procedureSteps for procedure (%s,%s)\n", ::srline(), $self->procedureName, $self->procedureId  if ($DDEBUG);
+    printf STDERR "%s: running sql query to get procedureSteps for (%s,%s)\n", ::srline(), $self->parentEntityName, $self->parentEntityId  if ($DDEBUG);
 
     if ( !$sqlpj->sql_exec($lbuf) ) {
         printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
@@ -2544,7 +3393,7 @@ sub initProcedureStepKeys
         @{$_};    #dereference each row.
     } @{$sqlpj->getQueryResult()};
 
-    #map (name,id,propert_sheet_id,actual_parameters_id) tuples into hashes:
+    #map (name,id,property_sheet_id,actual_parameters_id) tuples into hashes:
     my (%nameId, %namePropId, %nameActualParamsId);
     for (my $ii=0; $ii < $#results; $ii += 4) {
         $nameId{$results[$ii]} = $results[$ii+1];
@@ -2656,18 +3505,18 @@ sub rootDir
     return $self->{'mRootDir'};
 }
 
-sub procedureName
-#return value of mProcedureName
+sub parentEntityName
+#return value of mParentEntityName
 {
     my ($self) = @_;
-    return $self->{'mProcedureName'};
+    return $self->{'mParentEntityName'};
 }
 
-sub procedureId
-#return value of mProcedureId
+sub parentEntityId
+#return value of mParentEntityId
 {
     my ($self) = @_;
-    return $self->{'mProcedureId'};
+    return $self->{'mParentEntityId'};
 }
 
 sub getDbKeysInitialized
@@ -2734,11 +3583,11 @@ sub setNameActualParamsIdMap
     return $self->{'mNameActualParamsIdMap'};
 }
 
-sub ecProcedureStepsList
-#return mEcProcedureStepsList list
+sub ecProcedureStepList
+#return mEcProcedureStepList list
 {
     my ($self) = @_;
-    return @{$self->{'mEcProcedureStepsList'}};
+    return @{$self->{'mEcProcedureStepList'}};
 }
 
 sub update_static_class_attributes
@@ -3436,6 +4285,7 @@ sub new
         'mProjectId' => $projectId,
         'mDescription' => '',
         'mEcProcedures' => undef,
+        'mEcSchedules' => undef,
         'mPropertySheetId' => $propertySheetId,
         'mEcProps' => undef,
         }, $class;
@@ -3446,6 +4296,9 @@ sub new
 
     #set output root for this project:
     $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm($projectName));
+
+    #create properties container object, which will contain the list of our properties:
+    $self->{'mEcSchedules'} = new ecdump::ecSchedules($self, $projectName, $projectId);
 
     #create properties container object, which will contain the list of our properties:
     $self->{'mEcProps'} = new ecdump::ecProps($self, $propertySheetId);
@@ -3469,6 +4322,9 @@ sub loadProject
 
     #get my description (method defined in ecProjects):
     $self->fetchDescription('ec_project', $self->projectId);
+
+    #load my schedules:
+    $self->ecSchedules->loadSchedules();
 
     #load my properties:
     $self->ecProps->loadProps();
@@ -3494,6 +4350,9 @@ sub dumpProject
 
     #write my description out:
     $self->dumpDescription();
+
+    #dump my schedules:
+    $self->ecSchedules->dumpSchedules($indent+2);
 
     #dump my properties:
     $self->ecProps->dumpProps($indent+2);
@@ -3622,6 +4481,13 @@ sub ecProcedures
 {
     my ($self) = @_;
     return $self->{'mEcProcedures'};
+}
+
+sub ecSchedules
+#return value of mEcSchedules
+{
+    my ($self) = @_;
+    return $self->{'mEcSchedules'};
 }
 
 sub propertySheetId
@@ -4616,8 +5482,8 @@ sub new
     my $self = bless {
         'mProgName' => undef,
         'mPathSeparator' => undef,
-        'mVersionNumber' => "0.24",
-        'mVersionDate' => "21-Mar-2013",
+        'mVersionNumber' => "0.25",
+        'mVersionDate' => "25-Mar-2013",
         'mDebug' => 0,
         'mDDebug' => 0,
         'mQuiet' => 0,

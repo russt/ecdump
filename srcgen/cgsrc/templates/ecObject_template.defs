@@ -16,10 +16,10 @@ sub load{=EcOjectName=}
     $self->fetch{=EcOjectShortName=}Content($name, $id);
 
     #load my actual parameters:
-    #$self->ecActualParameters->loadActualParameters();
+    $self->ecActualParameters->loadActualParameters();
 
     #load my properties:
-    #$self->ecProps->loadProps();
+    $self->ecProps->loadProps();
 
     return 0;
 }
@@ -47,10 +47,10 @@ sub dump{=EcOjectName=}
     $self->dump{=EcOjectShortName=}Content();
 
     #dump my actual parameters:
-    #$self->ecActualParameters->dumpActualParameters();
+    $self->ecActualParameters->dumpActualParameters();
 
     #dump my properties:
-    #$self->ecProps->dumpProps($indent+2);
+    $self->ecProps->dumpProps($indent+2);
 
     return 0;
 }
@@ -62,7 +62,8 @@ sub dump{=EcOjectShortName=}Content
     my ($self) = @_;
     my ($errs) = 0;
 
-    #$errs += $self->dump{=EcOjectShortName=}Switches();
+    $errs += $self->dump{=EcOjectShortName=}Switches();
+    $errs += $self->dump{=EcOjectShortName=}Procedure();
 
     return $errs;
 }
@@ -86,12 +87,39 @@ sub dump{=EcOjectShortName=}Switches
     return os::write_str2file(\$txt, path::mkpathname($outroot, $contentfn));
 }
 
+sub dump{=EcOjectShortName=}Procedure
+#write the misc. {=ecobject_phrase=} procedure content
+#return 0 if successful
+{
+    my ($self) = @_;
+    my $contentfn = $self->{=ecOjectShortName=}ProcedureFname();
+    my $procedure = $self->get{=EcOjectShortName=}Procedure();
+    my $project = $self->projectName();
+    my $txt = $procedure;
+
+    #don't create empty files:
+    return 0 if ($txt eq '');
+
+    my $outroot = $self->rootDir();
+
+    if ($procedure ne '' && $project ne '') {
+        $txt = sprintf("%s/%s", $project, $procedure);
+    }
+
+    #fix eol:
+    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
+
+    return os::write_str2file(\$txt, path::mkpathname($outroot, $contentfn));
+}
+
 sub fetch{=EcOjectShortName=}Content
 #fetch the {=ecobject_phrase=} content for a given {=ecobject_phrase=} id.
 #return 0 if successful
 {
     my ($self, $name, $id) = @_;
     my ($sqlpj) = $self->sqlpj();
+
+{=$EcObjectDbTableComment:clrifndef:indent=}
 
     #this query should return only one row:
     my $lbuf = sprintf("select {=EcObjectDbFetchList=} from {=EcObjectDbTable=} where id=%d", $id);
@@ -121,8 +149,15 @@ sub fetch{=EcOjectShortName=}Content
     my ({=EcObjectPerlFetchList=}) = @results;
 
     #$self->setDDebug(1);
-    printf STDERR "%s: ({=EcObjectDbFetchList=})=(%s)\n", ::srline(), join(',', ($name,$id,@results)) if ($DDEBUG);
+    printf STDERR "%s: ({=EcObjectDbFetchList=})=(%s)\n", ::srline(), join(',', (@results)) if ($DDEBUG);
     #$self->setDDebug(0);
+
+    $self->set{=EcOjectShortName=}Procedure($procedure_name);
+
+    #create switches text (in a form that can be consumed by a posix shell):
+    my $switches = sprintf("{=EcObjectSwitchSprintfStr=}", {=EcObjectPerlSwitchList=});
+
+    $self->setSwitchText($switches);
 
     return 0;
 }

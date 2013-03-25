@@ -7,8 +7,8 @@
 ###########
 # note - version is initialized in pkgconfig.defs
 # TODO:  initialize these from:  cvs log -h ecdumpImpl.defs
-VERSION_STR  = 0.24
-VERSION_DATE = 21-Mar-2013
+VERSION_STR  = 0.25
+VERSION_DATE = 25-Mar-2013
 ###########
 
 %pragma trim_multiline_rnewline 1

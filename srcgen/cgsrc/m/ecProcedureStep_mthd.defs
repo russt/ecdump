@@ -41,7 +41,7 @@ sub loadProcedureStep
     $self->{'mEcParameters'} = new {=_ECPARAMETERS_PACKAGE=}($self, $name, $id, 'ec_procedure_step_parameter', 'procedure_step_id');
 
     #create actual parameters container object, which in actuality is a list of properties:
-    $self->{'mEcActualParameters'} = new {=_ECPROPS_PACKAGE=}($self, $apid, "actualparameters", "defaultvalue");
+    $self->{'mEcActualParameters'} = new {=_ECPROPS_PACKAGE=}($self, $apid, "actualparameters", "parametervalue");
 
     #load my formal parameters (most steps do not have):
     #$self->ecParameters->setDDebug(1);

@@ -27,15 +27,42 @@ generate_ec_methods := << //
     ECOBJECT_PHRASE        = $ecobject_phrase:toupper
     ECOBJECT_PHRASE_PLURAL = $ecobject_phrase_plural:toupper
 
+    ecOjectShortName     = ${EcOjectShortName:uncap}
+    EcObjectSwitchPrefix = ${EcOjectShortName:tolower}_
+
+    #allow whitespace in sql select specs:
+    CG_SPLIT_PATTERN = /[\n\t, ]+/
+    ecSelectStack          = $EcObjectDbSelectList:split
+    ecFetchStack           = $EcObjectDbFetchList:split
+    ecSwitchStack           = $EcObjectDbSwitchList:split
+
+    #output comma separated lists via :showstack:
     CG_STACK_DELIMITER = ,
     CG_GREP_SPEC := $_ = '$' . $_
-    ecSelectStack          = $EcObjectDbSelectList:split
-    EcObjectSelectCount    = $ecSelectStack:stacksize
-    EcObjectPerlSelectList = $ecSelectStack:g:showstack
 
-    ecFetchStack          = $EcObjectDbFetchList:split
-    EcObjectFetchCount    = $ecFetchStack:stacksize
+    #reformat select lists.. this could be more nicely done. RT 3/25/13
+    EcObjectDbSelectList   = $ecSelectStack:showstack
+    EcObjectPerlSelectList = $ecSelectStack:g:showstack
+    EcObjectSelectCount    = $ecSelectStack:stacksize
+
+    #for full fetch:
+    EcObjectDbFetchList    = $ecFetchStack:showstack
     EcObjectPerlFetchList = $ecFetchStack:g:showstack
+    EcObjectFetchCount     = $ecFetchStack:stacksize
+
+    #for switch settings:
+    EcObjectDbSwitchList    = $ecSwitchStack:showstack
+    EcObjectPerlSwitchList = $ecSwitchStack:g:showstack
+    EcObjectSwitchCount     = $ecSwitchStack:stacksize
+
+    #create sprintf format for switch settings:
+    CG_GREP_SPEC := $_ = "{=EcObjectSwitchPrefix=}" . "$_" . "='%s'"
+    %evalmacro CG_GREP_SPEC CG_GREP_SPEC
+    %void $CG_STACK_DELIMITER:clr:nl:a
+    EcObjectSwitchSprintfStr = $ecSwitchStack:g:showstack
+
+#%eecho CG_GREP_SPEC=.$CG_GREP_SPEC.
+#%eecho EcObjectSwitchSprintfStr=$EcObjectSwitchSprintfStr
 
     #write the collection implementation:
     templates/ecCollection_template.defs	m/ec${EcOjectNamePlural}_mthd.defs
@@ -86,8 +113,32 @@ genScheduleMethods := << //
     EcObjectDbTable        = ec_schedule
     EcObjectDbObjectKey    = project_id
     EcObjectDbSelectList   = name,id,property_sheet_id,actual_parameters_id
-    EcObjectDbFetchList    = name,id,property_sheet_id,actual_parameters_id
 
+EcObjectDbTableComment := << [
+###########
+#Attributes of interest in ec_schedule
+#    id, version, name, begin_date, description, disabled, end_date,
+#    run_interval, interval_units, misfire_policy, month_days,
+#    priority, procedure_name, start_time, stop_time, time_zone, week_days,
+#    acl_id, property_sheet_id, actual_parameters_id, description_clob_id, project_id
+###########
+]
+
+    #####
+    #note - we don't need to refetch data in EcObjectDbSelectList or description related fields.
+    #####
+    EcObjectDbFetchList := << [
+project_id, procedure_name, version, begin_date, disabled, end_date,
+run_interval, interval_units, misfire_policy, month_days,
+priority, start_time, stop_time, time_zone, week_days
+]
+
+    #list of fields to be treated as switches, go in *.settings file
+    EcObjectDbSwitchList := << [
+begin_date, disabled, end_date,
+run_interval, interval_units, misfire_policy, month_days,
+priority, start_time, stop_time, time_zone, week_days, version
+]
     %call generate_ec_methods
 }
 //

@@ -36,6 +36,7 @@ my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
 #templates are: (r/w) pl_getset, pl_getsetlist; (r/o) pl_attr_method, pl_attrlist_method
 ####
 ATTRIBUTE_LIST := << (
+Config	pl_attr_method	$cfg->config()
 #debugging and verbosity levels, inherited from parent (r/w):
 Debug	pl_getset	$cfg->getDebug()
 DDebug	pl_getset	$cfg->getDDebug()
@@ -44,16 +45,23 @@ Verbose	pl_getset	$cfg->getVerbose()
 #sqlpj interface (r/o):
 Sqlpj	pl_attr_method	$cfg->sqlpj()
 #local project attributes:
-RootDir	pl_attr_method	undef
-ScheduleName	pl_attr_method	$scheduleName
-ScheduleId	pl_attr_method	$scheduleId
-ScheduleContent	pl_getset	''
-ScheduleContentFname	pl_attr_method	'defaultvalue'
-#misc. switches associated with this schedule:
-#SwitchText	pl_getset	''
-#SwitchTextFname	pl_attr_method	'schedule.settings'
 #description of the schedule:
 Description	pl_getset	''
+RootDir	pl_attr_method	undef
+ProjectName	pl_attr_method	$cfg->parentEntityName()
+ProjectId	pl_attr_method	$cfg->parentEntityId()
+ScheduleName	pl_attr_method	$scheduleName
+ScheduleId	pl_attr_method	$scheduleId
+SchedProcedure	pl_getset	''
+SchedProcedureFname	pl_attr_method	'procedure'
+PropertySheetId	pl_attr_method	$propertySheetId
+ActualParametersId	pl_attr_method	$actualParametersId
+#misc. switches associated with this schedule:
+SwitchText	pl_getset	''
+SwitchTextFname	pl_attr_method	'schedule.settings'
+#these are the EC properties object for schedule properties & actual parameters:
+EcProps	pl_attr_method	undef
+EcActualParameters	pl_attr_method	undef
 )
 #see also: m/ecSchedule_mthd.defs
 %evalmacro ATTRIBUTE_LIST ATTRIBUTE_LIST
@@ -63,7 +71,7 @@ Description	pl_getset	''
 }
 { ## constructor section
 PL_CONSTRUCTOR_BODY := << (
-my ($cfg, $scheduleName, $scheduleId) = @_;
+my ($cfg, $scheduleName, $scheduleId, $propertySheetId, $actualParametersId) = @_;
 )
 %evalmacro PL_CONSTRUCTOR_BODY PL_CONSTRUCTOR_BODY
 
@@ -74,11 +82,17 @@ PL_OBJ_ATTRIBUTES := << (
 
 #this is for further initialzation of attributes, since hash init cannot be self-referential:
 PL_POST_ATTRIBUTE_INIT := << (
+#cache initial debugging and vebosity values in local package variables:
+$self->update_static_class_attributes();
+
 #set output root for the properties (this will be in parent dir):
 $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm($self->scheduleName()));
 
-#cache initial debugging and vebosity values in local package variables:
-$self->update_static_class_attributes();
+#create properties container object, which will contain the list of our properties:
+$self->{'mEcProps'} = new {=_ECPROPS_PACKAGE=}($self, $propertySheetId);
+
+#create actual parameters container object, which in actuality is a list of properties:
+$self->{'mEcActualParameters'} = new {=_ECPROPS_PACKAGE=}($self, $actualParametersId, "actualparameters", "parametervalue");
 )
 %evalmacro PL_POST_ATTRIBUTE_INIT PL_POST_ATTRIBUTE_INIT
 }
