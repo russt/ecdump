@@ -57,7 +57,9 @@ bldmsg -p $p ECDUMP_IGNORES=$ECDUMP_IGNORES
 
 p=`basename $0`
 bldmsg -p $p -markbeg ecdump
-ecdump -indexsteps -clean -verbose -props $PROJECT/.jdbc/commander-slave.props -dump "$ECDUMPROOT" -P "$PROJECT/bnrprojects2.txt"
+#remove -indexsteps:  too many diffs.  RT 3/27/13
+#ecdump -indexsteps -clean -verbose -props $PROJECT/.jdbc/commander-slave.props -dump "$ECDUMPROOT" -P "$PROJECT/bnrprojects2.txt"
+ecdump -clean -verbose -props $PROJECT/.jdbc/commander-slave.props -dump "$ECDUMPROOT" -P "$PROJECT/bnrprojects2.txt"
 status=$?
 bldmsg -p $p -status $status -markend ecdump
 
