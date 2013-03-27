@@ -137,7 +137,7 @@ priority, start_time, stop_time, time_zone, week_days
     EcObjectDbSwitchList := << [
 begin_date, disabled, end_date,
 run_interval, interval_units, misfire_policy, month_days,
-priority, start_time, stop_time, time_zone, week_days, version
+priority, start_time, stop_time, time_zone, week_days
 ]
     %call generate_ec_methods
 }

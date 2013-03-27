@@ -172,8 +172,7 @@ sched_priority='%s'
 sched_start_time='%s'
 sched_stop_time='%s'
 sched_time_zone='%s'
-sched_week_days='%s'
-sched_version='%s'", $begin_date,$disabled,$end_date,$run_interval,$interval_units,$misfire_policy,$month_days,$priority,$start_time,$stop_time,$time_zone,$week_days,$version);
+sched_week_days='%s'", $begin_date,$disabled,$end_date,$run_interval,$interval_units,$misfire_policy,$month_days,$priority,$start_time,$stop_time,$time_zone,$week_days);
 
     $self->setSwitchText($switches);
 

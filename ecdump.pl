@@ -1196,8 +1196,7 @@ sched_priority='%s'
 sched_start_time='%s'
 sched_stop_time='%s'
 sched_time_zone='%s'
-sched_week_days='%s'
-sched_version='%s'", $begin_date,$disabled,$end_date,$run_interval,$interval_units,$misfire_policy,$month_days,$priority,$start_time,$stop_time,$time_zone,$week_days,$version);
+sched_week_days='%s'", $begin_date,$disabled,$end_date,$run_interval,$interval_units,$misfire_policy,$month_days,$priority,$start_time,$stop_time,$time_zone,$week_days);
 
     $self->setSwitchText($switches);
 
@@ -5482,8 +5481,8 @@ sub new
     my $self = bless {
         'mProgName' => undef,
         'mPathSeparator' => undef,
-        'mVersionNumber' => "0.25",
-        'mVersionDate' => "25-Mar-2013",
+        'mVersionNumber' => "0.26",
+        'mVersionDate' => "27-Mar-2013",
         'mDebug' => 0,
         'mDDebug' => 0,
         'mQuiet' => 0,
