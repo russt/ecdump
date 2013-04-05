@@ -1,0 +1,35 @@
+#see also:  ecCloud.defs
+sub loadCloud
+#load each EC Cloud entity.
+#return 0 on success.
+{
+    my ($self, $indent) = @_;
+    my ($errs) = 0;
+
+    $errs += $self->ecResources->loadResources();
+    #$errs += $self->ecResourcePools->loadResourcePools();
+
+    return $errs;
+}
+
+sub dumpCloud
+#dump each EC Cloud entity to the dump tree.
+#return 0 on success.
+{
+    my ($self, $indent) = @_;
+    my $outroot = $self->rootDir();
+    my $errs = 0;
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
+        return 1;
+    }
+
+    printf STDERR "%sDUMPING CLOUD RESOURCES -> %s\n", ' 'x$indent, $outroot if ($VERBOSE);
+
+    $errs += $self->ecResources->dumpResources();
+    #$errs += $self->ecResourcePools->dumpResourcePools();
+
+    return $errs;
+}

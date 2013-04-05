@@ -1,0 +1,175 @@
+#see also:  ecResource.defs
+sub loadResource
+#load this resource.
+{
+    my ($self) = @_;
+    my($name, $id) = ($self->resourceName(), $self->resourceId());
+    my $outroot = $self->rootDir();
+
+    #first load this resource:
+    printf STDERR "LOADING RESOURCE (%s,%s)\n", $name, $id  if ($DDEBUG);
+
+    #get my description (method defined in ecProjects):
+    $self->fetchDescription('ec_resource', $id);
+
+    #get my content:
+    $self->fetchRsrcContent($name, $id);
+
+    #load my actual parameters:
+    $self->ecActualParameters->loadActualParameters();
+
+    #load my properties:
+    $self->ecProps->loadProps();
+
+    return 0;
+}
+
+sub dumpResource
+#dump this resource.
+#return 0 on success
+{
+    my ($self, $indent) = @_;
+    my $outroot = $self->rootDir();
+
+    #first dump this resource:
+    printf STDERR "%sDUMPING RESOURCE (%s,%s) -> %s\n", ' 'x$indent, $self->resourceName, $self->resourceId, $outroot if ($DEBUG);
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
+        return 1;
+    }
+
+    #write my description out:
+    $self->dumpDescription();
+
+    #write my content out:
+    $self->dumpRsrcContent();
+
+    #dump my actual parameters:
+    $self->ecActualParameters->dumpActualParameters();
+
+    #dump my properties:
+    $self->ecProps->dumpProps($indent+2);
+
+    return 0;
+}
+
+sub dumpRsrcContent
+#write the resource content to files.
+#return 0 if successful
+{
+    my ($self) = @_;
+    my ($errs) = 0;
+
+    $errs += $self->dumpRsrcSwitches();
+    $errs += $self->dumpRsrcProcedure();
+
+    return $errs;
+}
+
+sub dumpRsrcSwitches
+#write the misc. resource properties
+#return 0 if successful
+{
+    my ($self) = @_;
+    my $txt = $self->getSwitchText();
+    my $contentfn = $self->switchTextFname();
+
+    #don't create empty files:
+    return 0 if ($txt eq '');
+
+    my $outroot = $self->rootDir();
+
+    #fix eol:
+    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
+
+    return os::write_str2file(\$txt, path::mkpathname($outroot, $contentfn));
+}
+
+sub dumpRsrcProcedure
+#write the misc. resource procedure content
+#return 0 if successful
+{
+    my ($self) = @_;
+    my $contentfn = $self->rsrcProcedureFname();
+    my $procedure = $self->getRsrcProcedure();
+    my $project = $self->projectName();
+    my $txt = $procedure;
+
+    #don't create empty files:
+    return 0 if ($txt eq '');
+
+    my $outroot = $self->rootDir();
+
+    if ($procedure ne '' && $project ne '') {
+        $txt = sprintf("%s/%s", $project, $procedure);
+    }
+
+    #fix eol:
+    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
+
+    return os::write_str2file(\$txt, path::mkpathname($outroot, $contentfn));
+}
+
+sub fetchRsrcContent
+#fetch the resource content for a given resource id.
+#return 0 if successful
+{
+    my ($self, $name, $id) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    ###########
+    #Attributes of possible interest in ec_resource
+    #    id, version, name, deleted, owner, description, repository_names,
+    #    disabled, shell, step_limit, workspace_name, acl_id, property_sheet_id,
+    #    agent_id, description_clob_id, repository_names_clob_id, job_id, job_step_id
+    ###########
+
+
+    #this query should return only one row:
+    my $lbuf = sprintf("select version,name,deleted,owner,disabled,shell,step_limit,workspace_name,property_sheet_id,agent_id,repository_names_clob_id,repository_names, from ec_resource where id=%d", $id);
+
+    printf STDERR "%s: running sql query to get resource content fields\n", ::srline() if ($DDEBUG);
+
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.  we expect one row
+    } @{$sqlpj->getQueryResult()};
+
+    if ( $#results+1 != 13 ) {
+        printf STDERR "%s:  ERROR:  query '%s' returned wrong number of results (%d).\n", ::srline(), $lbuf, $#results+1;
+        return 1;
+    }
+
+    #map undefined values:
+    @results = map {
+        defined($_) ? $_ : '';
+    } @results;
+
+    my ($version,$name,$deleted,$owner,$disabled,$shell,$step_limit,$workspace_name,$property_sheet_id,$agent_id,$repository_names_clob_id,$repository_names) = @results;
+
+    #$self->setDDebug(1);
+    printf STDERR "%s: (version,name,deleted,owner,disabled,shell,step_limit,workspace_name,property_sheet_id,agent_id,repository_names_clob_id,repository_names,)=(%s)\n", ::srline(), join(',', (@results)) if ($DDEBUG);
+    #$self->setDDebug(0);
+
+    $self->setRsrcProcedure($procedure_name);
+
+    #create switches text (in a form that can be consumed by a posix shell):
+    my $switches = sprintf("rsrc_version='%s'
+rsrc_name='%s'
+rsrc_deleted='%s'
+rsrc_owner='%s'
+rsrc_disabled='%s'
+rsrc_shell='%s'
+rsrc_step_limit='%s'", $version,$name,$deleted,$owner,$disabled,$shell,$step_limit);
+
+    $self->setSwitchText($switches);
+
+    return 0;
+}

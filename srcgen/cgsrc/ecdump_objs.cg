@@ -13,6 +13,20 @@
     %call generate_a_module
 }
 {
+    #ecResource
+    PL_PACKAGE = $ECRESOURCE_PACKAGE
+    _PL_PACKAGE = $_ECRESOURCE_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+{
+    #ecResources
+    PL_PACKAGE = $ECRESOURCES_PACKAGE
+    _PL_PACKAGE = $_ECRESOURCES_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+{
     #ecSchedule
     PL_PACKAGE = $ECSCHEDULE_PACKAGE
     _PL_PACKAGE = $_ECSCHEDULE_PACKAGE
@@ -79,6 +93,13 @@
     #ecProjects
     PL_PACKAGE = $ECPROJECTS_PACKAGE
     _PL_PACKAGE = $_ECPROJECTS_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+{
+    #ecCloud
+    PL_PACKAGE = $ECCLOUD_PACKAGE
+    _PL_PACKAGE = $_ECCLOUD_PACKAGE
     module_defs = $PL_PACKAGE.defs
     %call generate_a_module
 }

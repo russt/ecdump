@@ -12,7 +12,7 @@ CG_ROOT = $CG_ROOT_BASE/objects
 #    OBJECT_DESCRIPTION  - (defaulted) description of object
 
 
-###### MAIN
+##################################### MAIN #####################################
 
 PARENT_PACKAGE := ${ECDUMP_PACKAGE}::
 
@@ -20,6 +20,8 @@ PARENT_PACKAGE := ${ECDUMP_PACKAGE}::
 OBJECTLIST := << [
 ecProp	object representing an EC Property
 ecProps	collection of EC Properties
+ecResource	object representing a single EC Resource
+ecResources	collection of EC Resources
 ecSchedule	object representing a single EC Schedule
 ecSchedules	collection of EC Schedules
 ecParameter	object representing a single EC Parameter
@@ -30,6 +32,7 @@ ecProcedure	object representing an EC Procedure
 ecProcedures	collection of EC Procedures
 ecProject	object representing an EC Project
 ecProjects	collection of EC Projects
+ecCloud	collection for EC Cloud objects
 ecdumpImpl	ecdump implementation
 ]
 

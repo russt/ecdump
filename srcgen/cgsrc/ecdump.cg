@@ -22,6 +22,8 @@ CG_ROOT = $CG_ROOT_BASE/objects
 %ifnot $MKOBJS %include ecdump_objs.defs
 %if    $MKOBJS %include ecdump_new.defs
 
+%if    $MKOBJS %include mkMethods.cg
+
 #now use to generate new objects:
 CG_ROOT = $CG_ROOT_BASE
 %pragma trim_multiline_rnewline 1

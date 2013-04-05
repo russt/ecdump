@@ -1,4 +1,5 @@
 m/ecdumpImpl_mthd.defs
+m/ecCloud_mthd.defs
 m/ecProjects_mthd.defs
 m/ecProject_mthd.defs
 m/ecProcedures_mthd.defs
@@ -9,11 +10,14 @@ m/ecProps_mthd.defs
 m/ecProp_mthd.defs
 m/ecParameters_mthd.defs
 m/ecParameter_mthd.defs
+m/ecResources_mthd.defs
+m/ecResource_mthd.defs
 m/ecSchedules_mthd.defs
 m/ecSchedule_mthd.defs
 ecdump.cg
 ecdump.defs
 ecdumpImpl.defs
+ecCloud.defs
 ecProjects.defs
 ecProject.defs
 ecProcedures.defs
@@ -26,6 +30,8 @@ ecParameters.defs
 ecParameter.defs
 ecSchedules.defs
 ecSchedule.defs
+ecResources.defs
+ecResource.defs
 pkgconfig.defs
 utils.defs
 ../build_setup.defs

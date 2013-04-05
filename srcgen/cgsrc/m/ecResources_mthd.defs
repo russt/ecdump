@@ -1,0 +1,137 @@
+#see also:  ecResources.defs
+sub loadResources
+#load each EC resource from the database
+#return 0 on success.
+{
+    my ($self) = @_;
+
+    #first load myself, the resource collection:
+    printf STDERR "      LOADING RESOURCES\n" if ($DDEBUG);
+    $self->addAllResources();
+
+    #then load each resource:
+    for my $proc ($self->ecResourceList()) {
+        $proc->loadResource();
+    }
+
+    return 0;
+}
+
+sub dumpResources
+#dump each EC resource to the dump tree.
+#return 0 on success.
+{
+    my ($self, $indent) = @_;
+    my $outroot = $self->rootDir();
+
+    #first dump myself, the resource collection:
+    printf STDERR "%sDUMPING RESOURCES -> %s\n", ' 'x$indent, $outroot if ($DEBUG);
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
+        return 1;
+    }
+
+    #then dump each resource:
+    my $errs = 0;
+    for my $proc ($self->ecResourceList()) {
+        $errs += $proc->dumpResource($indent+2);
+    }
+
+    return $errs;
+}
+
+sub addOneResource
+#supports list and dump commands.
+#add a single resource to the collection.
+#does not fully populate sub-objects. for that, use loadResources();
+#return 0 on success.
+{
+    my ($self, $resourceName) = @_;
+
+    #initialize resource keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->initResourceKeys());
+
+    #check that we have a legitimate resource name:
+    if (!defined($self->getNameIdMap->{$resourceName})) {
+        printf STDERR "%s:  ERROR:  resource '%s' is not in the database.\n", ::srline(), $resourceName;
+        return 1;
+    }
+
+    #no setter, for mEcResourceList - so use direct ref:
+    push @{$self->{'mEcResourceList'}},
+        (new {=_ECRESOURCE_PACKAGE=}($self,
+            $resourceName,
+            $self->getNameIdMap->{$resourceName},
+            $self->getNamePropIdMap->{$resourceName},
+            $self->getNameActualParamsIdMap->{$resourceName}));
+
+    return 0;
+}
+
+sub addAllResources
+#add all of the EC resources to the collection.
+#returns 0 on success
+{
+    my ($self) = @_;
+
+    #initialize resource keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->initResourceKeys());
+
+    #make sure we start with a clean list, in the event this routine has already been called:
+    $self->{'mEcResourceList'} = [];
+
+    #now add one resource obj. per retrieved resource:
+    for my $name (sort keys %{$self->getNameIdMap()}) {
+        $self->addOneResource($name);
+    }
+
+    return 0;
+}
+
+sub initResourceKeys
+{
+    my ($self) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    my $lbuf = sprintf("select name,id,property_sheet_id from ec_resource where resource_name=%s", $self->parentEntityId);
+
+    printf STDERR "%s: running sql query to get resources for (%s,%s)\n", ::srline(), $self->parentEntityName, $self->parentEntityId  if ($DDEBUG);
+
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.
+    } @{$sqlpj->getQueryResult()};
+
+    #map (name,id,property_sheet_id) tuples into hashes:
+    my (%nameId, %namePropId, %nameActualParamsId);
+    for (my $ii=0; $ii < $#results; $ii += 3) {
+        $nameId{$results[$ii]} = $results[$ii+1];
+        $namePropId{$results[$ii]} = $results[$ii+2];
+        $nameActualParamsId{$results[$ii]} = $results[$ii+3];
+    }
+    
+    $self->setNameIdMap(\%nameId);
+    $self->setNamePropIdMap(\%namePropId);
+    $self->setNameActualParamsIdMap(\%nameActualParamsId);
+
+    if ($DDEBUG) {
+        printf STDERR "%s: nameId result=\n", ::srline();
+        dumpDbKeys(\%nameId);
+
+        printf STDERR "%s: namePropId result=\n", ::srline();
+        dumpDbKeys(\%namePropId);
+
+        printf STDERR "%s: nameActualParamsId result=\n", ::srline();
+        dumpDbKeys(\%nameActualParamsId);
+    }
+
+    $self->setDbKeysInitialized(1);
+    return 0;
+}

@@ -14,6 +14,29 @@ CG_ROOT = $CG_ROOT_BASE/objects
 
 #use local templates to create a collection,object pattern.
 
+generate_ec_methods_top_entity := << //
+#alternate generate method - only used for Cloud object
+{
+    %echo generating methods for $EcOjectName ...
+
+    #these are derived from base defs:
+    EcOjectNamePlural = ${EcOjectName}
+    ecOjectName       = $EcOjectName:uncap
+    ecObjectNamePlural= ${ecOjectName}
+    ecobject_phrase_plural = ${ecobject_phrase}
+    ECOBJECT_PHRASE        = $ecobject_phrase:toupper
+    ECOBJECT_PHRASE_PLURAL = $ecobject_phrase_plural:toupper
+
+    ecOjectShortName     = ${EcOjectShortName:uncap}
+    EcObjectSwitchPrefix = ${EcOjectShortName:tolower}_
+
+    ecOjectShortName     = ${EcOjectShortName:uncap}
+    EcObjectSwitchPrefix = ${EcOjectShortName:tolower}_
+
+    #write the collection implementation:
+    templates/ecTopEntity_template.defs	m/ec${EcOjectName}_mthd.defs
+}
+//
 
 generate_ec_methods := << //
 {
@@ -74,9 +97,10 @@ generate_ec_methods := << //
 
 clear_ec_defs := << //
 {
-    %undef /^Ec.*/
-    %undef /^ec.*/
-    %undef /EC.*/
+    %undef /^EcObject*/
+    %undef /^ecObject*/
+    %undef /^ECOBJECT*/
+    %undef /^_ECOBJECT*/
 }
 //
 
@@ -143,7 +167,76 @@ priority, start_time, stop_time, time_zone, week_days
 }
 //
 
+genResourceMethods := << //
+{
+    %call clear_ec_defs
+
+    #base definitions:
+    EcOjectName     = Resource
+    EcOjectShortName= Rsrc
+    ecobject_phrase = resource
+    _ECOBJECT_PACKAGE       = $_ECRESOURCE_PACKAGE:nameof:cgvar
+    _ECOBJECT_PROPS_PACKAGE = $_ECPROPS_PACKAGE:nameof:cgvar
+
+    EcObjectDbTable        = ec_resource
+    EcObjectDbObjectKey    = resource_name
+    EcObjectDbSelectList   = name,id,property_sheet_id
+
+EcObjectDbTableComment := << [
+###########
+#Attributes of possible interest in ec_resource
+#    id, version, name, deleted, owner, description, repository_names,
+#    disabled, shell, step_limit, workspace_name, acl_id, property_sheet_id,
+#    agent_id, description_clob_id, repository_names_clob_id, job_id, job_step_id
+###########
+]
+
+    #####
+    #note - we don't need to refetch data in EcObjectDbSelectList or description related fields.
+    #####
+    EcObjectDbFetchList := << [
+version, name, deleted, owner, disabled,
+shell, step_limit, workspace_name, property_sheet_id, agent_id,
+repository_names_clob_id, repository_names
+]
+
+    #list of fields to be treated as switches, go in *.settings file
+    EcObjectDbSwitchList := << [
+version, name, deleted, owner, disabled,
+shell, step_limit
+]
+    %call generate_ec_methods
+}
+//
+
+genCloudMethods := << //
+#just using this to set names... not a collection of objects pattern - just a collection
+{
+    %call clear_ec_defs
+
+    #base definitions:
+    EcOjectName     = Cloud
+    EcOjectShortName= Cloud
+    ecobject_phrase = Cloud
+    _ECOBJECT_PACKAGE       = $_ECCLOUD_PACKAGE:nameof:cgvar
+    _ECOBJECT_PROPS_PACKAGE = $_ECPROPS_PACKAGE:nameof:cgvar
+
+    EcObjectDbTable        = ec_cloud
+    EcObjectDbObjectKey    = cloud_name
+
+    #not used
+    EcObjectDbSelectList   = NULL
+    EcObjectDbTableComment = NULL
+    EcObjectDbFetchList    = NULL
+    EcObjectDbSwitchList   = NULL
+    %call generate_ec_methods_top_entity
+}
+//
+
+##################################### MAIN #####################################
+
 CG_FOREACH_SPLIT_PATTERN = /,/
-generateList = genProcedureStepMethods,genScheduleMethods
+generateList = genProcedureStepMethods,genScheduleMethods,genResourceMethods
+generateList = genResourceMethods,genCloudMethods
 
 %foreach generator generateList %call $generator
