@@ -88,6 +88,9 @@ sub processDumpCommand
         return 1;
     }
 
+#printf STDERR "WARNING WARNING WARNING DEBUGGING RESOURCE DUMP\n";
+#return 0;
+
     #tell ecProjects to load and dump projects one at a time:
     if ($ecprojects->loadDumpProjects(0) != 0) {
         printf STDERR "%s: ERROR: failed to dump one or more projects!\n", ::srline();

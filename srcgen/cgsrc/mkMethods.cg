@@ -1,3 +1,19 @@
+#
+# mkMethods.cg - generate code to implement ecdump collection/object pattern.
+#
+# WARNING:
+#    the last fetch method generated was for ec_resources combined with ec_agent table.
+#    this required that switch (*.settings) definitions include the prefix instead of generating it,
+#    which in turn requires that the switch prefix agree with the fetch list table prefixes,
+#    I.e., if you say in the sql "from ec_resources rsrc" you would specify
+#    "rsrc_foo" in the switch settings list to indicate that foo belongs to ec_resources.
+#
+#    The use if the prefix is now necessary even if there is only one table.
+#    The benefit is that the table fetch variables are much less likey to clash
+#    with other variables in perl (e.g., $name, $id).
+#    RT 4/8/2013
+#
+
 #use new %foreach form:
 %pragma version 1.99
 
@@ -42,6 +58,11 @@ generate_ec_methods := << //
 {
     %echo generating methods for $EcOjectName ...
 
+#OLD: my $lbuf = sprintf("select {=EcObjectDbFetchList=} from {=EcObjectDbTable=} where id=%d", $id);
+#NEW: my $lbuf = sprintf("select {=EcObjectDbSelectList=} from {=EcObjectDbFetchFromClause=} where {=EcObjectDbFetchWhereClause=}", $id);
+    %ifndef EcObjectDbFetchFromClause     EcObjectDbFetchFromClause  = $EcObjectDbObjectKey
+    %ifndef EcObjectDbFetchWhereClause    EcObjectDbFetchWhereClause = where id=%d
+
     #these are derived from base defs:
     EcOjectNamePlural = ${EcOjectName}s
     ecOjectName       = $EcOjectName:uncap
@@ -55,9 +76,9 @@ generate_ec_methods := << //
 
     #allow whitespace in sql select specs:
     CG_SPLIT_PATTERN = /[\n\t, ]+/
-    ecSelectStack          = $EcObjectDbSelectList:split
-    ecFetchStack           = $EcObjectDbFetchList:split
-    ecSwitchStack           = $EcObjectDbSwitchList:split
+    ecSelectStack          = $EcObjectDbSelectList:trim:split
+    ecFetchStack           = $EcObjectDbFetchList:trim:split
+    ecSwitchStack           = $EcObjectDbSwitchList:trim:split
 
     #output comma separated lists via :showstack:
     CG_STACK_DELIMITER = ,
@@ -65,13 +86,19 @@ generate_ec_methods := << //
 
     #reformat select lists.. this could be more nicely done. RT 3/25/13
     EcObjectDbSelectList   = $ecSelectStack:showstack
-    EcObjectPerlSelectList = $ecSelectStack:g:showstack
     EcObjectSelectCount    = $ecSelectStack:stacksize
+    EcObjectPerlSelectList = $ecSelectStack:g:showstack
 
     #for full fetch:
     EcObjectDbFetchList    = $ecFetchStack:showstack
-    EcObjectPerlFetchList = $ecFetchStack:g:showstack
     EcObjectFetchCount     = $ecFetchStack:stacksize
+
+    CG_GREP_SPEC := $_ =~ s/\./_/
+    EcObjectPerlFetchList = $ecFetchStack:g
+    CG_GREP_SPEC := $_ = '$' . $_
+    EcObjectPerlFetchList = $EcObjectPerlFetchList:g:showstack
+
+#%eecho EcObjectDbFetchList='$EcObjectDbFetchList'
 
     #for switch settings:
     EcObjectDbSwitchList    = $ecSwitchStack:showstack
@@ -79,8 +106,9 @@ generate_ec_methods := << //
     EcObjectSwitchCount     = $ecSwitchStack:stacksize
 
     #create sprintf format for switch settings:
-    CG_GREP_SPEC := $_ = "{=EcObjectSwitchPrefix=}" . "$_" . "='%s'"
-    %evalmacro CG_GREP_SPEC CG_GREP_SPEC
+    #CG_GREP_SPEC := $_ = "{=EcObjectSwitchPrefix=}" . "$_" . "='%s'"
+    #%evalmacro CG_GREP_SPEC CG_GREP_SPEC
+    CG_GREP_SPEC := $_ = "$_" . "='%s'"
     %void $CG_STACK_DELIMITER:clr:nl:a
     EcObjectSwitchSprintfStr = $ecSwitchStack:g:showstack
 
@@ -167,48 +195,6 @@ priority, start_time, stop_time, time_zone, week_days
 }
 //
 
-genResourceMethods := << //
-{
-    %call clear_ec_defs
-
-    #base definitions:
-    EcOjectName     = Resource
-    EcOjectShortName= Rsrc
-    ecobject_phrase = resource
-    _ECOBJECT_PACKAGE       = $_ECRESOURCE_PACKAGE:nameof:cgvar
-    _ECOBJECT_PROPS_PACKAGE = $_ECPROPS_PACKAGE:nameof:cgvar
-
-    EcObjectDbTable        = ec_resource
-    EcObjectDbObjectKey    = resource_name
-    EcObjectDbSelectList   = name,id,property_sheet_id
-
-EcObjectDbTableComment := << [
-###########
-#Attributes of possible interest in ec_resource
-#    id, version, name, deleted, owner, description, repository_names,
-#    disabled, shell, step_limit, workspace_name, acl_id, property_sheet_id,
-#    agent_id, description_clob_id, repository_names_clob_id, job_id, job_step_id
-###########
-]
-
-    #####
-    #note - we don't need to refetch data in EcObjectDbSelectList or description related fields.
-    #####
-    EcObjectDbFetchList := << [
-version, name, deleted, owner, disabled,
-shell, step_limit, workspace_name, property_sheet_id, agent_id,
-repository_names_clob_id, repository_names
-]
-
-    #list of fields to be treated as switches, go in *.settings file
-    EcObjectDbSwitchList := << [
-version, name, deleted, owner, disabled,
-shell, step_limit
-]
-    %call generate_ec_methods
-}
-//
-
 genCloudMethods := << //
 #just using this to set names... not a collection of objects pattern - just a collection
 {
@@ -230,6 +216,71 @@ genCloudMethods := << //
     EcObjectDbFetchList    = NULL
     EcObjectDbSwitchList   = NULL
     %call generate_ec_methods_top_entity
+}
+//
+
+genResourceMethods := << //
+{
+    %call clear_ec_defs
+
+    #base definitions:
+    EcOjectName     = Resource
+    EcOjectShortName= Rsrc
+    ecobject_phrase = resource
+    _ECOBJECT_PACKAGE       = $_ECRESOURCE_PACKAGE:nameof:cgvar
+    _ECOBJECT_PROPS_PACKAGE = $_ECPROPS_PACKAGE:nameof:cgvar
+
+    EcObjectDbTable        = ec_resource
+    EcObjectDbObjectKey    = resource_name
+    EcObjectDbSelectList   = name,id,property_sheet_id
+
+EcObjectDbTableComment := << [
+###########
+#Attributes of possible interest in ec_resource
+#    id, version, name, deleted, owner, description, repository_names,
+#    disabled, shell, step_limit, workspace_name, acl_id, property_sheet_id,
+#    agent_id, description_clob_id, repository_names_clob_id, job_id, job_step_id
+#Attributes of possible interest in ec_agent
+#    id, version, artifact_cache_directory, proxy_customization, host_name, port,
+#    proxy_host_name, proxy_port, proxy_protocol, usessl, signature,
+#    status_agent_version, status_code, status_created, status_created_millis,
+#    status_generation, status_message, status_ping_token, status_protocol_version,
+#    status_state, proxy_customization_clob_id
+###########
+]
+
+    #####
+    #note - we don't need to refetch data in EcObjectDbSelectList or description related fields.
+    #####
+
+    EcObjectDbFetchList := << [
+rsrc.name, rsrc.version, rsrc.deleted, rsrc.owner, rsrc.disabled, rsrc.shell, rsrc.step_limit, rsrc.workspace_name,
+rsrc.property_sheet_id, rsrc.agent_id, rsrc.repository_names_clob_id, rsrc.repository_names,
+agent.id, agent.version, agent.host_name, agent.port, agent.proxy_host_name, agent.proxy_port, agent.proxy_protocol, agent.usessl, agent.signature
+]
+
+    EcObjectDbFetchFromClause  := ec_agent agent, ec_resource rsrc
+    EcObjectDbFetchWhereClause := rsrc.id = %d and rsrc.agent_id = agent.id
+
+    #list of fields to be treated as switches, go in *.settings file
+    EcObjectDbSwitchList := << [
+rsrc_name,
+rsrc_version,
+rsrc_deleted,
+rsrc_owner,
+rsrc_disabled,
+rsrc_shell,
+rsrc_step_limit
+agent_version,
+agent_host_name,
+agent_port,
+agent_proxy_host_name,
+agent_proxy_port,
+agent_proxy_protocol,
+agent_usessl,
+agent_signature
+]
+    %call generate_ec_methods
 }
 //
 

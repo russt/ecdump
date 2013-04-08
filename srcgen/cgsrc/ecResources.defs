@@ -17,6 +17,7 @@ PL_EXTERN_PKG_IMPORTS = << (
 )
 PL_PKG_IMPORTS = << (
 require $_UTILS_PACKAGE;
+use $_ECRESOURCE_PACKAGE;
 )
 %if    $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS:rnewline
 %ifnot $GEN_ONE_MODULE   PL_PKG_IMPORTS = ${PL_EXTERN_PKG_IMPORTS:rnewline}$PL_PKG_IMPORTS
@@ -42,8 +43,15 @@ Debug	pl_getset	$cfg->getDebug()
 DDebug	pl_getset	$cfg->getDDebug()
 Quiet	pl_getset	$cfg->getQuiet()
 Verbose	pl_getset	$cfg->getVerbose()
+#sqlpj interface (r/o).  note we need to get it from config, since ecCloud doesn't use sql:
+Sqlpj	pl_attr_method	$cfg->config->getSqlpjImpl()
 #local project attributes:
 RootDir	pl_attr_method	undef
+DbKeysInitialized	pl_getset	0
+NameIdMap	pl_getset	undef
+NamePropIdMap	pl_getset	undef
+#this is my list of EC resource objects:
+EcResourceList	pl_attrlist_method	[]
 )
 #see also:  m/ecResources_mthd.defs
 %evalmacro ATTRIBUTE_LIST ATTRIBUTE_LIST

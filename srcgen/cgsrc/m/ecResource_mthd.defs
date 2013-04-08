@@ -6,6 +6,7 @@ sub loadResource
     my($name, $id) = ($self->resourceName(), $self->resourceId());
     my $outroot = $self->rootDir();
 
+#$self->setDDebug(1);
     #first load this resource:
     printf STDERR "LOADING RESOURCE (%s,%s)\n", $name, $id  if ($DDEBUG);
 
@@ -15,12 +16,10 @@ sub loadResource
     #get my content:
     $self->fetchRsrcContent($name, $id);
 
-    #load my actual parameters:
-    $self->ecActualParameters->loadActualParameters();
-
     #load my properties:
     $self->ecProps->loadProps();
 
+#$self->setDDebug(0);
     return 0;
 }
 
@@ -46,9 +45,6 @@ sub dumpResource
     #write my content out:
     $self->dumpRsrcContent();
 
-    #dump my actual parameters:
-    $self->ecActualParameters->dumpActualParameters();
-
     #dump my properties:
     $self->ecProps->dumpProps($indent+2);
 
@@ -63,7 +59,6 @@ sub dumpRsrcContent
     my ($errs) = 0;
 
     $errs += $self->dumpRsrcSwitches();
-    $errs += $self->dumpRsrcProcedure();
 
     return $errs;
 }
@@ -87,31 +82,6 @@ sub dumpRsrcSwitches
     return os::write_str2file(\$txt, path::mkpathname($outroot, $contentfn));
 }
 
-sub dumpRsrcProcedure
-#write the misc. resource procedure content
-#return 0 if successful
-{
-    my ($self) = @_;
-    my $contentfn = $self->rsrcProcedureFname();
-    my $procedure = $self->getRsrcProcedure();
-    my $project = $self->projectName();
-    my $txt = $procedure;
-
-    #don't create empty files:
-    return 0 if ($txt eq '');
-
-    my $outroot = $self->rootDir();
-
-    if ($procedure ne '' && $project ne '') {
-        $txt = sprintf("%s/%s", $project, $procedure);
-    }
-
-    #fix eol:
-    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
-
-    return os::write_str2file(\$txt, path::mkpathname($outroot, $contentfn));
-}
-
 sub fetchRsrcContent
 #fetch the resource content for a given resource id.
 #return 0 if successful
@@ -124,11 +94,17 @@ sub fetchRsrcContent
     #    id, version, name, deleted, owner, description, repository_names,
     #    disabled, shell, step_limit, workspace_name, acl_id, property_sheet_id,
     #    agent_id, description_clob_id, repository_names_clob_id, job_id, job_step_id
+    #Attributes of possible interest in ec_agent
+    #    id, version, artifact_cache_directory, proxy_customization, host_name, port,
+    #    proxy_host_name, proxy_port, proxy_protocol, usessl, signature,
+    #    status_agent_version, status_code, status_created, status_created_millis,
+    #    status_generation, status_message, status_ping_token, status_protocol_version,
+    #    status_state, proxy_customization_clob_id
     ###########
 
 
     #this query should return only one row:
-    my $lbuf = sprintf("select version,name,deleted,owner,disabled,shell,step_limit,workspace_name,property_sheet_id,agent_id,repository_names_clob_id,repository_names, from ec_resource where id=%d", $id);
+    my $lbuf = sprintf("select rsrc.name,rsrc.version,rsrc.deleted,rsrc.owner,rsrc.disabled,rsrc.shell,rsrc.step_limit,rsrc.workspace_name,rsrc.property_sheet_id,rsrc.agent_id,rsrc.repository_names_clob_id,rsrc.repository_names,agent.id,agent.version,agent.host_name,agent.port,agent.proxy_host_name,agent.proxy_port,agent.proxy_protocol,agent.usessl,agent.signature from ec_agent agent, ec_resource rsrc where rsrc.id = %d and rsrc.agent_id = agent.id", $id);
 
     printf STDERR "%s: running sql query to get resource content fields\n", ::srline() if ($DDEBUG);
 
@@ -142,7 +118,7 @@ sub fetchRsrcContent
         @{$_};    #dereference each row.  we expect one row
     } @{$sqlpj->getQueryResult()};
 
-    if ( $#results+1 != 13 ) {
+    if ( $#results+1 != 21 ) {
         printf STDERR "%s:  ERROR:  query '%s' returned wrong number of results (%d).\n", ::srline(), $lbuf, $#results+1;
         return 1;
     }
@@ -152,22 +128,28 @@ sub fetchRsrcContent
         defined($_) ? $_ : '';
     } @results;
 
-    my ($version,$name,$deleted,$owner,$disabled,$shell,$step_limit,$workspace_name,$property_sheet_id,$agent_id,$repository_names_clob_id,$repository_names) = @results;
+    my ($rsrc_name,$rsrc_version,$rsrc_deleted,$rsrc_owner,$rsrc_disabled,$rsrc_shell,$rsrc_step_limit,$rsrc_workspace_name,$rsrc_property_sheet_id,$rsrc_agent_id,$rsrc_repository_names_clob_id,$rsrc_repository_names,$agent_id,$agent_version,$agent_host_name,$agent_port,$agent_proxy_host_name,$agent_proxy_port,$agent_proxy_protocol,$agent_usessl,$agent_signature) = @results;
 
     #$self->setDDebug(1);
-    printf STDERR "%s: (version,name,deleted,owner,disabled,shell,step_limit,workspace_name,property_sheet_id,agent_id,repository_names_clob_id,repository_names,)=(%s)\n", ::srline(), join(',', (@results)) if ($DDEBUG);
+    printf STDERR "%s: (rsrc.name,rsrc.version,rsrc.deleted,rsrc.owner,rsrc.disabled,rsrc.shell,rsrc.step_limit,rsrc.workspace_name,rsrc.property_sheet_id,rsrc.agent_id,rsrc.repository_names_clob_id,rsrc.repository_names,agent.id,agent.version,agent.host_name,agent.port,agent.proxy_host_name,agent.proxy_port,agent.proxy_protocol,agent.usessl,agent.signature)=(%s)\n", ::srline(), join(',', (@results)) if ($DDEBUG);
     #$self->setDDebug(0);
 
-    $self->setRsrcProcedure($procedure_name);
-
     #create switches text (in a form that can be consumed by a posix shell):
-    my $switches = sprintf("rsrc_version='%s'
-rsrc_name='%s'
+    my $switches = sprintf("rsrc_name='%s'
+rsrc_version='%s'
 rsrc_deleted='%s'
 rsrc_owner='%s'
 rsrc_disabled='%s'
 rsrc_shell='%s'
-rsrc_step_limit='%s'", $version,$name,$deleted,$owner,$disabled,$shell,$step_limit);
+rsrc_step_limit='%s'
+agent_version='%s'
+agent_host_name='%s'
+agent_port='%s'
+agent_proxy_host_name='%s'
+agent_proxy_port='%s'
+agent_proxy_protocol='%s'
+agent_usessl='%s'
+agent_signature='%s'", $rsrc_name,$rsrc_version,$rsrc_deleted,$rsrc_owner,$rsrc_disabled,$rsrc_shell,$rsrc_step_limit,$agent_version,$agent_host_name,$agent_port,$agent_proxy_host_name,$agent_proxy_port,$agent_proxy_protocol,$agent_usessl,$agent_signature);
 
     $self->setSwitchText($switches);
 

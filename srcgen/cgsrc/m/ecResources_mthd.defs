@@ -64,8 +64,8 @@ sub addOneResource
         (new {=_ECRESOURCE_PACKAGE=}($self,
             $resourceName,
             $self->getNameIdMap->{$resourceName},
-            $self->getNamePropIdMap->{$resourceName},
-            $self->getNameActualParamsIdMap->{$resourceName}));
+            $self->getNamePropIdMap->{$resourceName}
+            ));
 
     return 0;
 }
@@ -95,9 +95,10 @@ sub initResourceKeys
     my ($self) = @_;
     my ($sqlpj) = $self->sqlpj();
 
-    my $lbuf = sprintf("select name,id,property_sheet_id from ec_resource where resource_name=%s", $self->parentEntityId);
+    my $lbuf = sprintf("select name,id,property_sheet_id from ec_resource");
 
-    printf STDERR "%s: running sql query to get resources for (%s,%s)\n", ::srline(), $self->parentEntityName, $self->parentEntityId  if ($DDEBUG);
+    #NOTE:  there is only one resources object, as opposed to projects where there are many.  RT 4/8/2013
+    printf STDERR "%s: running sql query to get all resources records\n", ::srline()  if ($DDEBUG);
 
     if ( !$sqlpj->sql_exec($lbuf) ) {
         printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
@@ -110,27 +111,24 @@ sub initResourceKeys
     } @{$sqlpj->getQueryResult()};
 
     #map (name,id,property_sheet_id) tuples into hashes:
-    my (%nameId, %namePropId, %nameActualParamsId);
+    my (%nameId, %namePropId);
     for (my $ii=0; $ii < $#results; $ii += 3) {
         $nameId{$results[$ii]} = $results[$ii+1];
         $namePropId{$results[$ii]} = $results[$ii+2];
-        $nameActualParamsId{$results[$ii]} = $results[$ii+3];
     }
     
     $self->setNameIdMap(\%nameId);
     $self->setNamePropIdMap(\%namePropId);
-    $self->setNameActualParamsIdMap(\%nameActualParamsId);
 
+    #$self->setDDebug(1);
     if ($DDEBUG) {
         printf STDERR "%s: nameId result=\n", ::srline();
         dumpDbKeys(\%nameId);
 
         printf STDERR "%s: namePropId result=\n", ::srline();
         dumpDbKeys(\%namePropId);
-
-        printf STDERR "%s: nameActualParamsId result=\n", ::srline();
-        dumpDbKeys(\%nameActualParamsId);
     }
+    #$self->setDDebug(0);
 
     $self->setDbKeysInitialized(1);
     return 0;

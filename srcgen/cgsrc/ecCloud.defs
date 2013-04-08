@@ -45,7 +45,7 @@ Quiet	pl_getset	$cfg->getQuiet()
 Verbose	pl_getset	$cfg->getVerbose()
 #local project attributes:
 RootDir	pl_attr_method	undef
-#list of resource objects:
+#container object for EC resources:
 EcResources	pl_attr_method	undef
 )
 #see also: m/ecCloud_mthd.defs

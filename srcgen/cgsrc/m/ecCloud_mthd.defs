@@ -6,8 +6,8 @@ sub loadCloud
     my ($self, $indent) = @_;
     my ($errs) = 0;
 
-    $errs += $self->ecResources->loadResources();
-    #$errs += $self->ecResourcePools->loadResourcePools();
+    $errs += $self->ecResources->loadResources($indent+2);
+    #$errs += $self->ecResourcePools->loadResourcePools($indent+2);
 
     return $errs;
 }
@@ -28,8 +28,8 @@ sub dumpCloud
 
     printf STDERR "%sDUMPING CLOUD RESOURCES -> %s\n", ' 'x$indent, $outroot if ($VERBOSE);
 
-    $errs += $self->ecResources->dumpResources();
-    #$errs += $self->ecResourcePools->dumpResourcePools();
+    $errs += $self->ecResources->dumpResources($indent+2);
+    #$errs += $self->ecResourcePools->dumpResourcePools($indent+2);
 
     return $errs;
 }

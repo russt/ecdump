@@ -122,7 +122,7 @@ sub fetch{=EcOjectShortName=}Content
 {=$EcObjectDbTableComment:clrifndef:indent=}
 
     #this query should return only one row:
-    my $lbuf = sprintf("select {=EcObjectDbFetchList=} from {=EcObjectDbTable=} where id=%d", $id);
+    my $lbuf = sprintf("select {=EcObjectDbFetchList=} from {=EcObjectDbFetchFromClause=} where {=EcObjectDbFetchWhereClause=}", $id);
 
     printf STDERR "%s: running sql query to get {=ecobject_phrase=} content fields\n", ::srline() if ($DDEBUG);
 
@@ -151,8 +151,6 @@ sub fetch{=EcOjectShortName=}Content
     #$self->setDDebug(1);
     printf STDERR "%s: ({=EcObjectDbFetchList=})=(%s)\n", ::srline(), join(',', (@results)) if ($DDEBUG);
     #$self->setDDebug(0);
-
-    $self->set{=EcOjectShortName=}Procedure($procedure_name);
 
     #create switches text (in a form that can be consumed by a posix shell):
     my $switches = sprintf("{=EcObjectSwitchSprintfStr=}", {=EcObjectPerlSwitchList=});

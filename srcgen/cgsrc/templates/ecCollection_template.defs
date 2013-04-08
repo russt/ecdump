@@ -65,7 +65,8 @@ sub addOne{=EcOjectName=}
             ${=ecOjectName=}Name,
             $self->getNameIdMap->{${=ecOjectName=}Name},
             $self->getNamePropIdMap->{${=ecOjectName=}Name},
-            $self->getNameActualParamsIdMap->{${=ecOjectName=}Name}));
+            $self->getNameActualParamsIdMap->{${=ecOjectName=}Name}
+            ));
 
     return 0;
 }
@@ -110,7 +111,9 @@ sub init{=EcOjectName=}Keys
     } @{$sqlpj->getQueryResult()};
 
     #map ({=EcObjectDbSelectList=}) tuples into hashes:
-    my (%nameId, %namePropId, %nameActualParamsId);
+    my (%nameId) = ();
+    my (%namePropId) = ();
+    my (%nameActualParamsId) = ();
     for (my $ii=0; $ii < $#results; $ii += {=EcObjectSelectCount=}) {
         $nameId{$results[$ii]} = $results[$ii+1];
         $namePropId{$results[$ii]} = $results[$ii+2];

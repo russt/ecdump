@@ -953,6 +953,736 @@ sub update_static_class_attributes
 } #end of ecdump::ecProps
 {
 #
+#ecResource - object representing a single EC Resource
+#
+
+use strict;
+
+package ecdump::ecResource;
+my $pkgname = __PACKAGE__;
+
+#imports:
+
+#package variables:
+ecdump::utils->import;
+our @ISA = qw(ecdump::ecProjects);
+
+#standard debugging attributes:
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
+
+sub new
+{
+    my ($invocant) = @_;
+    shift @_;
+
+    #allows this constructor to be invoked with reference or with explicit package name:
+    my $class = ref($invocant) || $invocant;
+
+    my ($cfg, $resourceName, $resourceId, $propertySheetId) = @_;
+
+    #set up class attribute  hash and bless it into class:
+    my $self = bless {
+        'mConfig' => $cfg->config(),
+        'mDebug' => $cfg->getDebug(),
+        'mDDebug' => $cfg->getDDebug(),
+        'mQuiet' => $cfg->getQuiet(),
+        'mVerbose' => $cfg->getVerbose(),
+        'mSqlpj' => $cfg->sqlpj(),
+        'mDescription' => '',
+        'mRootDir' => undef,
+        'mResourceName' => $resourceName,
+        'mResourceId' => $resourceId,
+        'mPropertySheetId' => $propertySheetId,
+        'mSwitchText' => '',
+        'mSwitchTextFname' => 'resource.settings',
+        'mEcProps' => undef,
+        }, $class;
+
+    #post-attribute init after we bless our $self (allows use of accessor methods):
+    #set output root for the properties (this will be in parent dir):
+    $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm($self->resourceName()));
+
+    #create properties container object, which will contain the list of our properties:
+    $self->{'mEcProps'} = new ecdump::ecProps($self, $propertySheetId);
+
+    #cache initial debugging and vebosity values in local package variables:
+    $self->update_static_class_attributes();
+
+    return $self;
+}
+
+################################### PACKAGE ####################################
+
+#see also:  ecResource.defs
+sub loadResource
+#load this resource.
+{
+    my ($self) = @_;
+    my($name, $id) = ($self->resourceName(), $self->resourceId());
+    my $outroot = $self->rootDir();
+
+#$self->setDDebug(1);
+    #first load this resource:
+    printf STDERR "LOADING RESOURCE (%s,%s)\n", $name, $id  if ($DDEBUG);
+
+    #get my description (method defined in ecProjects):
+    $self->fetchDescription('ec_resource', $id);
+
+    #get my content:
+    $self->fetchRsrcContent($name, $id);
+
+    #load my properties:
+    $self->ecProps->loadProps();
+
+#$self->setDDebug(0);
+    return 0;
+}
+
+sub dumpResource
+#dump this resource.
+#return 0 on success
+{
+    my ($self, $indent) = @_;
+    my $outroot = $self->rootDir();
+
+    #first dump this resource:
+    printf STDERR "%sDUMPING RESOURCE (%s,%s) -> %s\n", ' 'x$indent, $self->resourceName, $self->resourceId, $outroot if ($DEBUG);
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
+        return 1;
+    }
+
+    #write my description out:
+    $self->dumpDescription();
+
+    #write my content out:
+    $self->dumpRsrcContent();
+
+    #dump my properties:
+    $self->ecProps->dumpProps($indent+2);
+
+    return 0;
+}
+
+sub dumpRsrcContent
+#write the resource content to files.
+#return 0 if successful
+{
+    my ($self) = @_;
+    my ($errs) = 0;
+
+    $errs += $self->dumpRsrcSwitches();
+
+    return $errs;
+}
+
+sub dumpRsrcSwitches
+#write the misc. resource properties
+#return 0 if successful
+{
+    my ($self) = @_;
+    my $txt = $self->getSwitchText();
+    my $contentfn = $self->switchTextFname();
+
+    #don't create empty files:
+    return 0 if ($txt eq '');
+
+    my $outroot = $self->rootDir();
+
+    #fix eol:
+    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
+
+    return os::write_str2file(\$txt, path::mkpathname($outroot, $contentfn));
+}
+
+sub fetchRsrcContent
+#fetch the resource content for a given resource id.
+#return 0 if successful
+{
+    my ($self, $name, $id) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    ###########
+    #Attributes of possible interest in ec_resource
+    #    id, version, name, deleted, owner, description, repository_names,
+    #    disabled, shell, step_limit, workspace_name, acl_id, property_sheet_id,
+    #    agent_id, description_clob_id, repository_names_clob_id, job_id, job_step_id
+    #Attributes of possible interest in ec_agent
+    #    id, version, artifact_cache_directory, proxy_customization, host_name, port,
+    #    proxy_host_name, proxy_port, proxy_protocol, usessl, signature,
+    #    status_agent_version, status_code, status_created, status_created_millis,
+    #    status_generation, status_message, status_ping_token, status_protocol_version,
+    #    status_state, proxy_customization_clob_id
+    ###########
+
+
+    #this query should return only one row:
+    my $lbuf = sprintf("select rsrc.name,rsrc.version,rsrc.deleted,rsrc.owner,rsrc.disabled,rsrc.shell,rsrc.step_limit,rsrc.workspace_name,rsrc.property_sheet_id,rsrc.agent_id,rsrc.repository_names_clob_id,rsrc.repository_names,agent.id,agent.version,agent.host_name,agent.port,agent.proxy_host_name,agent.proxy_port,agent.proxy_protocol,agent.usessl,agent.signature from ec_agent agent, ec_resource rsrc where rsrc.id = %d and rsrc.agent_id = agent.id", $id);
+
+    printf STDERR "%s: running sql query to get resource content fields\n", ::srline() if ($DDEBUG);
+
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.  we expect one row
+    } @{$sqlpj->getQueryResult()};
+
+    if ( $#results+1 != 21 ) {
+        printf STDERR "%s:  ERROR:  query '%s' returned wrong number of results (%d).\n", ::srline(), $lbuf, $#results+1;
+        return 1;
+    }
+
+    #map undefined values:
+    @results = map {
+        defined($_) ? $_ : '';
+    } @results;
+
+    my ($rsrc_name,$rsrc_version,$rsrc_deleted,$rsrc_owner,$rsrc_disabled,$rsrc_shell,$rsrc_step_limit,$rsrc_workspace_name,$rsrc_property_sheet_id,$rsrc_agent_id,$rsrc_repository_names_clob_id,$rsrc_repository_names,$agent_id,$agent_version,$agent_host_name,$agent_port,$agent_proxy_host_name,$agent_proxy_port,$agent_proxy_protocol,$agent_usessl,$agent_signature) = @results;
+
+    #$self->setDDebug(1);
+    printf STDERR "%s: (rsrc.name,rsrc.version,rsrc.deleted,rsrc.owner,rsrc.disabled,rsrc.shell,rsrc.step_limit,rsrc.workspace_name,rsrc.property_sheet_id,rsrc.agent_id,rsrc.repository_names_clob_id,rsrc.repository_names,agent.id,agent.version,agent.host_name,agent.port,agent.proxy_host_name,agent.proxy_port,agent.proxy_protocol,agent.usessl,agent.signature)=(%s)\n", ::srline(), join(',', (@results)) if ($DDEBUG);
+    #$self->setDDebug(0);
+
+    #create switches text (in a form that can be consumed by a posix shell):
+    my $switches = sprintf("rsrc_name='%s'
+rsrc_version='%s'
+rsrc_deleted='%s'
+rsrc_owner='%s'
+rsrc_disabled='%s'
+rsrc_shell='%s'
+rsrc_step_limit='%s'
+agent_version='%s'
+agent_host_name='%s'
+agent_port='%s'
+agent_proxy_host_name='%s'
+agent_proxy_port='%s'
+agent_proxy_protocol='%s'
+agent_usessl='%s'
+agent_signature='%s'", $rsrc_name,$rsrc_version,$rsrc_deleted,$rsrc_owner,$rsrc_disabled,$rsrc_shell,$rsrc_step_limit,$agent_version,$agent_host_name,$agent_port,$agent_proxy_host_name,$agent_proxy_port,$agent_proxy_protocol,$agent_usessl,$agent_signature);
+
+    $self->setSwitchText($switches);
+
+    return 0;
+}
+
+sub config
+#return value of mConfig
+{
+    my ($self) = @_;
+    return $self->{'mConfig'};
+}
+
+sub getDebug
+#return value of Debug
+{
+    my ($self) = @_;
+    return $self->{'mDebug'};
+}
+
+sub setDebug
+#set value of Debug and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mDebug'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mDebug'};
+}
+
+sub getDDebug
+#return value of DDebug
+{
+    my ($self) = @_;
+    return $self->{'mDDebug'};
+}
+
+sub setDDebug
+#set value of DDebug and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mDDebug'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mDDebug'};
+}
+
+sub getQuiet
+#return value of Quiet
+{
+    my ($self) = @_;
+    return $self->{'mQuiet'};
+}
+
+sub setQuiet
+#set value of Quiet and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mQuiet'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mQuiet'};
+}
+
+sub getVerbose
+#return value of Verbose
+{
+    my ($self) = @_;
+    return $self->{'mVerbose'};
+}
+
+sub setVerbose
+#set value of Verbose and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mVerbose'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mVerbose'};
+}
+
+sub sqlpj
+#return value of mSqlpj
+{
+    my ($self) = @_;
+    return $self->{'mSqlpj'};
+}
+
+sub getDescription
+#return value of Description
+{
+    my ($self) = @_;
+    return $self->{'mDescription'};
+}
+
+sub setDescription
+#set value of Description and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mDescription'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mDescription'};
+}
+
+sub rootDir
+#return value of mRootDir
+{
+    my ($self) = @_;
+    return $self->{'mRootDir'};
+}
+
+sub resourceName
+#return value of mResourceName
+{
+    my ($self) = @_;
+    return $self->{'mResourceName'};
+}
+
+sub resourceId
+#return value of mResourceId
+{
+    my ($self) = @_;
+    return $self->{'mResourceId'};
+}
+
+sub propertySheetId
+#return value of mPropertySheetId
+{
+    my ($self) = @_;
+    return $self->{'mPropertySheetId'};
+}
+
+sub getSwitchText
+#return value of SwitchText
+{
+    my ($self) = @_;
+    return $self->{'mSwitchText'};
+}
+
+sub setSwitchText
+#set value of SwitchText and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mSwitchText'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mSwitchText'};
+}
+
+sub switchTextFname
+#return value of mSwitchTextFname
+{
+    my ($self) = @_;
+    return $self->{'mSwitchTextFname'};
+}
+
+sub ecProps
+#return value of mEcProps
+{
+    my ($self) = @_;
+    return $self->{'mEcProps'};
+}
+
+sub update_static_class_attributes
+#static class method to update package level attributess as required
+#used to set verbosity and debugging for all objects of the class post-instantiation.
+{
+    my ($self) = @_;
+    $DEBUG   = $self->getDebug();
+    $DDEBUG  = $self->getDDebug();
+    $QUIET   = $self->getQuiet();
+    $VERBOSE = $self->getVerbose();
+}
+
+1;
+} #end of ecdump::ecResource
+{
+#
+#ecResources - collection of EC Resources
+#
+
+use strict;
+
+package ecdump::ecResources;
+my $pkgname = __PACKAGE__;
+
+#imports:
+
+#package variables:
+ecdump::utils->import;
+our @ISA = qw(ecdump::ecProjects);
+
+#standard debugging attributes:
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
+
+sub new
+{
+    my ($invocant) = @_;
+    shift @_;
+
+    #allows this constructor to be invoked with reference or with explicit package name:
+    my $class = ref($invocant) || $invocant;
+
+    my ($cfg) = @_;
+
+    #set up class attribute  hash and bless it into class:
+    my $self = bless {
+        'mConfig' => $cfg->config(),
+        'mDebug' => $cfg->getDebug(),
+        'mDDebug' => $cfg->getDDebug(),
+        'mQuiet' => $cfg->getQuiet(),
+        'mVerbose' => $cfg->getVerbose(),
+        'mSqlpj' => $cfg->config->getSqlpjImpl(),
+        'mRootDir' => undef,
+        'mDbKeysInitialized' => 0,
+        'mNameIdMap' => undef,
+        'mNamePropIdMap' => undef,
+        'mEcResourceList' => [],
+        }, $class;
+
+    #post-attribute init after we bless our $self (allows use of accessor methods):
+    #set output root for the resource objects (this will be in parent dir):
+    $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm('resources'));
+
+    #cache initial debugging and vebosity values in local package variables:
+    $self->update_static_class_attributes();
+
+    return $self;
+}
+
+################################### PACKAGE ####################################
+
+#see also:  ecResources.defs
+sub loadResources
+#load each EC resource from the database
+#return 0 on success.
+{
+    my ($self) = @_;
+
+    #first load myself, the resource collection:
+    printf STDERR "      LOADING RESOURCES\n" if ($DDEBUG);
+    $self->addAllResources();
+
+    #then load each resource:
+    for my $proc ($self->ecResourceList()) {
+        $proc->loadResource();
+    }
+
+    return 0;
+}
+
+sub dumpResources
+#dump each EC resource to the dump tree.
+#return 0 on success.
+{
+    my ($self, $indent) = @_;
+    my $outroot = $self->rootDir();
+
+    #first dump myself, the resource collection:
+    printf STDERR "%sDUMPING RESOURCES -> %s\n", ' 'x$indent, $outroot if ($DEBUG);
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
+        return 1;
+    }
+
+    #then dump each resource:
+    my $errs = 0;
+    for my $proc ($self->ecResourceList()) {
+        $errs += $proc->dumpResource($indent+2);
+    }
+
+    return $errs;
+}
+
+sub addOneResource
+#supports list and dump commands.
+#add a single resource to the collection.
+#does not fully populate sub-objects. for that, use loadResources();
+#return 0 on success.
+{
+    my ($self, $resourceName) = @_;
+
+    #initialize resource keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->initResourceKeys());
+
+    #check that we have a legitimate resource name:
+    if (!defined($self->getNameIdMap->{$resourceName})) {
+        printf STDERR "%s:  ERROR:  resource '%s' is not in the database.\n", ::srline(), $resourceName;
+        return 1;
+    }
+
+    #no setter, for mEcResourceList - so use direct ref:
+    push @{$self->{'mEcResourceList'}},
+        (new ecdump::ecResource($self,
+            $resourceName,
+            $self->getNameIdMap->{$resourceName},
+            $self->getNamePropIdMap->{$resourceName}
+            ));
+
+    return 0;
+}
+
+sub addAllResources
+#add all of the EC resources to the collection.
+#returns 0 on success
+{
+    my ($self) = @_;
+
+    #initialize resource keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->initResourceKeys());
+
+    #make sure we start with a clean list, in the event this routine has already been called:
+    $self->{'mEcResourceList'} = [];
+
+    #now add one resource obj. per retrieved resource:
+    for my $name (sort keys %{$self->getNameIdMap()}) {
+        $self->addOneResource($name);
+    }
+
+    return 0;
+}
+
+sub initResourceKeys
+{
+    my ($self) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    my $lbuf = sprintf("select name,id,property_sheet_id from ec_resource");
+
+    #NOTE:  there is only one resources object, as opposed to projects where there are many.  RT 4/8/2013
+    printf STDERR "%s: running sql query to get all resources records\n", ::srline()  if ($DDEBUG);
+
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.
+    } @{$sqlpj->getQueryResult()};
+
+    #map (name,id,property_sheet_id) tuples into hashes:
+    my (%nameId, %namePropId);
+    for (my $ii=0; $ii < $#results; $ii += 3) {
+        $nameId{$results[$ii]} = $results[$ii+1];
+        $namePropId{$results[$ii]} = $results[$ii+2];
+    }
+    
+    $self->setNameIdMap(\%nameId);
+    $self->setNamePropIdMap(\%namePropId);
+
+    #$self->setDDebug(1);
+    if ($DDEBUG) {
+        printf STDERR "%s: nameId result=\n", ::srline();
+        dumpDbKeys(\%nameId);
+
+        printf STDERR "%s: namePropId result=\n", ::srline();
+        dumpDbKeys(\%namePropId);
+    }
+    #$self->setDDebug(0);
+
+    $self->setDbKeysInitialized(1);
+    return 0;
+}
+
+sub config
+#return value of mConfig
+{
+    my ($self) = @_;
+    return $self->{'mConfig'};
+}
+
+sub getDebug
+#return value of Debug
+{
+    my ($self) = @_;
+    return $self->{'mDebug'};
+}
+
+sub setDebug
+#set value of Debug and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mDebug'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mDebug'};
+}
+
+sub getDDebug
+#return value of DDebug
+{
+    my ($self) = @_;
+    return $self->{'mDDebug'};
+}
+
+sub setDDebug
+#set value of DDebug and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mDDebug'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mDDebug'};
+}
+
+sub getQuiet
+#return value of Quiet
+{
+    my ($self) = @_;
+    return $self->{'mQuiet'};
+}
+
+sub setQuiet
+#set value of Quiet and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mQuiet'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mQuiet'};
+}
+
+sub getVerbose
+#return value of Verbose
+{
+    my ($self) = @_;
+    return $self->{'mVerbose'};
+}
+
+sub setVerbose
+#set value of Verbose and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mVerbose'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mVerbose'};
+}
+
+sub sqlpj
+#return value of mSqlpj
+{
+    my ($self) = @_;
+    return $self->{'mSqlpj'};
+}
+
+sub rootDir
+#return value of mRootDir
+{
+    my ($self) = @_;
+    return $self->{'mRootDir'};
+}
+
+sub getDbKeysInitialized
+#return value of DbKeysInitialized
+{
+    my ($self) = @_;
+    return $self->{'mDbKeysInitialized'};
+}
+
+sub setDbKeysInitialized
+#set value of DbKeysInitialized and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mDbKeysInitialized'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mDbKeysInitialized'};
+}
+
+sub getNameIdMap
+#return value of NameIdMap
+{
+    my ($self) = @_;
+    return $self->{'mNameIdMap'};
+}
+
+sub setNameIdMap
+#set value of NameIdMap and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mNameIdMap'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mNameIdMap'};
+}
+
+sub getNamePropIdMap
+#return value of NamePropIdMap
+{
+    my ($self) = @_;
+    return $self->{'mNamePropIdMap'};
+}
+
+sub setNamePropIdMap
+#set value of NamePropIdMap and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mNamePropIdMap'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mNamePropIdMap'};
+}
+
+sub ecResourceList
+#return mEcResourceList list
+{
+    my ($self) = @_;
+    return @{$self->{'mEcResourceList'}};
+}
+
+sub update_static_class_attributes
+#static class method to update package level attributess as required
+#used to set verbosity and debugging for all objects of the class post-instantiation.
+{
+    my ($self) = @_;
+    $DEBUG   = $self->getDebug();
+    $DDEBUG  = $self->getDDebug();
+    $QUIET   = $self->getQuiet();
+    $VERBOSE = $self->getVerbose();
+}
+
+1;
+} #end of ecdump::ecResources
+{
+#
 #ecSchedule - object representing a single EC Schedule
 #
 
@@ -4585,9 +5315,6 @@ sub loadDumpProjects
 
     printf STDERR "%sDUMPING PROJECTS -> %s\n", ' 'x$indent, $outroot if ($VERBOSE);
 
-    $self->loadEcTopLevel();
-    $self->dumpEcTopLevel();
-
     my $errs = 0;
     for my $pj ($self->ecProjects()) {
         if ($pj->loadProject($indent+2) != 0) {
@@ -4608,10 +5335,9 @@ sub loadDumpProjects
 
 sub loadProjects
 #load each project from the database
+#DEPRECATED:  see loadDumpProjects().
 {
     my ($self) = @_;
-
-    $self->loadEcTopLevel();
 
     for my $pj ($self->ecProjects()) {
         $pj->loadProject();
@@ -4636,6 +5362,7 @@ sub createOutdir
 
 sub dumpProjects
 #dump each project to the dump tree.
+#DEPRECATED:  see loadDumpProjects().
 {
     my ($self, $indent) = @_;
     my $outroot = $self->rootDir();
@@ -4643,8 +5370,6 @@ sub dumpProjects
     printf STDERR "%sDUMPING PROJECTS -> %s\n", ' 'x$indent, $outroot if ($VERBOSE);
 
     return 1 unless ($self->createOutdir() != 0);
-
-    $self->dumpEcTopLevel();
 
     my $errs = 0;
     for my $pj ($self->ecProjects()) {
@@ -4662,20 +5387,6 @@ sub listProjectNames
     for my $pj ($self->ecProjects()) {
         printf "%s\n", $pj->projectName();
     }
-}
-
-sub loadEcTopLevel
-#load top-level EC metadata
-{
-    #TBD.
-    return 0;
-}
-
-sub dumpEcTopLevel
-#dump top-level EC metadata
-{
-    #TBD.
-    return 0;
 }
 
 sub addOneProject
@@ -5053,6 +5764,195 @@ sub update_static_class_attributes
 } #end of ecdump::ecProjects
 {
 #
+#ecCloud - collection for EC Cloud objects
+#
+
+use strict;
+
+package ecdump::ecCloud;
+my $pkgname = __PACKAGE__;
+
+#imports:
+
+#package variables:
+ecdump::utils->import;
+our @ISA = qw(ecdump::ecProjects);
+
+#standard debugging attributes:
+my ($VERBOSE, $DEBUG, $DDEBUG, $QUIET) = (0,0,0,0);
+
+sub new
+{
+    my ($invocant) = @_;
+    shift @_;
+
+    #allows this constructor to be invoked with reference or with explicit package name:
+    my $class = ref($invocant) || $invocant;
+
+    my ($cfg) = @_;
+
+    #set up class attribute  hash and bless it into class:
+    my $self = bless {
+        'mConfig' => $cfg->config(),
+        'mDebug' => $cfg->getDebug(),
+        'mDDebug' => $cfg->getDDebug(),
+        'mQuiet' => $cfg->getQuiet(),
+        'mVerbose' => $cfg->getVerbose(),
+        'mRootDir' => undef,
+        'mEcResources' => undef,
+        }, $class;
+
+    #post-attribute init after we bless our $self (allows use of accessor methods):
+    #set output root for the cloud objects (this will be in parent dir):
+    $self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm('cloud'));
+
+    #create resources object, which will contain the list of our resources:
+    $self->{'mEcResources'} = new ecdump::ecResources($self);
+
+    #cache initial debugging and vebosity values in local package variables:
+    $self->update_static_class_attributes();
+
+    return $self;
+}
+
+################################### PACKAGE ####################################
+
+#see also:  ecCloud.defs
+sub loadCloud
+#load each EC Cloud entity.
+#return 0 on success.
+{
+    my ($self, $indent) = @_;
+    my ($errs) = 0;
+
+    $errs += $self->ecResources->loadResources($indent+2);
+    #$errs += $self->ecResourcePools->loadResourcePools($indent+2);
+
+    return $errs;
+}
+
+sub dumpCloud
+#dump each EC Cloud entity to the dump tree.
+#return 0 on success.
+{
+    my ($self, $indent) = @_;
+    my $outroot = $self->rootDir();
+    my $errs = 0;
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
+        return 1;
+    }
+
+    printf STDERR "%sDUMPING CLOUD RESOURCES -> %s\n", ' 'x$indent, $outroot if ($VERBOSE);
+
+    $errs += $self->ecResources->dumpResources($indent+2);
+    #$errs += $self->ecResourcePools->dumpResourcePools($indent+2);
+
+    return $errs;
+}
+
+sub config
+#return value of mConfig
+{
+    my ($self) = @_;
+    return $self->{'mConfig'};
+}
+
+sub getDebug
+#return value of Debug
+{
+    my ($self) = @_;
+    return $self->{'mDebug'};
+}
+
+sub setDebug
+#set value of Debug and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mDebug'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mDebug'};
+}
+
+sub getDDebug
+#return value of DDebug
+{
+    my ($self) = @_;
+    return $self->{'mDDebug'};
+}
+
+sub setDDebug
+#set value of DDebug and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mDDebug'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mDDebug'};
+}
+
+sub getQuiet
+#return value of Quiet
+{
+    my ($self) = @_;
+    return $self->{'mQuiet'};
+}
+
+sub setQuiet
+#set value of Quiet and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mQuiet'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mQuiet'};
+}
+
+sub getVerbose
+#return value of Verbose
+{
+    my ($self) = @_;
+    return $self->{'mVerbose'};
+}
+
+sub setVerbose
+#set value of Verbose and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mVerbose'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mVerbose'};
+}
+
+sub rootDir
+#return value of mRootDir
+{
+    my ($self) = @_;
+    return $self->{'mRootDir'};
+}
+
+sub ecResources
+#return value of mEcResources
+{
+    my ($self) = @_;
+    return $self->{'mEcResources'};
+}
+
+sub update_static_class_attributes
+#static class method to update package level attributess as required
+#used to set verbosity and debugging for all objects of the class post-instantiation.
+{
+    my ($self) = @_;
+    $DEBUG   = $self->getDebug();
+    $DDEBUG  = $self->getDDebug();
+    $QUIET   = $self->getQuiet();
+    $VERBOSE = $self->getVerbose();
+}
+
+1;
+} #end of ecdump::ecCloud
+{
+#
 #ecdumpImpl - ecdump implementation
 #
 
@@ -5099,6 +5999,7 @@ sub new
         'mRootDir' => $cfg->getOutputDirectory(),
         'mDbConnectionInitialized' => 0,
         'mEcProjects' => undef,
+        'mEcCloud' => undef,
         }, $class;
 
     #post-attribute init after we bless our $self (allows use of accessor methods):
@@ -5106,7 +6007,10 @@ sub new
     #cache initial debugging and vebosity values in local package variables:
     $self->update_static_class_attributes();
 
-    #create projects object, which will contain the list of our projects::
+    #create cloud object, which will is responsible for dumping resources and resource pools:
+    $self->{'mEcCloud'} = new ecdump::ecCloud($self);
+
+    #create projects object, which will contain the list of our projects:
     $self->{'mEcProjects'} = new ecdump::ecProjects($self);
 
     return $self;
@@ -5191,8 +6095,21 @@ sub processDumpCommand
 #process dump command.  return 0 on success.
 {
     my ($self) = @_;
-
+    my $eccloud = $self->ecCloud();
     my $ecprojects = $self->ecProjects();
+
+    #load/dump ecCloud first because it is fast::
+    if ($eccloud->loadCloud(0) != 0) {
+        printf STDERR "%s: ERROR: failed to load EC cloud resources!\n", ::srline();
+        return 1;
+    }
+    if ($eccloud->dumpCloud(0) != 0) {
+        printf STDERR "%s: ERROR: failed to dump EC cloud resources!\n", ::srline();
+        return 1;
+    }
+
+#printf STDERR "WARNING WARNING WARNING DEBUGGING RESOURCE DUMP\n";
+#return 0;
 
     #tell ecProjects to load and dump projects one at a time:
     if ($ecprojects->loadDumpProjects(0) != 0) {
@@ -5440,6 +6357,13 @@ sub ecProjects
     return $self->{'mEcProjects'};
 }
 
+sub ecCloud
+#return value of mEcCloud
+{
+    my ($self) = @_;
+    return $self->{'mEcCloud'};
+}
+
 sub update_static_class_attributes
 #static class method to update package level attributess as required
 #used to set verbosity and debugging for all objects of the class post-instantiation.
@@ -5481,8 +6405,8 @@ sub new
     my $self = bless {
         'mProgName' => undef,
         'mPathSeparator' => undef,
-        'mVersionNumber' => "0.26",
-        'mVersionDate' => "27-Mar-2013",
+        'mVersionNumber' => "0.27",
+        'mVersionDate' => "08-Apr-2013",
         'mDebug' => 0,
         'mDDebug' => 0,
         'mQuiet' => 0,
