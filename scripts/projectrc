@@ -37,4 +37,6 @@ setenv ECDUMP_IGNORES "$ECDUMP_IGNORES;lastJobCleanupScript;highestP4prodChangel
 
 #echo ECDUMP_IGNORES is $ECDUMP_IGNORES
 
-alias golog 'cd $PROJECT && subpj `\ls -1d logs/* | grep "^logs/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" | tail -1`'
+alias golog     'cd $PROJECT && subpj `\ls -1d logs/* | grep "^logs/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" | tail -1`'
+alias godump    'cd $PROJECT && subpj `\ls -1 | grep "^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" | tail -1`'
+alias godumplog 'cd $PROJECT && subpj logs/`\ls -1 | grep "^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" | tail -1`'
