@@ -22,6 +22,8 @@ ecProp	object representing an EC Property
 ecProps	collection of EC Properties
 ecResource	object representing a single EC Resource
 ecResources	collection of EC Resources
+ecResourcePool	object representing a single EC Resource Pool
+ecResourcePools	collection of EC Resource Pools
 ecSchedule	object representing a single EC Schedule
 ecSchedules	collection of EC Schedules
 ecParameter	object representing a single EC Parameter

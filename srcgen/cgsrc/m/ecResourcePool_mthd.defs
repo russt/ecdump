@@ -1,0 +1,207 @@
+#see also:  ecResourcePool.defs
+sub loadResourcePool
+#load this resource pool.
+{
+    my ($self) = @_;
+    my($name, $id) = ($self->resourcePoolName(), $self->resourcePoolId());
+    my $outroot = $self->rootDir();
+
+    #first load this resource pool:
+    printf STDERR "LOADING RESOURCE POOL (%s,%s)\n", $name, $id  if ($DDEBUG);
+
+    #get my description (method defined in ecProjects):
+    $self->fetchDescription('ec_resource_pool', $id);
+
+    #get my content:
+    $self->fetchpoolContent($name, $id);
+    $self->fetchPoolResources($name, $id);
+
+    #load my actual parameters:
+
+    #load my properties:
+    $self->ecProps->loadProps();
+
+    return 0;
+}
+
+sub dumpResourcePool
+#dump this resource pool.
+#return 0 on success
+{
+    my ($self, $indent) = @_;
+    my $outroot = $self->rootDir();
+
+    #first dump this resource pool:
+    printf STDERR "%sDUMPING RESOURCE POOL (%s,%s) -> %s\n", ' 'x$indent, $self->resourcePoolName, $self->resourcePoolId, $outroot if ($DEBUG);
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
+        return 1;
+    }
+
+    #write my description out:
+    $self->dumpDescription();
+
+    #write my content out:
+    $self->dumppoolContent();
+
+    #dump my properties:
+    $self->ecProps->dumpProps($indent+2);
+
+    return 0;
+}
+
+sub dumppoolContent
+#write the resource pool content to files.
+#return 0 if successful
+{
+    my ($self) = @_;
+    my ($errs) = 0;
+
+    $errs += $self->dumppoolSwitches();
+    $errs += $self->dumpPoolResources();
+
+    return $errs;
+}
+
+sub dumpPoolResources
+#write the pool resouce list to a file
+#return 0 if successful
+{
+    my ($self) = @_;
+    my $txt = join("\n", ($self->getPoolResourceList()));
+    my $contentfn = $self->poolResourcesFname();
+
+    #don't create empty files:
+    return 0 if ($txt eq '');
+
+    my $outroot = $self->rootDir();
+
+    #fix eol:
+    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
+
+    return os::write_str2file(\$txt, path::mkpathname($outroot, $contentfn));
+}
+
+sub dumppoolSwitches
+#write the misc. resource pool properties
+#return 0 if successful
+{
+    my ($self) = @_;
+    my $txt = $self->getSwitchText();
+    my $contentfn = $self->switchTextFname();
+
+    #don't create empty files:
+    return 0 if ($txt eq '');
+
+    my $outroot = $self->rootDir();
+
+    #fix eol:
+    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
+
+    return os::write_str2file(\$txt, path::mkpathname($outroot, $contentfn));
+}
+
+sub fetchpoolContent
+#fetch the resource pool content for a given resource pool id.
+#return 0 if successful
+{
+    my ($self, $name, $id) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    ###########
+    #Attributes of possible interest in ec_resource_pool_resource:
+    #    resource_pool_id, resource_name
+    #Attributes of possible interest in ec_resource_pool
+    #    id, version, name, created, created_millis, deleted, last_modified_by, modified, modified_millis,
+    #    owner, auto_delete, description, ordering_filter, disabled, last_resource_used, acl_id,
+    #    property_sheet_id, description_clob_id, ordering_filter_clob_id
+    ###########
+
+
+    #this query should return only one row:
+    my $lbuf = sprintf("select pool.id,pool.version,pool.name,pool.deleted,pool.owner,pool.auto_delete,pool.description,pool.ordering_filter,pool.disabled,pool.last_resource_used,pool.acl_id,pool.property_sheet_id,pool.description_clob_id,pool.ordering_filter_clob_id from ec_resource_pool pool where pool.id = %d", $id);
+
+    printf STDERR "%s: running sql query to get resource pool content fields\n", ::srline() if ($DDEBUG);
+
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.  we expect one row
+    } @{$sqlpj->getQueryResult()};
+
+    if ( $#results+1 != 14 ) {
+        printf STDERR "%s:  ERROR:  query '%s' returned wrong number of results (%d).\n", ::srline(), $lbuf, $#results+1;
+        return 1;
+    }
+
+    #map undefined values:
+    @results = map {
+        defined($_) ? $_ : '';
+    } @results;
+
+    my ($pool_id,$pool_version,$pool_name,$pool_deleted,$pool_owner,$pool_auto_delete,$pool_description,$pool_ordering_filter,$pool_disabled,$pool_last_resource_used,$pool_acl_id,$pool_property_sheet_id,$pool_description_clob_id,$pool_ordering_filter_clob_id) = @results;
+
+    #$self->setDDebug(1);
+    printf STDERR "%s: (pool.id,pool.version,pool.name,pool.deleted,pool.owner,pool.auto_delete,pool.description,pool.ordering_filter,pool.disabled,pool.last_resource_used,pool.acl_id,pool.property_sheet_id,pool.description_clob_id,pool.ordering_filter_clob_id)=(%s)\n", ::srline(), join(',', (@results)) if ($DDEBUG);
+    #$self->setDDebug(0);
+
+    #create switches text (in a form that can be consumed by a posix shell):
+    my $switches = sprintf("pool_name='%s'
+pool_deleted='%s'
+pool_owner='%s'
+pool_auto_delete='%s'
+pool_disabled='%s'
+pool_ordering_filter='%s'", $pool_name,$pool_deleted,$pool_owner,$pool_auto_delete,$pool_disabled,$pool_ordering_filter);
+
+    $self->setSwitchText($switches);
+
+    return 0;
+}
+
+sub fetchPoolResources
+#fetch the resource list associated with this pool.
+#return 0 if successful
+{
+    my ($self, $name, $id) = @_;
+    my ($sqlpj) = $self->sqlpj();
+
+    ###########
+    #ec_resource_pool_resource: (resource_pool_id, resource_name)
+    ###########
+
+
+    #this query should return only one row:
+    my $lbuf = sprintf("select resource_name from ec_resource_pool_resource where resource_pool_id = %d", $id);
+
+    printf STDERR "%s: running sql query to get resource list for resouce pool '%s'\n", ::srline(), $name if ($DDEBUG);
+
+    if ( !$sqlpj->sql_exec($lbuf) ) {
+        printf STDERR "%s:  ERROR:  query '%s' failed.\n", ::srline(), $lbuf;
+        return 1;
+    }
+
+    #o'wise, stash results (query returns a ref to a list of list refs):
+    my @results = map {
+        @{$_};    #dereference each row.  we expect one row for each resource attached to the pool
+    } @{$sqlpj->getQueryResult()};
+
+    #map undefined values:
+    @results = map {
+        defined($_) ? $_ : '';
+    } @results;
+
+    #RESULT:
+    $self->setPoolResourceList(@results);
+
+    #$self->setDDebug(1);
+    printf STDERR "%s: resources for pool[%s]=(%s)\n", ::srline(), $name, join(',', ($self->getPoolResourceList())) if ($DDEBUG);
+    #$self->setDDebug(0);
+
+    return 0;
+}

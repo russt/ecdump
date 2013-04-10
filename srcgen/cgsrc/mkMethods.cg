@@ -263,15 +263,14 @@ agent.id, agent.version, agent.host_name, agent.port, agent.proxy_host_name, age
     EcObjectDbFetchWhereClause := rsrc.id = %d and rsrc.agent_id = agent.id
 
     #list of fields to be treated as switches, go in *.settings file
+    #NOTE:  rsrc_version, agent_version causes numerous diffs, esp. rsrc_version.
     EcObjectDbSwitchList := << [
 rsrc_name,
-rsrc_version,
 rsrc_deleted,
 rsrc_owner,
 rsrc_disabled,
 rsrc_shell,
 rsrc_step_limit
-agent_version,
 agent_host_name,
 agent_port,
 agent_proxy_host_name,
@@ -284,10 +283,61 @@ agent_signature
 }
 //
 
+genResourcePoolMethods := << //
+{
+    %call clear_ec_defs
+
+    #base definitions:
+    EcOjectName     = ResourcePool
+    EcOjectShortName= pool
+    ecobject_phrase = resource pool
+    _ECOBJECT_PACKAGE       = $_ECRESOURCEPOOL_PACKAGE:nameof:cgvar
+    _ECOBJECT_PROPS_PACKAGE = $_ECPROPS_PACKAGE:nameof:cgvar
+
+    EcObjectDbTable        = ec_resource_pool
+    EcObjectDbObjectKey    = id
+    EcObjectDbSelectList   = name,id,property_sheet_id
+
+EcObjectDbTableComment := << [
+###########
+#Attributes of possible interest in ec_resource_pool_resource:
+#    resource_pool_id, resource_name
+#Attributes of possible interest in ec_resource_pool
+#    id, version, name, created, created_millis, deleted, last_modified_by, modified, modified_millis,
+#    owner, auto_delete, description, ordering_filter, disabled, last_resource_used, acl_id,
+#    property_sheet_id, description_clob_id, ordering_filter_clob_id
+###########
+]
+
+    #####
+    #note - we don't need to refetch data in EcObjectDbSelectList or description related fields.
+    #####
+
+    EcObjectDbFetchList := << [
+pool.id, pool.version, pool.name, pool.deleted, pool.owner, pool.auto_delete, pool.description, pool.ordering_filter, pool.disabled, pool.last_resource_used, pool.acl_id, pool.property_sheet_id, pool.description_clob_id, pool.ordering_filter_clob_id
+]
+
+    EcObjectDbFetchFromClause  := ec_resource_pool pool
+    EcObjectDbFetchWhereClause := pool.id = %d
+
+    #list of fields to be treated as switches, go in *.settings file
+    #NOTE:  rsrc_version, agent_version causes numerous diffs, esp. rsrc_version.
+    EcObjectDbSwitchList := << [
+pool_name,
+pool_deleted,
+pool_owner,
+pool_auto_delete,
+pool_disabled,
+pool_ordering_filter
+]
+    %call generate_ec_methods
+}
+//
+
 ##################################### MAIN #####################################
 
 CG_FOREACH_SPLIT_PATTERN = /,/
 generateList = genProcedureStepMethods,genScheduleMethods,genResourceMethods
-generateList = genResourceMethods,genCloudMethods
+generateList = genResourcePoolMethods
 
 %foreach generator generateList %call $generator

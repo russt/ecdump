@@ -27,6 +27,20 @@
     %call generate_a_module
 }
 {
+    #ecResourcePool
+    PL_PACKAGE = $ECRESOURCEPOOL_PACKAGE
+    _PL_PACKAGE = $_ECRESOURCEPOOL_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+{
+    #ecResourcePools
+    PL_PACKAGE = $ECRESOURCEPOOLS_PACKAGE
+    _PL_PACKAGE = $_ECRESOURCEPOOLS_PACKAGE
+    module_defs = $PL_PACKAGE.defs
+    %call generate_a_module
+}
+{
     #ecSchedule
     PL_PACKAGE = $ECSCHEDULE_PACKAGE
     _PL_PACKAGE = $_ECSCHEDULE_PACKAGE

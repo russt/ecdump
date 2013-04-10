@@ -54,6 +54,7 @@ HaveDumpCommand	pl_getset	0
 IgnorePropertiesHash	pl_getset	undef
 IndexProcedureStepNameOption	pl_getset	0
 HtmlDecorationOption	pl_getset	0
+DumpCloudOnly	pl_getset	0
 )
 %evalmacro ATTRIBUTE_LIST ATTRIBUTE_LIST
 #generate attribute accessors (this creates class_attribute_dcls, getset_methods):

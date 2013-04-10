@@ -1,13 +1,13 @@
 #
-#ecCloud.defs -  definitions for ecCloud object.
+#ecResourcePools.defs -  definitions for ecResourcePools object.
 #
 
 #allows us to run stand-alone:
 %ifndef CG_ROOT %include ../build_setup.defs
 
 { ## header section
-PL_PACKAGE = $ECCLOUD_PACKAGE
-PL_PACKAGE_DESCRIPTION = collection for EC Cloud objects
+PL_PACKAGE = $ECRESOURCEPOOLS_PACKAGE
+PL_PACKAGE_DESCRIPTION = collection of EC Resource Pools
 
 #not a base class - use standard constuctor name:
 PL_CONSTRUCTOR_NAME = new
@@ -16,9 +16,8 @@ PL_CONSTRUCTOR_NAME = new
 PL_EXTERN_PKG_IMPORTS = << (
 )
 PL_PKG_IMPORTS = << (
-use $_ECRESOURCES_PACKAGE;
-use $_ECRESOURCEPOOLS_PACKAGE;
 require $_UTILS_PACKAGE;
+use $_ECRESOURCEPOOL_PACKAGE;
 )
 %if    $GEN_ONE_MODULE   PL_PKG_IMPORTS = $PL_EXTERN_PKG_IMPORTS:rnewline
 %ifnot $GEN_ONE_MODULE   PL_PKG_IMPORTS = ${PL_EXTERN_PKG_IMPORTS:rnewline}$PL_PKG_IMPORTS
@@ -44,13 +43,17 @@ Debug	pl_getset	$cfg->getDebug()
 DDebug	pl_getset	$cfg->getDDebug()
 Quiet	pl_getset	$cfg->getQuiet()
 Verbose	pl_getset	$cfg->getVerbose()
+#sqlpj interface (r/o).  note we need to get it from config, since ecCloud doesn't use sql:
+Sqlpj	pl_attr_method	$cfg->config->getSqlpjImpl()
 #local project attributes:
 RootDir	pl_attr_method	undef
-#container object for EC resources:
-EcResources	pl_attr_method	undef
-EcResourcePools	pl_attr_method	undef
+DbKeysInitialized	pl_getset	0
+NameIdMap	pl_getset	undef
+NamePropIdMap	pl_getset	undef
+#this is my list of EC resource objects:
+EcResourcePoolList	pl_attrlist_method	[]
 )
-#see also: m/ecCloud_mthd.defs
+#see also:  m/ecResourcePools_mthd.defs
 %evalmacro ATTRIBUTE_LIST ATTRIBUTE_LIST
 #generate attribute accessors (this creates class_attribute_dcls, getset_methods):
 %include perl/genattr.defs
@@ -69,14 +72,8 @@ PL_OBJ_ATTRIBUTES := << (
 
 #this is for further initialzation of attributes, since hash init cannot be self-referential:
 PL_POST_ATTRIBUTE_INIT := << (
-#set output root for the cloud objects (this will be in parent dir):
-$self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm('cloud'));
-
-#create resources object, which will contain the list of our resources:
-$self->{'mEcResources'} = new {=_ECRESOURCES_PACKAGE=}($self);
-
-#create resource pools object, which will contain the list of our resources pools:
-$self->{'mEcResourcePools'} = new {=_ECRESOURCEPOOLS_PACKAGE=}($self);
+#set output root for the resource objects (this will be in parent dir):
+$self->{'mRootDir'} = path::mkpathname($cfg->rootDir(), ec2scm('resourcepools'));
 
 #cache initial debugging and vebosity values in local package variables:
 $self->update_static_class_attributes();
@@ -95,7 +92,7 @@ $VERBOSE = $self->getVerbose();
 
 PL_PKG_METHODS := << (
 
-{=%include m/ecCloud_mthd.defs=}
+{=%include m/ecResourcePools_mthd.defs=}
 
 {=getset_methods=}
 

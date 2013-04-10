@@ -12,6 +12,8 @@ m/ecParameters_mthd.defs
 m/ecParameter_mthd.defs
 m/ecResources_mthd.defs
 m/ecResource_mthd.defs
+m/ecResourcePools_mthd.defs
+m/ecResourcePool_mthd.defs
 m/ecSchedules_mthd.defs
 m/ecSchedule_mthd.defs
 ecdump.cg
@@ -32,6 +34,8 @@ ecSchedules.defs
 ecSchedule.defs
 ecResources.defs
 ecResource.defs
+ecResourcePools.defs
+ecResourcePool.defs
 pkgconfig.defs
 utils.defs
 ../build_setup.defs

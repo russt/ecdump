@@ -188,6 +188,8 @@ SYNOPSIS
 
   If -dump is specified, and no projects are named, then dump all projects.
 
+  If -cloudonly is specified, skip project dumps (useful for testing).
+
 OPTIONS
   -help             Display this help message.
   -V                Show the $pkgname version.
@@ -197,6 +199,7 @@ OPTIONS
   -quiet            Display severe errors only.
 
   -list             List all projects and exit.
+  -cloudonly        Dump the EC cloud objects only.  Projects ignored.
   -dump dirname     Dump any named projects, output rooted at <dirname>.
   -P file           Dump only the projects listed in <file>.
   -clean            Remove <dirname> prior to dump.
@@ -281,6 +284,9 @@ PL_PARSE_ARGS_LOOP := << [
         printf STDERR "%s:  -dump requires directory name.\n", $p;
         return 1;
     }
+} elsif ($flag =~ '^-cloudonly') {
+    # -cloudonly        Dump the EC cloud objects only.  Projects ignored.
+    $edmpcfg->setDumpCloudOnly(1);
 } elsif ($flag =~ '^-P') {
     # -P file - get the list of projects to dump from <file>
     if ($#ARGV+1 > 0 && $ARGV[0] !~ /^-/) {
