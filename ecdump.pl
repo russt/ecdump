@@ -1153,7 +1153,6 @@ sub fetchRsrcContent
     my $switches = sprintf("rsrc_name='%s'
 rsrc_deleted='%s'
 rsrc_owner='%s'
-rsrc_disabled='%s'
 rsrc_shell='%s'
 rsrc_step_limit='%s'
 agent_host_name='%s'
@@ -1162,7 +1161,7 @@ agent_proxy_host_name='%s'
 agent_proxy_port='%s'
 agent_proxy_protocol='%s'
 agent_usessl='%s'
-agent_signature='%s'", $rsrc_name,$rsrc_deleted,$rsrc_owner,$rsrc_disabled,$rsrc_shell,$rsrc_step_limit,$agent_host_name,$agent_port,$agent_proxy_host_name,$agent_proxy_port,$agent_proxy_protocol,$agent_usessl,$agent_signature);
+agent_signature='%s'", $rsrc_name,$rsrc_deleted,$rsrc_owner,$rsrc_shell,$rsrc_step_limit,$agent_host_name,$agent_port,$agent_proxy_host_name,$agent_proxy_port,$agent_proxy_protocol,$agent_usessl,$agent_signature);
 
     $self->setSwitchText($switches);
 
@@ -6631,6 +6630,42 @@ sub new
 ################################### PACKAGE ####################################
 
 #see also:  ecCloud.defs
+sub loadDumpCloud
+#load/dump cloud objects
+{
+    my ($self, $indent) = @_;
+    my $outroot = $self->rootDir();
+    my ($errs) = 0;
+
+    printf STDERR "%sDUMPING CLOUD RESOURCES -> %s\n", ' 'x$indent, $outroot if ($VERBOSE);
+
+    os::createdir($outroot, 0775) unless (-d $outroot);
+    if (!-d $outroot) {
+        printf STDERR "%s: can't create output dir, '%s' (%s)\n", ::srline(), $outroot, $!;
+        return 1;
+    }
+
+    $errs += $self->ecResources->loadResources($indent+2);
+    $errs += $self->ecResources->dumpResources($indent+2);
+
+    $errs += $self->ecResourcePools->loadResourcePools($indent+2);
+    $errs += $self->ecResourcePools->dumpResourcePools($indent+2);
+
+    $errs += $self->freeCloud($indent+2);
+
+    return $errs;
+}
+
+sub freeCloud
+#release cloud object refs
+{
+    my ($self, $indent) = @_;
+
+    undef $self->{'mEcResources'};
+    undef $self->{'mEcResourcePools'};
+    return 0;
+}
+
 sub loadCloud
 #load each EC Cloud entity.
 #return 0 on success.
@@ -6918,12 +6953,8 @@ sub processDumpCommand
     my $ecprojects = $self->ecProjects();
 
     #load/dump ecCloud first because it is fast::
-    if ($eccloud->loadCloud(0) != 0) {
-        printf STDERR "%s: ERROR: failed to load EC cloud resources!\n", ::srline();
-        return 1;
-    }
-    if ($eccloud->dumpCloud(0) != 0) {
-        printf STDERR "%s: ERROR: failed to dump EC cloud resources!\n", ::srline();
+    if ($eccloud->loadDumpCloud(0) != 0) {
+        printf STDERR "%s: ERROR: failed to dump one or more cloud resources!\n", ::srline();
         return 1;
     }
 
@@ -7233,8 +7264,8 @@ sub new
     my $self = bless {
         'mProgName' => undef,
         'mPathSeparator' => undef,
-        'mVersionNumber' => "0.29",
-        'mVersionDate' => "09-Apr-2013",
+        'mVersionNumber' => "0.30",
+        'mVersionDate' => "10-Apr-2013",
         'mDebug' => 0,
         'mDDebug' => 0,
         'mQuiet' => 0,
@@ -8165,7 +8196,7 @@ sub parse_args
         $edmpcfg->setHaveDumpCommand(0);
     }
 
-    if ($edmpcfg->getHaveDumpCommand() && !$edmpcfg->getHaveProjects()) {
+    if ($edmpcfg->getHaveDumpCommand() && !$edmpcfg->getHaveProjects() && !$edmpcfg->getDumpCloudOnly()) {
         printf STDERR "%s: INFO:  dump specified, but no projects specified - will dump all projects.\n", $p unless($QUIET);
         $edmpcfg->setDumpAllProjects(1);
     }

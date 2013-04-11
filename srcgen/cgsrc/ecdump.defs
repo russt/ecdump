@@ -398,7 +398,7 @@ if ($edmpcfg->getHaveDumpCommand() && $edmpcfg->getHaveListCommand()) {
     $edmpcfg->setHaveDumpCommand(0);
 }
 
-if ($edmpcfg->getHaveDumpCommand() && !$edmpcfg->getHaveProjects()) {
+if ($edmpcfg->getHaveDumpCommand() && !$edmpcfg->getHaveProjects() && !$edmpcfg->getDumpCloudOnly()) {
     printf STDERR "%s: INFO:  dump specified, but no projects specified - will dump all projects.\n", $p unless($QUIET);
     $edmpcfg->setDumpAllProjects(1);
 }

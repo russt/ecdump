@@ -268,7 +268,6 @@ agent.id, agent.version, agent.host_name, agent.port, agent.proxy_host_name, age
 rsrc_name,
 rsrc_deleted,
 rsrc_owner,
-rsrc_disabled,
 rsrc_shell,
 rsrc_step_limit
 agent_host_name,
@@ -337,7 +336,6 @@ pool_ordering_filter
 ##################################### MAIN #####################################
 
 CG_FOREACH_SPLIT_PATTERN = /,/
-generateList = genProcedureStepMethods,genScheduleMethods,genResourceMethods
-generateList = genResourcePoolMethods
+generateList = genProcedureStepMethods,genScheduleMethods,genResourceMethods,genResourcePoolMethods
 
 %foreach generator generateList %call $generator

@@ -79,12 +79,8 @@ sub processDumpCommand
     my $ecprojects = $self->ecProjects();
 
     #load/dump ecCloud first because it is fast::
-    if ($eccloud->loadCloud(0) != 0) {
-        printf STDERR "%s: ERROR: failed to load EC cloud resources!\n", ::srline();
-        return 1;
-    }
-    if ($eccloud->dumpCloud(0) != 0) {
-        printf STDERR "%s: ERROR: failed to dump EC cloud resources!\n", ::srline();
+    if ($eccloud->loadDumpCloud(0) != 0) {
+        printf STDERR "%s: ERROR: failed to dump one or more cloud resources!\n", ::srline();
         return 1;
     }
 

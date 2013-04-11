@@ -138,7 +138,6 @@ sub fetchRsrcContent
     my $switches = sprintf("rsrc_name='%s'
 rsrc_deleted='%s'
 rsrc_owner='%s'
-rsrc_disabled='%s'
 rsrc_shell='%s'
 rsrc_step_limit='%s'
 agent_host_name='%s'
@@ -147,7 +146,7 @@ agent_proxy_host_name='%s'
 agent_proxy_port='%s'
 agent_proxy_protocol='%s'
 agent_usessl='%s'
-agent_signature='%s'", $rsrc_name,$rsrc_deleted,$rsrc_owner,$rsrc_disabled,$rsrc_shell,$rsrc_step_limit,$agent_host_name,$agent_port,$agent_proxy_host_name,$agent_proxy_port,$agent_proxy_protocol,$agent_usessl,$agent_signature);
+agent_signature='%s'", $rsrc_name,$rsrc_deleted,$rsrc_owner,$rsrc_shell,$rsrc_step_limit,$agent_host_name,$agent_port,$agent_proxy_host_name,$agent_proxy_port,$agent_proxy_protocol,$agent_usessl,$agent_signature);
 
     $self->setSwitchText($switches);
 
