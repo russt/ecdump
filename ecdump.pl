@@ -4116,6 +4116,7 @@ sub new
         'mProcStepIndex' => -1,
         'mProcStepSubprocedure' => '',
         'mProcStepSubproject' => '',
+        'mProcStepCondition' => '',
         'mSwitchText' => '',
         'mSwitchTextFname' => 'procstep.settings',
         'mDescription' => '',
@@ -4240,8 +4241,27 @@ sub dumpProcStepContent
     $errs += $self->dumpProcStepPostProcessor();
     $errs += $self->dumpProcStepSubprocedure();
     $errs += $self->dumpProcStepSwitches();
+    $errs += $self->dumpProcStepCondition();
 
     return $errs;
+}
+
+sub dumpProcStepCondition
+#write the proc step command to a file called command
+#return 0 if successful
+{
+    my ($self) = @_;
+    my $txt = $self->getProcStepCondition();
+
+    #don't create empty files:
+    return 0 if ($txt eq '');
+
+    my $outroot = $self->getRootDir();
+
+    #fix eol:
+    $txt = "$txt\n" unless ($txt eq '' || $txt =~ /\n$/);
+
+    return os::write_str2file(\$txt, path::mkpathname($outroot, "step_condition"));
 }
 
 sub dumpProcStepCommand
@@ -4443,6 +4463,18 @@ where id=%d", $id);
         $self->setProcStepPostProcessor($clobtxt);
     } elsif ($post_processor ne '') {
         $self->setProcStepPostProcessor($post_processor);
+    }
+
+    #set step_condition text if it exists:
+    if ($step_condition_clob_id ne '') {
+        my $clobtxt = '';
+        if ($self->fetchClobText(\$clobtxt, $step_condition_clob_id) != 0) {
+            printf STDERR "%s:  ERROR:  failed to fetch step_condition_clob='%s' for %s[%s]\n", ::srline(), $step_condition_clob_id, "ec_procedure step", $id;
+            return 1;
+        }
+        $self->setProcStepCondition($clobtxt);
+    } elsif ($step_condition ne '') {
+        $self->setProcStepCondition($step_condition);
     }
 
     #set subprocedure, subproject:
@@ -4669,6 +4701,22 @@ sub setProcStepSubproject
     $self->{'mProcStepSubproject'} = $value;
     $self->update_static_class_attributes();
     return $self->{'mProcStepSubproject'};
+}
+
+sub getProcStepCondition
+#return value of ProcStepCondition
+{
+    my ($self) = @_;
+    return $self->{'mProcStepCondition'};
+}
+
+sub setProcStepCondition
+#set value of ProcStepCondition and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mProcStepCondition'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mProcStepCondition'};
 }
 
 sub getSwitchText
@@ -7264,8 +7312,8 @@ sub new
     my $self = bless {
         'mProgName' => undef,
         'mPathSeparator' => undef,
-        'mVersionNumber' => "0.30",
-        'mVersionDate' => "10-Apr-2013",
+        'mVersionNumber' => "0.31",
+        'mVersionDate' => "03-May-2013",
         'mDebug' => 0,
         'mDDebug' => 0,
         'mQuiet' => 0,

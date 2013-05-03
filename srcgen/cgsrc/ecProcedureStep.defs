@@ -59,6 +59,7 @@ ProcStepPostProcessor	pl_getset	''
 ProcStepIndex	pl_getset	-1
 ProcStepSubprocedure	pl_getset	''
 ProcStepSubproject	pl_getset	''
+ProcStepCondition	pl_getset	''
 #misc. switches associated with this procedure step:
 SwitchText	pl_getset	''
 SwitchTextFname	pl_attr_method	'procstep.settings'
