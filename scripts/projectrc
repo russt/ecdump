@@ -1,18 +1,17 @@
-#use local cvs for this project:
-#source $RUSSTHOME/proj/.projectrc
+source $HOME/.projectrc_java6
+source $HOME/.projectrc_perl5_local
+source $HOME/.projectrc_vim
 
-#source ~/.projectrc_java5
-source ~/.projectrc_java6
-source ~/.projectrc_perl5_local
-source ~/.projectrc_vim
-
-#perforce specific:
+#don't need these - using standard locations:
+#source $HOME/.projectrc_git
 #source $HOME/.projectrc_p4
-#source $HOME/.projectrc_bnr
 
-setenv P4USER rtremain
-setenv P4CLIENT rtremain_main_tools
-setenv P4PORT 'perforce:1666'
+setenv P4CLIENT	bnr_ec_sources
+setenv P4USER	rtremain
+setenv P4PORT	gitconfusion:1666
+
+setenv GITURL	git@gitconfusion
+setenv GITREPO	${GITURL}:${P4CLIENT}
 
 setenv FORTE_PORT macosx
 setenv TOOLROOT $HOME/ftools
@@ -40,3 +39,6 @@ setenv ECDUMP_IGNORES "$ECDUMP_IGNORES;lastJobCleanupScript;highestP4prodChangel
 alias golog     'cd $PROJECT && subpj `\ls -1d logs/* | grep "^logs/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" | tail -1`'
 alias godump    'cd $PROJECT && subpj `\ls -1 | grep "^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" | tail -1`'
 alias godumplog 'cd $PROJECT && subpj logs/`\ls -1 | grep "^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" | tail -1`'
+
+env | egrep 'P4|REPO'
+git var -l | egrep 'user.email|_IDENT'
