@@ -101,9 +101,13 @@ set_global_vars()
     set -a
     #export vars..
     LOGDIR=$BASEDIR
+    GIT_LOCAL_ROOT=/bld/ecdump
+    mkdir -p $GIT_LOCAL_ROOT
     GIT_REMOTE_REPO_URL=git@ecdump.gitconfusion:ecscm-master
-    LOCAL_GIT_MASTER_DIR=$BASEDIR/ecscm-master.git
-    LOCAL_GIT_MASTER_URL=file://$BASEDIR/ecscm-master.git
+    LOCAL_GIT_MASTER_DIR=$GIT_LOCAL_ROOT/ecscm-master.git
+    LOCAL_GIT_MASTER_URL=file://$LOCAL_GIT_MASTER_DIR
+    #this has to be on same filesystem as we are moving .git dir back & forth.
+    #Q:  can it be a symlink?
     LOCAL_GIT_WORKING_DIR=$BASEDIR/ecscm-work
     GIT_PROCESSING_LOG=$LOGDIR/${p}_git.log
     set +a
@@ -122,20 +126,26 @@ create_local_git_master()
     fi
 
     if [ ! -d "$LOCAL_GIT_MASTER_DIR" ]; then
+        bldmsg -markbeg -p $p git clone --bare "$GIT_REMOTE_REPO_URL" "$LOCAL_GIT_MASTER_DIR"
         git clone --bare "$GIT_REMOTE_REPO_URL" "$LOCAL_GIT_MASTER_DIR"
         if [ $? -ne 0 ]; then
             bldmsg -error -p $p -status $? FAILED: git clone --bare "$GIT_REMOTE_REPO_URL" "$LOCAL_GIT_MASTER_DIR"
+            bldmsg -markend -p $p -status 1 git clone --bare "$GIT_REMOTE_REPO_URL" "$LOCAL_GIT_MASTER_DIR"
             return 1
         fi
+        bldmsg -markend -p $p -status 0 git clone --bare "$GIT_REMOTE_REPO_URL" "$LOCAL_GIT_MASTER_DIR"
     fi
 
     #note - fetch is a no-op if we just cloned, but do it anyway to verify the config.
+    bldmsg -markbeg -p $p git fetch in $LOCAL_GIT_MASTER_DIR
     cd "$LOCAL_GIT_MASTER_DIR"
     git fetch
     if [ $? -ne 0 ]; then
         bldmsg -error -p $p -status $? FAILED in "'$LOCAL_GIT_MASTER_DIR'": git fetch
+        bldmsg -markend -p $p -status 1 git fetch in $LOCAL_GIT_MASTER_DIR
         return 1
     fi
+    bldmsg -markend -p $p -status 0 git fetch in $LOCAL_GIT_MASTER_DIR
 
     return 0
 }
@@ -146,24 +156,30 @@ create_local_git_working()
     cd "$BASEDIR"
 
     if [ $DOCLEAN -eq 1 ]; then
+        bldmsg -markbeg -p $p removing "$LOCAL_GIT_WORKING_DIR"
         rm -rf "$LOCAL_GIT_WORKING_DIR"
+        bldmsg -markend -p $p -status $? removing "$LOCAL_GIT_WORKING_DIR"
     fi
 
     if [ -d "$LOCAL_GIT_WORKING_DIR" ]; then
         cd "$LOCAL_GIT_WORKING_DIR"
+        bldmsg -markbeg -p $p git pull in $LOCAL_GIT_WORKING_DIR
         git pull
         if [ $? -ne 0 ]; then
             bldmsg -error -p $p -status $? FAILED: git pull in "'$LOCAL_GIT_WORKING_DIR'"
+            bldmsg -markend -p $p -status 1 git pull in $LOCAL_GIT_WORKING_DIR
             return 1
         fi
+        bldmsg -markend -p $p -status 0 git pull in $LOCAL_GIT_WORKING_DIR
     else
+        bldmsg -markbeg -p $p git clone "$LOCAL_GIT_MASTER_URL" "$LOCAL_GIT_WORKING_DIR"
         git clone "$LOCAL_GIT_MASTER_URL" "$LOCAL_GIT_WORKING_DIR"
         if [ $? -ne 0 ]; then
             bldmsg -error -p $p -status $? FAILED: git clone "$LOCAL_GIT_MASTER_URL" "$LOCAL_GIT_WORKING_DIR"
+            bldmsg -markend -p $p -status 1 git clone "$LOCAL_GIT_MASTER_URL" "$LOCAL_GIT_WORKING_DIR"
             return 1
         fi
-
-        cd "$LOCAL_GIT_WORKING_DIR"
+        bldmsg -markend -p $p -status 0 git clone "$LOCAL_GIT_MASTER_URL" "$LOCAL_GIT_WORKING_DIR"
     fi
 
     return 0
@@ -172,10 +188,11 @@ create_local_git_working()
 process_ecdump_list()
 #process each directory in ecdump list
 {
+    cd "$BASEDIR"
+
     set $ECDUMP_LIST
     while [ $# -gt 0 ]
     do
-        cd "$BASEDIR"
         theDumpDir=$1; shift
         process_one_dumpdir "$theDumpDir"
         if [ $? -ne 0 ]; then
@@ -191,57 +208,78 @@ process_one_dumpdir()
 #add all files to working dir and commit to local master.
 #do not push to git fusion yet - that is handled separately.
 {
-    bldmsg -mark Processing ecdump directory $1
+    ecdumpdir="$1"
+    cd "$BASEDIR"
 
-    if [ ! -d "$1" ]; then
-        bldmsg -p $p -error Not a directory, "'$1'" - skipped.
+    bldmsg -mark Processing ecdump directory $ecdumpdir
+
+    if [ ! -d "$ecdumpdir" ]; then
+        bldmsg -p $p -error Not a directory, "'$ecdumpdir'" - skipped.
         return 1
     fi
 
-    cd "$1"
+    cd "$ecdumpdir"
+    if [ -d .git ]; then
+        bldmsg -warn -p $p cleaning up local .git directory from previous run in `pwd`
+        rm -rf .git
+    fi
 
-    bldmsg -mark git add --all in $1
-    #mv .git from working dir to here:
-    mv $LOCAL_GIT_WORKING_DIR/.git .
+    if [ ! -d "$LOCAL_GIT_WORKING_DIR" ]; then
+        bldmsg -error -p $p -status 1 cannot proceed - $LOCAL_GIT_WORKING_DIR does not exist!
+        return 1
+    fi
+
+    mv "$LOCAL_GIT_WORKING_DIR/.git" .
+    if [ $? -ne 0 ]; then
+        bldmsg -error -p $p -status $? FAILED: cannot move $LOCAL_GIT_WORKING_DIR/.git to `pwd`
+        return 1
+    fi
+
+    bldmsg -markbeg -p $p git add --all in $ecdumpdir
     git add --all
     if [ $? -ne 0 ]; then
-        bldmsg -error -p $p -status $? FAILED in "'$1'": git add --all
+        bldmsg -error -p $p -status $? FAILED in "'$ecdumpdir'": git add --all
+        bldmsg -markend -p $p -status 1 git add --all in $ecdumpdir
 
         #attempt to reset git to previous state - but we are probably screwed at this point:
-        bldmsg -mark git reset --hard in $1
+        bldmsg -mark git reset --hard in $ecdumpdir
         git reset --hard
 
         #move .git dir back:
-        mv .git $LOCAL_GIT_WORKING_DIR
+        mv .git "$LOCAL_GIT_WORKING_DIR"
 
         return 1
     fi
+    bldmsg -markend -p $p -status 0 git add --all in $ecdumpdir
 
     #otherwise, git add was a success - commit:
 
-    bldmsg -mark git commit in $1
-    git commit -m "ecdump $1"
+    bldmsg -markbeg -p $p git commit in $ecdumpdir
+    git commit -m "ecdump $ecdumpdir"
     if [ $? -ne 0 ]; then
-        bldmsg -error -p $p -status $? FAILED in "'$1'": git commit -m "'ecdump $1'"
+        bldmsg -error -p $p -status $? FAILED in "'$ecdumpdir'": git commit -m "'ecdump $ecdumpdir'"
+        bldmsg -markend -p $p -status 1 git commit in $ecdumpdir
 
         #move .git dir back:
-        mv .git $LOCAL_GIT_WORKING_DIR
+        mv .git "$LOCAL_GIT_WORKING_DIR"
         return 1
     fi
+    bldmsg -markend -p $p -status 0 git commit in $ecdumpdir
 
-    bldmsg -mark git push in $1
+    bldmsg -markbeg -p $p git push in $ecdumpdir
     git push
     if [ $? -ne 0 ]; then
-        bldmsg -error -p $p -status $? FAILED in "'$1'": git push
+        bldmsg -error -p $p -status $? FAILED in "'$ecdumpdir'": git push
+        bldmsg -markbeg -p $p -status 1 git push in $ecdumpdir
 
         #move .git dir back:
         mv .git $LOCAL_GIT_WORKING_DIR
         return 1
     fi
+    bldmsg -markend -p $p -status 0 git push in $ecdumpdir
 
-
-    #SUCCESS! park .git in working dir:
-    mv .git $LOCAL_GIT_WORKING_DIR
+    #SUCCESS! park .git back to working dir:
+    mv .git "$LOCAL_GIT_WORKING_DIR"
 
     return 0
 }
@@ -292,10 +330,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-process_ecdump_list > $GIT_PROCESSING_LOG 2>&1
+#process_ecdump_list > $GIT_PROCESSING_LOG 2>&1
+process_ecdump_list
 if [ $? -ne 0 ]; then
     bldmsg -error -p $p -status $? failed to process one or more directories in list: $ECDUMP_LIST
-    bldmsg -error -p $p see $GIT_PROCESSING_LOG for details
+    #bldmsg -error -p $p see $GIT_PROCESSING_LOG for details
     exit 1
 fi
 
