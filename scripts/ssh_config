@@ -1,0 +1,13 @@
+####  don't forget to add local entry for gitconfusion in /etc/hosts
+####  don't forget to add id_rsa.ecdump id_rsa.ecdump.pub to ~/.ssh
+####  don't forget to add this ssh_config snippet to ~/.ssh/config
+Host ecdump.gitconfusion
+	Hostname gitconfusion
+	User git
+	Protocol 2
+	IdentityFile ~/.ssh/id_rsa.ecdump
+	IdentitiesOnly yes
+
+Host gitconfusion
+	User root
+	Protocol 2
