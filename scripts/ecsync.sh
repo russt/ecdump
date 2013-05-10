@@ -26,7 +26,16 @@ Options:
                  local master to remote master.
 
 Environment:
- LOGDIR          Where to put all log files.
+ GIT_REMOTE_REPO_URL    The remote git-fusion repository we will sync to/from.
+                        Current setting is $GIT_REMOTE_REPO_URL
+ GIT_LOCAL_ROOT         Override where we locate the local git master repository directory.
+                        Current setting is $GIT_LOCAL_ROOT
+ LOCAL_GIT_MASTER_DIR   Local bare repository that we push to.
+                        Current setting is $LOCAL_GIT_MASTER_DIR
+ LOCAL_GIT_MASTER_URL   Local bare repository that we push to.
+                        Current setting is $LOCAL_GIT_MASTER_URL
+ LOCAL_GIT_WORKING_DIR  Local git working directory.  Must be on same filesystem as dump directories.
+                        Current setting is $LOCAL_GIT_WORKING_DIR
 
 Example:
  $p -clean 1303271430 1303271600 1305031242
@@ -100,17 +109,16 @@ set_global_vars()
 
     set -a
     #export vars..
-    LOGDIR=$BASEDIR
-    GIT_LOCAL_ROOT=/bld/ecdump
-    mkdir -p $GIT_LOCAL_ROOT
-    GIT_REMOTE_REPO_URL=git@ecdump.gitconfusion:ecscm-master
-    LOCAL_GIT_MASTER_DIR=$GIT_LOCAL_ROOT/ecscm-master.git
-    LOCAL_GIT_MASTER_URL=file://$LOCAL_GIT_MASTER_DIR
+    [ -z "$GIT_LOCAL_ROOT" ] && GIT_LOCAL_ROOT=/bld/ecdump
+    [ -z "$GIT_REMOTE_REPO_URL" ] && GIT_REMOTE_REPO_URL=git@ecdump.gitconfusion:ecscm-master
+    [ -z "$LOCAL_GIT_MASTER_DIR" ] && LOCAL_GIT_MASTER_DIR=$GIT_LOCAL_ROOT/ecscm-master.git
+    [ -z "$LOCAL_GIT_MASTER_URL" ] && LOCAL_GIT_MASTER_URL=file://$LOCAL_GIT_MASTER_DIR
     #this has to be on same filesystem as we are moving .git dir back & forth.
     #Q:  can it be a symlink?
-    LOCAL_GIT_WORKING_DIR=$BASEDIR/ecscm-work
-    GIT_PROCESSING_LOG=$LOGDIR/${p}_git.log
+    [ -z "$LOCAL_GIT_WORKING_DIR" ] && LOCAL_GIT_WORKING_DIR=$BASEDIR/ecscm-work
     set +a
+
+    mkdir -p "$GIT_LOCAL_ROOT"
 
     return 0
 }
@@ -199,6 +207,14 @@ process_ecdump_list()
             bldmsg -error -p $p -status $? failed to process dump directory: "'$theDumpDir'"
             return 1
         fi
+        if [ $DOREMOTEPUSH -eq 1 ]; then
+            do_remote_push
+            if [ $? -ne 0 ]; then
+                bldmsg -error -p $p -status $? failed to push changes for $theDumpDir to remote master.
+                return 1
+            fi
+        fi
+
     done
     return 0
 }
@@ -301,6 +317,7 @@ do_remote_push()
     bldmsg -markend -p $p -status 0 "git push local master -> remote master"
     return 0
 }
+
 ##################################### MAIN #####################################
 
 set_global_vars
@@ -330,20 +347,10 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-#process_ecdump_list > $GIT_PROCESSING_LOG 2>&1
 process_ecdump_list
 if [ $? -ne 0 ]; then
     bldmsg -error -p $p -status $? failed to process one or more directories in list: $ECDUMP_LIST
-    #bldmsg -error -p $p see $GIT_PROCESSING_LOG for details
     exit 1
-fi
-
-if [ $DOREMOTEPUSH -eq 1 ]; then
-    do_remote_push
-    if [ $? -ne 0 ]; then
-        bldmsg -error -p $p -status $? failed to push changes to remote master.
-        exit 1
-    fi
 fi
 
 exit 0
