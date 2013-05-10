@@ -2,23 +2,31 @@ source $HOME/.projectrc_java6
 source $HOME/.projectrc_perl5_local
 source $HOME/.projectrc_vim
 
-#don't need these - using standard locations:
-#source $HOME/.projectrc_git
+source $HOME/.projectrc_git
 #source $HOME/.projectrc_p4
 
-setenv P4CLIENT	bnr_ec_sources
-setenv P4USER	rtremain
+setenv P4CLIENT	Misc
+setenv P4CLIENT	ecscm-master
+setenv P4USER	ecdump
 setenv P4PORT	gitconfusion:1666
 
-setenv GITURL	git@gitconfusion
+setenv GITURL	git@ecdump.gitconfusion
 setenv GITREPO	${GITURL}:${P4CLIENT}
+#setenv EMAIL build@perforce.com
+
+setenv GIT_COMMITTER_NAME "EC Dumper"
+setenv GIT_COMMITTER_EMAIL build@perforce.com
+
+#the author name is used by git-fusion
+setenv GIT_AUTHOR_NAME "EC Dumper"
+setenv GIT_AUTHOR_EMAIL build@perforce.com
 
 setenv FORTE_PORT macosx
 setenv TOOLROOT $HOME/ftools
 setenv CG_TEMPLATE_PATH ".;$TOOLROOT/lib/cmn/templates;$TOOLROOT/lib/cmn/templates/java"
 
 #make sure project dir is in path:
-set path = ( /usr/local/perl/bin $PROJECT $path )
+set path = ( $GITHOME/bin /usr/local/perl/bin $PROJECT $path )
 
 #setenv PERL5LIB "$PROJECT/src/lib:$PERL5LIB"
 #setenv PERL5LIB "$PROJECT/bld/main/tools/build/lib/perl:$PROJECT/src/lib:/usr/local/perl/Library/Perl/Updates/5.10.0:/usr/local/perl/lib/perl5/site_perl"
@@ -40,5 +48,11 @@ alias golog     'cd $PROJECT && subpj `\ls -1d logs/* | grep "^logs/[0-9][0-9][0
 alias godump    'cd $PROJECT && subpj `\ls -1 | grep "^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" | tail -1`'
 alias godumplog 'cd $PROJECT && subpj logs/`\ls -1 | grep "^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" | tail -1`'
 
+#User's guide says you can use clone, fetch, pull, or push.  However, only clone works outside of a git working dir.
+alias gfinfo git clone ${GITURL}:@info
+alias gfhelp git clone ${GITURL}:@help
+alias gflist git clone ${GITURL}:@list
+
 env | egrep 'P4|REPO'
 git var -l | egrep 'user.email|_IDENT'
+
