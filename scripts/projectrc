@@ -10,6 +10,9 @@ setenv P4CLIENT	ecscm-master
 setenv P4USER	ecdump
 setenv P4PORT	gitconfusion:1666
 
+#set this to 0 if you don't want to run ecsync.sh from the cron job:
+setenv DO_EC_SCM_SYNC 1
+
 setenv GITURL	git@ecdump.gitconfusion
 setenv GITREPO	${GITURL}:${P4CLIENT}
 #setenv EMAIL build@perforce.com
@@ -55,4 +58,3 @@ alias gflist git clone ${GITURL}:@list
 
 env | egrep 'P4|REPO'
 git var -l | egrep 'user.email|_IDENT'
-
