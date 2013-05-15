@@ -48,5 +48,5 @@ SubmitOptions:	submitunchanged
 LineEnd:	local
 
 View:
-	//depot/ecdumps/bnr/ecscm-master/... //ecscm-master/...
+	//depot/tools/build/ecdumps/bnr/ecscm-master/... //ecscm-master/...
 
