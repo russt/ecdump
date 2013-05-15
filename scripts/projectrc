@@ -8,15 +8,25 @@ source $HOME/.projectrc_git
 setenv P4CLIENT	Misc
 setenv P4CLIENT	ecscm-master
 setenv P4USER	ecdump
-setenv P4PORT	gitconfusion:1666
+setenv P4PORT	perforce:1666
 
+#########
+#doecdump parameters:
 #set this to 0 if you don't want to run ecsync.sh from the cron job:
 setenv DO_EC_SCM_SYNC 1
+#########
 
-setenv GITURL	git@ecdump.gitconfusion
-setenv GITREPO	${GITURL}:${P4CLIENT}
+setenv GIT_REMOTE_URL	perforce@ecdump.gf
+setenv GITREPO	${GIT_REMOTE_URL}:${P4CLIENT}
+
+#######
+#ecsync.sh environment:
+setenv GIT_REMOTE_REPO_URL	$GITREPO
+#this is where our local git-master repo will be referenced:
+setenv GIT_LOCAL_ROOT	/bld/ecdump
+#######
+
 #setenv EMAIL build@perforce.com
-
 setenv GIT_COMMITTER_NAME "EC Dumper"
 setenv GIT_COMMITTER_EMAIL build@perforce.com
 
@@ -52,9 +62,9 @@ alias godump    'cd $PROJECT && subpj `\ls -1 | grep "^[0-9][0-9][0-9][0-9][0-9]
 alias godumplog 'cd $PROJECT && subpj logs/`\ls -1 | grep "^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]" | tail -1`'
 
 #User's guide says you can use clone, fetch, pull, or push.  However, only clone works outside of a git working dir.
-alias gfinfo git clone ${GITURL}:@info
-alias gfhelp git clone ${GITURL}:@help
-alias gflist git clone ${GITURL}:@list
+alias gfinfo git clone ${GIT_REMOTE_URL}:@info
+alias gfhelp git clone ${GIT_REMOTE_URL}:@help
+alias gflist git clone ${GIT_REMOTE_URL}:@list
 
 env | egrep 'P4|REPO'
 git var -l | egrep 'user.email|_IDENT'
