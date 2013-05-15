@@ -180,8 +180,8 @@ create_local_git_working()
         fi
         bldmsg -markend -p $p -status 0 git pull in $LOCAL_GIT_WORKING_DIR
     else
-        bldmsg -markbeg -p $p git clone "$LOCAL_GIT_MASTER_URL" "$LOCAL_GIT_WORKING_DIR"
-        git clone "$LOCAL_GIT_MASTER_URL" "$LOCAL_GIT_WORKING_DIR"
+        bldmsg -markbeg -p $p git clone -b master "$LOCAL_GIT_MASTER_URL" "$LOCAL_GIT_WORKING_DIR"
+        git clone -b master "$LOCAL_GIT_MASTER_URL" "$LOCAL_GIT_WORKING_DIR"
         if [ $? -ne 0 ]; then
             bldmsg -error -p $p -status $? FAILED: git clone "$LOCAL_GIT_MASTER_URL" "$LOCAL_GIT_WORKING_DIR"
             bldmsg -markend -p $p -status 1 git clone "$LOCAL_GIT_MASTER_URL" "$LOCAL_GIT_WORKING_DIR"
@@ -268,8 +268,18 @@ process_one_dumpdir()
     fi
     bldmsg -markend -p $p -status 0 git add --all in $ecdumpdir
 
-    #otherwise, git add was a success - commit:
+    #note - adding in a status here as we are getting an occasional commit error
+    #that seems to be repaired by git status.  RT 5/13/13
 
+    bldmsg -markbeg -p $p git status --short in $ecdumpdir
+    git status --short
+    if [ $? -ne 0 ]; then
+        bldmsg -warn -p $p -status $? FAILED in "'$ecdumpdir'": git status --short - ignoring errors
+        bldmsg -markend -p $p -status 1 git status --short in $ecdumpdir
+    fi
+    bldmsg -markend -p $p -status 0 git status --short in $ecdumpdir
+
+    #git add was a success - commit:
     bldmsg -markbeg -p $p git commit in $ecdumpdir
     git commit -m "ecdump $ecdumpdir"
     if [ $? -ne 0 ]; then
