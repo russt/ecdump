@@ -72,6 +72,13 @@ if [ "$LOGROOT" = "" ]; then
     exit 1
 fi
 
+if [ -z "$DO_EC_SCM_SYNC" ]; then
+    DO_EC_SCM_SYNC=0
+    bldmsg -p $p -warn defaulting DO_EC_SCM_SYNC=$DO_EC_SCM_SYNC
+else
+    bldmsg -p $p -mark NOTE: DO_EC_SCM_SYNC=$DO_EC_SCM_SYNC
+fi
+
 bldmsg -p $p Using `ecdump -V`
 bldmsg -p $p ECDUMPROOT=$ECDUMPROOT
 bldmsg -p $p ECDUMP_IGNORES=$ECDUMP_IGNORES
@@ -115,7 +122,7 @@ if [ $? -ne 0 ]; then
 fi
 
 #if we have diffs, then call ecsync.sh script to push the diffs to SCM:
-if [ $have_diffs -eq 1 ]; then
+if [ $DO_EC_SCM_SYNC -eq 1 -a $have_diffs -eq 1 ]; then
     do_ecsync $YYMMDDHHMM > $LOGROOT/ecsync.log 2>&1
     if [ $? -ne 0 ]; then
         bldmsg -error -p $p -status $? do_ecsync FAILED.
