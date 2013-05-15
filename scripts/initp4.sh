@@ -1,11 +1,23 @@
 #!/bin/sh
 #initialize p4 git-fusion repo
 
-P4CLIENT="ecscm-master"
-P4USER="ecdump"
-P4PORT="gitconfusion:1666"
-GITURL="git@ecdump.gitconfusion"
-GITREPO="${GITURL}:${P4CLIENT}"
+showenv()
+{
+    cat << EOF
+    P4CLIENT=$P4CLIENT
+    P4USER=$P4USER
+    P4PORT=$P4PORT
+EOF
+
+}
+
+if [ -z "$P4CLIENT" -o -z "$P4USER" -o -z "$P4PORT" ]; then
+    echo One or more environment variables undefined:
+    showenv
+    exit 1
+else
+    showenv
+fi
 
 p4 client -i < $P4CLIENT.spec
 
@@ -18,3 +30,5 @@ EOF
 
 p4 add README.txt
 p4 submit -d "add README file"
+
+echo $?
