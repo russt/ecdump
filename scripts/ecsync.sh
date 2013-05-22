@@ -272,12 +272,20 @@ process_one_dumpdir()
     #that seems to be repaired by git status.  RT 5/13/13
 
     bldmsg -markbeg -p $p git status --short in $ecdumpdir
-    git status --short
+    git_status=`git status --short`
     if [ $? -ne 0 ]; then
         bldmsg -warn -p $p -status $? FAILED in "'$ecdumpdir'": git status --short - ignoring errors
         bldmsg -markend -p $p -status 1 git status --short in $ecdumpdir
     fi
     bldmsg -markend -p $p -status 0 git status --short in $ecdumpdir
+
+    if [ -z "$git_status" ]; then
+        bldmsg -mark -p $p According to git status, no files have changed - so nothing to commit. DONE.
+
+        #SUCCESS! park .git back to working dir:
+        mv .git "$LOCAL_GIT_WORKING_DIR"
+        return 0
+    fi
 
     #git add was a success - commit:
     bldmsg -markbeg -p $p git commit in $ecdumpdir
