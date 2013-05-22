@@ -107,7 +107,8 @@ nfiles=`echo $LAST2RUNS | wc -w`
 
 if [ $nfiles -eq 2 ]; then
     bldmsg -p $p -markbeg ddiff
-    ddiff -fdiffonly $LAST2RUNS > $LOGROOT/ddiff.log 2>&1
+    #NOTE:  since git/perforce do not recognize directory diffs, do not include them in the ddiff.  RT 5/15/13
+    ddiff -f -fdiffonly $LAST2RUNS > $LOGROOT/ddiff.log 2>&1
     bldmsg -p $p -markend -status $? ddiff
 else
     bldmsg -error -p $p wrong number of files to diff, file list= "'$LAST2RUNS'"
