@@ -68,3 +68,4 @@ alias gflist git clone ${GIT_REMOTE_URL}:@list
 
 env | egrep 'P4|REPO'
 git var -l | egrep 'user.email|_IDENT'
+echo DO_EC_SCM_SYNC=$DO_EC_SCM_SYNC
