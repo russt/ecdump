@@ -2,11 +2,11 @@
 #build.cg - generate sqlpj into single prlskel lib
 #
 #to generate package for distribution:
-#    codegen -cgroot .. -u build.cg
+#    cado -u -cgroot .. build.cg
 #
 #generation options (will generate to bld):
-#    codegen -DNO_SYMLINKS=0 -DDEBUG=1 -u build.cg
-#    codegen -DNO_DBPROPS=0 -DNO_SYMLINKS=0 -DDEBUG=1 -u build.cg
+#    cado -DNO_SYMLINKS=0 -DDEBUG=1 -u build.cg
+#    cado -DNO_DBPROPS=0 -DNO_SYMLINKS=0 -DDEBUG=1 -u build.cg
 
 
 %ifndef CG_ROOT CG_ROOT = bld
@@ -21,10 +21,16 @@
 %include build_setup.defs
 %include cgsrc/ecdump.cg
 
+PROJECT_LICENSE_FILE = bsd2clause.txt
 COPYRIGHT_YEARS  = 2013-2013
-COPYRIGHT_HOLDER = Russ Tremain
+COPYRIGHT_HOLDER = Perforce Software, Inc.
+AUTHOR_NAME = Russ Tremain
+
+#export to environment for signsrc program:
 %export COPYRIGHT_YEARS
 %export COPYRIGHT_HOLDER
+%export PROJECT_LICENSE_FILE
+%export AUTHOR_NAME
 
 %echo Adding LICENSE header to $CG_ROOT/*.pl ...
 %shell signsrc $CG_ROOT/*.pl
