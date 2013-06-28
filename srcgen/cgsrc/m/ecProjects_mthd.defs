@@ -84,10 +84,63 @@ sub listProjectNames
     }
 }
 
+sub addAllMatchingProjects
+#supports list and dump commands.
+#called from outside to match list of projects against projects retrieved from database.
+#resolves to list of actual projects and adds each one.
+#return 0 on success.
+{
+    my ($self) = @_;
+
+    #initialize project keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->initDbKeys());
+
+    my $nerrs = 0;
+    my %output = ();
+
+    my @ecprojects = sort keys %{$self->getNameIdMap};
+    my @listToAdd = ();
+
+#printf STDERR "addAllMatchingProjects: ecprojects=(%s)\n", join(',', @ecprojects);
+
+    for my $pjname ($self->projectList()) {
+#printf STDERR "addAllMatchingProjects[LOOP] pjname='%s'\n", $pjname;
+        #if exact match ...
+        if (defined($self->getNameIdMap->{$pjname})) {
+            #then add it to list:
+            $output{$pjname} = 1;    #add uniquely
+        } elsif ( $pjname =~ /^\/.*\/$/ ) {
+            #then we have a regular expression - add all matching projects:
+            #we do this in an eval context to avoid compilation error if user gives us a bad pattern:
+            @listToAdd = ();
+            eval "\@listToAdd = grep($pjname, \@ecprojects)";
+            if ( $@ ) {
+                printf STDERR "%s:  WARNING:  syntax error in pattern '%s' - ignored\n", ::srline(), $pjname;
+                next;
+            }
+
+            if ($#listToAdd >= 0) {
+                #add list to output hash:
+                map {
+                    $output{$_} = 1;
+                } @listToAdd;
+            } else {
+                printf STDERR "%s:  WARNING:  project name '%s' didn't match any projects in database.\n", ::srline(), $pjname;
+            }
+        }
+    }
+
+    #note that all input project names are now expanded and vetted:
+    for my $pjname (sort keys %output) {
+        $nerrs += $self->addOneProject($pjname);
+    }
+
+    return $nerrs;
+}
+
 sub addOneProject
 #supports list and dump commands.
-#can be called from outside (to process a list of user-supplied projects).
-#add a single project to the collection.
+#called internally to add a single project to the collection.
 #does not fully populate sub-objects. for that, use loadProjects();
 #return 0 on success.
 {
@@ -98,8 +151,8 @@ sub addOneProject
 
     #check that we have a legitimate project name:
     if (!defined($self->getNameIdMap->{$projectName})) {
-        printf STDERR "%s:  ERROR:  project '%s' is not in the database.\n", ::srline(), $projectName;
-        return 1;
+        printf STDERR "%s:  WARNING:  project '%s' is not in the database.\n", ::srline(), $projectName;
+        return 0;    #skip add
     }
 
     #no setter, for mEcProjects - so use direct ref:

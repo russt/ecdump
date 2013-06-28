@@ -49,6 +49,7 @@ OutputDirectory	pl_getset	'<NULL>'
 DoClean	pl_getset	0
 HaveProjects	pl_getset	0
 DumpAllProjects	pl_getset	0
+ListAllProjects	pl_getset	0
 HaveListCommand	pl_getset	0
 HaveDumpCommand	pl_getset	0
 IgnorePropertiesHash	pl_getset	undef

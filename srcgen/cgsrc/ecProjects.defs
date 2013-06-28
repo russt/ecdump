@@ -47,6 +47,7 @@ Verbose	pl_getset	$cfg->getVerbose()
 Sqlpj	pl_attr_method	$cfg->sqlpj()
 #local project attributes:
 RootDir	pl_attr_method	undef
+ProjectList	pl_attrlist_method	[$cfg->config->getProjectList()]
 #reference to list of project objects (initially empty list):
 EcProjects	pl_attrlist_method	undef
 DbKeysInitialized	pl_getset	0

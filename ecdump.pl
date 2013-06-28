@@ -6146,6 +6146,7 @@ sub new
         'mVerbose' => $cfg->getVerbose(),
         'mSqlpj' => $cfg->sqlpj(),
         'mRootDir' => undef,
+        'mProjectList' => [$cfg->config->getProjectList()],
         'mEcProjects' => undef,
         'mDbKeysInitialized' => 0,
         'mNameIdMap' => undef,
@@ -6250,10 +6251,63 @@ sub listProjectNames
     }
 }
 
+sub addAllMatchingProjects
+#supports list and dump commands.
+#called from outside to match list of projects against projects retrieved from database.
+#resolves to list of actual projects and adds each one.
+#return 0 on success.
+{
+    my ($self) = @_;
+
+    #initialize project keys if not done yet:
+    return 1 unless ($self->getDbKeysInitialized() || !$self->initDbKeys());
+
+    my $nerrs = 0;
+    my %output = ();
+
+    my @ecprojects = sort keys %{$self->getNameIdMap};
+    my @listToAdd = ();
+
+#printf STDERR "addAllMatchingProjects: ecprojects=(%s)\n", join(',', @ecprojects);
+
+    for my $pjname ($self->projectList()) {
+#printf STDERR "addAllMatchingProjects[LOOP] pjname='%s'\n", $pjname;
+        #if exact match ...
+        if (defined($self->getNameIdMap->{$pjname})) {
+            #then add it to list:
+            $output{$pjname} = 1;    #add uniquely
+        } elsif ( $pjname =~ /^\/.*\/$/ ) {
+            #then we have a regular expression - add all matching projects:
+            #we do this in an eval context to avoid compilation error if user gives us a bad pattern:
+            @listToAdd = ();
+            eval "\@listToAdd = grep($pjname, \@ecprojects)";
+            if ( $@ ) {
+                printf STDERR "%s:  WARNING:  syntax error in pattern '%s' - ignored\n", ::srline(), $pjname;
+                next;
+            }
+
+            if ($#listToAdd >= 0) {
+                #add list to output hash:
+                map {
+                    $output{$_} = 1;
+                } @listToAdd;
+            } else {
+                printf STDERR "%s:  WARNING:  project name '%s' didn't match any projects in database.\n", ::srline(), $pjname;
+            }
+        }
+    }
+
+    #note that all input project names are now expanded and vetted:
+    for my $pjname (sort keys %output) {
+        $nerrs += $self->addOneProject($pjname);
+    }
+
+    return $nerrs;
+}
+
 sub addOneProject
 #supports list and dump commands.
-#can be called from outside (to process a list of user-supplied projects).
-#add a single project to the collection.
+#called internally to add a single project to the collection.
 #does not fully populate sub-objects. for that, use loadProjects();
 #return 0 on success.
 {
@@ -6264,8 +6318,8 @@ sub addOneProject
 
     #check that we have a legitimate project name:
     if (!defined($self->getNameIdMap->{$projectName})) {
-        printf STDERR "%s:  ERROR:  project '%s' is not in the database.\n", ::srline(), $projectName;
-        return 1;
+        printf STDERR "%s:  WARNING:  project '%s' is not in the database.\n", ::srline(), $projectName;
+        return 0;    #skip add
     }
 
     #no setter, for mEcProjects - so use direct ref:
@@ -6553,6 +6607,13 @@ sub rootDir
 {
     my ($self) = @_;
     return $self->{'mRootDir'};
+}
+
+sub projectList
+#return mProjectList list
+{
+    my ($self) = @_;
+    return @{$self->{'mProjectList'}};
 }
 
 sub ecProjects
@@ -6900,8 +6961,8 @@ sub new
         'mHaveDumpCommand' => $cfg->getHaveDumpCommand(),
         'mHaveListCommand' => $cfg->getHaveListCommand(),
         'mDumpAllProjects' => $cfg->getDumpAllProjects(),
+        'mListAllProjects' => $cfg->getListAllProjects(),
         'mDumpCloudOnly' => $cfg->getDumpCloudOnly(),
-        'mProjectList' => [$cfg->getProjectList()],
         'mDoClean' => $cfg->getDoClean(),
         'mRootDir' => $cfg->getOutputDirectory(),
         'mDbConnectionInitialized' => 0,
@@ -6977,17 +7038,18 @@ sub execEcdump
 
     my $nerrs = 0;
 
-    if ($self->haveListCommand() || $self->dumpAllProjects()) {
+    if ($self->listAllProjects() || $self->dumpAllProjects()) {
         $nerrs += $ecprojects->addAllProjects();
     } else {
-        for my $pjname ($self->projectList()) {
-            $nerrs += $ecprojects->addOneProject($pjname);
-        }
+        #we have a -P <list> option - add the matching projects:
+        $nerrs += $ecprojects->addAllMatchingProjects();
     }
 
     if ($nerrs) {
-        printf STDERR "%s:  encounterd %d ERROR%s while adding projects. ABORT\n", $self->progName(), $nerrs, ($nerrs == 1 ? '' : 'S');
-        return 1;
+        #this used to abort if a project listed was no longer present in database.
+        #we want to dump what projects are still there, so count as warning only.  RT 6/27/13
+        printf STDERR "%s:  encountered %d ERRORS%s while adding projects.\n", $self->progName(), $nerrs, ($nerrs == 1 ? '' : 'S');
+        return $nerrs;
     }
 
     if ($self->haveListCommand()) {
@@ -7218,18 +7280,18 @@ sub dumpAllProjects
     return $self->{'mDumpAllProjects'};
 }
 
+sub listAllProjects
+#return value of mListAllProjects
+{
+    my ($self) = @_;
+    return $self->{'mListAllProjects'};
+}
+
 sub dumpCloudOnly
 #return value of mDumpCloudOnly
 {
     my ($self) = @_;
     return $self->{'mDumpCloudOnly'};
-}
-
-sub projectList
-#return mProjectList list
-{
-    my ($self) = @_;
-    return @{$self->{'mProjectList'}};
 }
 
 sub doClean
@@ -7317,8 +7379,8 @@ sub new
     my $self = bless {
         'mProgName' => undef,
         'mPathSeparator' => undef,
-        'mVersionNumber' => "0.31",
-        'mVersionDate' => "03-May-2013",
+        'mVersionNumber' => "0.32",
+        'mVersionDate' => "28-Jun-2013",
         'mDebug' => 0,
         'mDDebug' => 0,
         'mQuiet' => 0,
@@ -7336,6 +7398,7 @@ sub new
         'mDoClean' => 0,
         'mHaveProjects' => 0,
         'mDumpAllProjects' => 0,
+        'mListAllProjects' => 0,
         'mHaveListCommand' => 0,
         'mHaveDumpCommand' => 0,
         'mIgnorePropertiesHash' => undef,
@@ -7728,6 +7791,22 @@ sub setDumpAllProjects
     return $self->{'mDumpAllProjects'};
 }
 
+sub getListAllProjects
+#return value of ListAllProjects
+{
+    my ($self) = @_;
+    return $self->{'mListAllProjects'};
+}
+
+sub setListAllProjects
+#set value of ListAllProjects and return value.
+{
+    my ($self, $value) = @_;
+    $self->{'mListAllProjects'} = $value;
+    $self->update_static_class_attributes();
+    return $self->{'mListAllProjects'};
+}
+
 sub getHaveListCommand
 #return value of HaveListCommand
 {
@@ -8037,7 +8116,8 @@ OPTIONS
   -list             List all projects and exit.
   -cloudonly        Dump the EC cloud objects only.  Projects ignored.
   -dump dirname     Dump any named projects, output rooted at <dirname>.
-  -P file           Dump only the projects listed in <file>.
+  -P file           Dump only the projects matching names listed in <file>.
+                    Names can be Perl regular expressions, e.g. /^Codeline:.*\$\/
   -clean            Remove <dirname> prior to dump.
 
   -indexsteps       Add index prefixes to dump of procedure step names dirs, e.g. "01_foostep"
@@ -8111,6 +8191,7 @@ sub parse_args
         } elsif ($flag =~ '^-list') {
             # -list             List all projects and exit.
             $edmpcfg->setHaveListCommand(1);
+            $edmpcfg->setListAllProjects(1);    #list displayed can be reduced by -P <project_list>
         } elsif ($flag =~ '^-clean') {
             # -clean            Remove <dirname> prior to dump.
             $edmpcfg->setDoClean(1);
@@ -8241,6 +8322,7 @@ sub parse_args
         $edmpcfg->setProjectList(@plist);
         $edmpcfg->setHaveProjects(1);
         $edmpcfg->setDumpAllProjects(0);
+        $edmpcfg->setListAllProjects(0);
     }
 
 

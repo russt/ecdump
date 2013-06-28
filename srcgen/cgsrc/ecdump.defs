@@ -201,7 +201,8 @@ OPTIONS
   -list             List all projects and exit.
   -cloudonly        Dump the EC cloud objects only.  Projects ignored.
   -dump dirname     Dump any named projects, output rooted at <dirname>.
-  -P file           Dump only the projects listed in <file>.
+  -P file           Dump only the projects matching names listed in <file>.
+                    Names can be Perl regular expressions, e.g. /^Codeline:.*\$\/
   -clean            Remove <dirname> prior to dump.
 
   -indexsteps       Add index prefixes to dump of procedure step names dirs, e.g. "01_foostep"
@@ -272,6 +273,7 @@ PL_PARSE_ARGS_LOOP := << [
 } elsif ($flag =~ '^-list') {
     # -list             List all projects and exit.
     $edmpcfg->setHaveListCommand(1);
+    $edmpcfg->setListAllProjects(1);    #list displayed can be reduced by -P <project_list>
 } elsif ($flag =~ '^-clean') {
     # -clean            Remove <dirname> prior to dump.
     $edmpcfg->setDoClean(1);
@@ -390,6 +392,7 @@ if ($#plist >= 0) {
     $edmpcfg->setProjectList(@plist);
     $edmpcfg->setHaveProjects(1);
     $edmpcfg->setDumpAllProjects(0);
+    $edmpcfg->setListAllProjects(0);
 }
 
 

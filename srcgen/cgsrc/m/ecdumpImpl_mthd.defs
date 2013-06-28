@@ -50,17 +50,18 @@ sub execEcdump
 
     my $nerrs = 0;
 
-    if ($self->haveListCommand() || $self->dumpAllProjects()) {
+    if ($self->listAllProjects() || $self->dumpAllProjects()) {
         $nerrs += $ecprojects->addAllProjects();
     } else {
-        for my $pjname ($self->projectList()) {
-            $nerrs += $ecprojects->addOneProject($pjname);
-        }
+        #we have a -P <list> option - add the matching projects:
+        $nerrs += $ecprojects->addAllMatchingProjects();
     }
 
     if ($nerrs) {
-        printf STDERR "%s:  encounterd %d ERROR%s while adding projects. ABORT\n", $self->progName(), $nerrs, ($nerrs == 1 ? '' : 'S');
-        return 1;
+        #this used to abort if a project listed was no longer present in database.
+        #we want to dump what projects are still there, so count as warning only.  RT 6/27/13
+        printf STDERR "%s:  encountered %d ERRORS%s while adding projects.\n", $self->progName(), $nerrs, ($nerrs == 1 ? '' : 'S');
+        return $nerrs;
     }
 
     if ($self->haveListCommand()) {

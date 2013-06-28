@@ -51,8 +51,8 @@ Sqlpj	pl_attr_method	$cfg->getSqlpjImpl()
 HaveDumpCommand	pl_attr_method	$cfg->getHaveDumpCommand()
 HaveListCommand	pl_attr_method	$cfg->getHaveListCommand()
 DumpAllProjects	pl_attr_method	$cfg->getDumpAllProjects()
+ListAllProjects	pl_attr_method	$cfg->getListAllProjects()
 DumpCloudOnly	pl_attr_method	$cfg->getDumpCloudOnly()
-ProjectList	pl_attrlist_method	[$cfg->getProjectList()]
 DoClean	pl_attr_method	$cfg->getDoClean()
 RootDir	pl_attr_method	$cfg->getOutputDirectory()
 #local attributes:
