@@ -1,3 +1,5 @@
 .*.sw*
 bld/
 Makefile
+/bdb
+/.projectrc
