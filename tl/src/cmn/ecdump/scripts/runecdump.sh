@@ -1,5 +1,5 @@
 #!/bin/sh
-#runecdump.sh - wraper to run the daily dump
+#runecdump.sh - wraper to run the periodic dump driven from build framework
 
 p=`basename $0`
 

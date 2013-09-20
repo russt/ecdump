@@ -1,5 +1,5 @@
 #!/bin/sh
-#gc.sh - run ecdump.
+#gc.sh - TEST ddiff code
 
 remove_if_nodiffs()
 #Usage:  remove_if_nodiffs lastdumpdir newdumpdir

@@ -1,0 +1,13 @@
+TEMPLATE = file.mmf
+
+DESTRULE = dist_except_cmn
+UPDATE=-udiff
+
+PKG      = lib/${TARGET_OS}/ecdump/scripts
+DEST     = ${BASE}/${PKG}
+MODE    =  0555
+
+#set to -check or -nocheck:
+CHECK    = -check
+
+FILES   = doecdump.sh ecsync.sh runecdump.sh
