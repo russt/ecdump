@@ -3,5 +3,13 @@ doecdump.sh	lib/${TARGET_OS}/ecdump/scripts/doecdump.sh	0555
 ecsync.sh	lib/${TARGET_OS}/ecdump/scripts/ecsync.sh	0555
 runecdump.sh	lib/${TARGET_OS}/ecdump/scripts/runecdump.sh	0555
 
-#this is more for reference:
+#install again without suffix:
+doecdump.sh	lib/${TARGET_OS}/ecdump/scripts/doecdump	0555
+ecsync.sh	lib/${TARGET_OS}/ecdump/scripts/ecsync	0555
+runecdump.sh	lib/${TARGET_OS}/ecdump/scripts/runecdump	0555
+
+#sample crontab:
+crontab.txt	lib/${TARGET_OS}/ecdump/scripts/crontab.txt	0444
+
+#not installed - for reference:
 initp4.sh	lib/${TARGET_OS}/ecdump/scripts/initp4.sh	0444

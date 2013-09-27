@@ -1,4 +1,4 @@
-#
+# SAMPLE CRONTAB FOR ECDUMP
 #minute (0-59),
 #hour (0-23),
 #day of the month (1-31),
@@ -7,9 +7,4 @@
 #
 #MIN HRS DAT MON DAY
 #----------------------------------------------------------------------------
-#
-30  11,14,18,23  *   *   *  /Users/rtremain/bin/runinpj ecdump runecdump.sh > /Users/rtremain/Perforce/ecdump/runecdump.out 2>&1
-#
-#testing
-#* * * * * date > /tmp/dateA.out
-09  13  *   *   *  /Users/rtremain/bin/runinpj ecdump runecdump.sh > /Users/rtremain/Perforce/ecdump/runecdump.out 2>&1
+#30  3,8-18,23  *   *   1-6  /usr/local/btools/packages/vspms/bin/runinpj ecdump runecdump > /bld/ecdump/work/runecdump.out 2>&1

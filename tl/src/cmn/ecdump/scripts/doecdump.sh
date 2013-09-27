@@ -1,5 +1,5 @@
 #!/bin/sh
-#doecdump.sh - run ecdump.
+#doecdump - run ecdump.
 
 remove_if_nodiffs()
 #Usage:  remove_if_nodiffs lastdumpdir newdumpdir
@@ -48,14 +48,18 @@ do_ecsync()
     dumpdir="$1"
     cd $PROJECT
 
-    bldmsg -p $p -markbeg ecsync.sh -push $dumpdir
-    ecsync.sh -push $dumpdir
+    if [ "$ECSYNC_OPTS" = "" ]; then
+	ECSYNC_OPTS="-push"
+    fi
+
+    bldmsg -p $p -markbeg ecsync $ECSYNC_OPTS $dumpdir
+    ecsync $ECSYNC_OPTS $dumpdir
     if [ $? -ne 0 ]; then
-        bldmsg -error -p $p -status $? FAILED: ecsync.sh -push $dumpdir
-        bldmsg -p $p -markend -status 1 ecsync.sh -push $dumpdir
+        bldmsg -error -p $p -status $? FAILED: ecsync $ECSYNC_OPTS $dumpdir
+        bldmsg -p $p -markend -status 1 ecsync $ECSYNC_OPTS $dumpdir
         return 1
     fi
-    bldmsg -p $p -markend -status 0 ecsync.sh -push $dumpdir
+    bldmsg -p $p -markend -status 0 ecsync $ECSYNC_OPTS $dumpdir
 
     return 0
 }
@@ -122,7 +126,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-#if we have diffs, then call ecsync.sh script to push the diffs to SCM:
+#if we have diffs, then call ecsync script to push the diffs to SCM:
 if [ $DO_EC_SCM_SYNC -eq 1 -a $have_diffs -eq 1 ]; then
     do_ecsync $YYMMDDHHMM > $LOGROOT/ecsync.log 2>&1
     if [ $? -ne 0 ]; then

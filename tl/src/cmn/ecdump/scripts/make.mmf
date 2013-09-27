@@ -10,4 +10,4 @@ MODE    =  0555
 #set to -check or -nocheck:
 CHECK    = -check
 
-FILES   = doecdump.sh ecsync.sh runecdump.sh
+FILES   = doecdump.sh ecsync.sh runecdump.sh crontab.txt
