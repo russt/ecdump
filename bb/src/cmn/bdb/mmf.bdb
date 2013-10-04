@@ -1,0 +1,3 @@
+# directories built by toolsBuild (makedrv -c mmf)
+tl/src/cmn/ecdump
+tl/src/cmn/ecdump/scripts
